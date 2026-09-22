@@ -9,7 +9,7 @@ An authored definition of a goal: what to listen for, how progress accumulates, 
 _Avoid_: Mission (unless a game renames it in UI), task as a synonym for the definition itself
 
 **Progress**:
-One player's durable state on a single Quest: current value, which steps are claimed, and how many times it has been claimed.
+One player's durable state on a single Quest: current value, which steps are claimed, and how many times it has been claimed. Values use `long` in v0.1; wider numeric types are a later concern.
 _Avoid_: PlayerQuestData, quest row
 
 **Progress Snapshot**:
@@ -24,6 +24,18 @@ _Avoid_: QuestGroup, QuestGroupType as the everyday name
 The fact a Quest listens for: an opaque integer kind (game-defined enum cast to int) plus an optional integer param. Gameplay reports kind + param + value; matching Quests update.
 _Avoid_: QuestType as the name for the whole Quest; targetId as jargon for the param; a package-owned catalog of verb names
 
+**Accumulation**:
+How a report changes Progress on a Quest: Sum (add), HighWater (keep max), or Flag (set to 1 once). Declared on the Quest, not chosen by the caller.
+_Avoid_: setValue, overrideValue, force as caller flags
+
+**Claim Policy**:
+How claiming works: once per Step (progress kept), or repeat-with-reset (progress cleared, up to a repeat limit). Board-local quirks (e.g. resetting sibling counters) stay in the game.
+_Avoid_: questMaxClaimed as undocumented special-case behavior
+
 **Step**:
 One claimable threshold on a Quest (e.g. reach 10, then 50). Identified relative to its Quest.
 _Avoid_: questLevel as the everyday name
+
+**Tracker**:
+The in-memory engine that indexes open Boards' Quests, applies Reports, derives claimability, and raises claim/progress signals. Pure C#; not a MonoBehaviour.
+_Avoid_: QuestManager as the product name
