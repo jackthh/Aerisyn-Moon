@@ -9,7 +9,7 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 
 | Package | Description | Status |
 |---|---|---|
-| [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Quest definitions, progress, and reward hooks | Scaffold (`0.1.0`) |
+| [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events | `0.1.0` |
 
 ## Install a package
 
@@ -34,6 +34,8 @@ Private repo: configure Git credentials on the machine so Unity can clone.
 ## Repo layout
 
 ```text
+CONTEXT.md                # shared domain glossary
+docs/adr/                 # architecture decisions
 Packages/
   com.aerisyn.quests/     # one UPM package (own package.json + asmdefs)
 ```
