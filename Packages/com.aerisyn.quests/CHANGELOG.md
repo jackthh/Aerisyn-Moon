@@ -19,6 +19,7 @@ First usable release. Replaces the earlier unreleased scaffold at the same versi
 - Events: `ProgressChanged`, `StepBecameClaimable`, `StepClaimed`, `BoardChanged`.
 - Authoring ScriptableObjects `QuestAsset` and `QuestBoardAsset` with validation, plus Editor inspectors that surface errors.
 - Sample **Basic Board** with a temporary JSON store (sample only).
+- Committed Unity `.meta` files for every package asset and folder (required for Git Package Manager installs).
 
 ### Notes
 
