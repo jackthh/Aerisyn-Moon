@@ -21,8 +21,8 @@ A named set of Quests that open and close together (stage, daily, event season).
 _Avoid_: QuestGroup, QuestGroupType as the everyday name
 
 **Objective**:
-The fact a Quest listens for (kind + optional param), reported by gameplay.
-_Avoid_: QuestType as the name for the whole Quest; targetId as jargon for the param
+The fact a Quest listens for: an opaque integer kind (game-defined enum cast to int) plus an optional integer param. Gameplay reports kind + param + value; matching Quests update.
+_Avoid_: QuestType as the name for the whole Quest; targetId as jargon for the param; a package-owned catalog of verb names
 
 **Step**:
 One claimable threshold on a Quest (e.g. reach 10, then 50). Identified relative to its Quest.
