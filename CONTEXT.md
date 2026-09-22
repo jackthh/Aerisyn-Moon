@@ -21,8 +21,8 @@ A named set of Quests that open and close together (stage, daily, event season).
 _Avoid_: QuestGroup, QuestGroupType as the everyday name
 
 **Objective**:
-The fact a Quest listens for: an opaque integer kind (game-defined enum cast to int) plus an optional integer param. Gameplay reports kind + param + value; matching Quests update.
-_Avoid_: QuestType as the name for the whole Quest; targetId as jargon for the param; a package-owned catalog of verb names
+The fact a Quest listens for: an opaque integer kind (game-defined enum cast to int) plus an optional integer param. A Quest may set MatchAnyParam so every report of that kind matches regardless of param.
+_Avoid_: QuestType as the name for the whole Quest; targetId as jargon for the param; a package-owned catalog of verb names; stealing 0 as a magic "any" sentinel
 
 **Accumulation**:
 How a report changes Progress on a Quest: Sum (add), HighWater (keep max), or Flag (set to 1 once). Declared on the Quest, not chosen by the caller.
