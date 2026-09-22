@@ -1,0 +1,16 @@
+{
+  "name": "Aerisyn.Quests.Samples.BasicBoard",
+  "rootNamespace": "Aerisyn.Quests.Samples.BasicBoard",
+  "references": [
+    "Aerisyn.Quests"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

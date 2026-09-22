@@ -2,19 +2,26 @@
   "name": "com.aerisyn.quests",
   "version": "0.1.0",
   "displayName": "Aerisyn Quests",
-  "description": "Modular quest definitions, progress tracking, and reward hooks for Unity projects.",
+  "description": "Game-agnostic quest tracker: authored quest definitions, board-scoped progress, accumulation and claim rules, and events for UI. Rewards and saving stay in the game.",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.quests",
   "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.quests/CHANGELOG.md",
   "keywords": [
     "aerisyn",
     "quests",
-    "gameplay"
+    "gameplay",
+    "achievements"
   ],
   "author": {
     "name": "Aerisyn",
     "url": "https://github.com/jackthh/Aerisyn-Moon"
   },
   "dependencies": {},
-  "samples": []
+  "samples": [
+    {
+      "displayName": "Basic Board",
+      "description": "One tracker, one board, every accumulation and claim mode, with a temporary JSON save.",
+      "path": "Samples~/BasicBoard"
+    }
+  ]
 }

@@ -1,5 +1,9 @@
 # Samples
 
-Place optional Unity samples here (Unity imports `Samples~` only when the user adds a sample from Package Manager).
+Unity imports a folder here only when the user adds it from Package Manager.
 
-Until the first sample ships, this folder is a placeholder so the layout is ready.
+| Sample | Folder | Shows |
+|---|---|---|
+| Basic Board | `BasicBoard/` | One Board, every accumulation and claim mode, temp JSON persistence |
+
+Samples may contain MonoBehaviours and throwaway persistence. The Runtime assembly never does.
