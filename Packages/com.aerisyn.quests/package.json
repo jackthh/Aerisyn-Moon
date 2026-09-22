@@ -1,0 +1,20 @@
+{
+  "name": "com.aerisyn.quests",
+  "version": "0.1.0",
+  "displayName": "Aerisyn Quests",
+  "description": "Modular quest definitions, progress tracking, and reward hooks for Unity projects.",
+  "unity": "2022.3",
+  "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.quests",
+  "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.quests/CHANGELOG.md",
+  "keywords": [
+    "aerisyn",
+    "quests",
+    "gameplay"
+  ],
+  "author": {
+    "name": "Aerisyn",
+    "url": "https://github.com/jackthh/Aerisyn-Moon"
+  },
+  "dependencies": {},
+  "samples": []
+}
