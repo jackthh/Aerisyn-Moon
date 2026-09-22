@@ -5,7 +5,7 @@ Domain language for `com.aerisyn.quests`: authored goals a player can pursue, ho
 ## Language
 
 **Quest**:
-An authored definition of a goal: what to listen for, how progress accumulates, ordered steps with thresholds and rewards, and how claiming works.
+An authored definition of a goal: what to listen for, how progress accumulates, ordered steps with thresholds, and how claiming works. Reward contents are owned by the game, keyed by quest/step identity.
 _Avoid_: Mission (unless a game renames it in UI), task as a synonym for the definition itself
 
 **Progress**:
@@ -21,5 +21,9 @@ A named set of Quests that open and close together (stage, daily, event season).
 _Avoid_: QuestGroup, QuestGroupType as the everyday name
 
 **Objective**:
-The fact a Quest listens for (kind + optional param), reported by gameplay.
+The fact a Quest listens for (kind + optional param), reported by gameplay. Kind is an opaque integer the game defines; the package does not ship a catalog of game verbs.
 _Avoid_: QuestType as the name for the whole Quest; targetId as jargon for the param
+
+**Step**:
+One claimable threshold on a Quest (e.g. reach 10, then 50). Identified relative to its Quest.
+_Avoid_: questLevel as the everyday name
