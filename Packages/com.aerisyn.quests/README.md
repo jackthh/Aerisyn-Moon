@@ -3,11 +3,23 @@
 A game-agnostic quest tracker. Gameplay reports facts; every open Quest that listens moves; the game
 grants rewards when a claim succeeds. The package never touches currency, UI, or disk.
 
-**Unity:** 2022.3+ · **Dependencies:** none · **Runtime assembly:** `Aerisyn.Quests` (pure C#)
+**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Quests` · **Version:** `0.1.3`
+
+## Requirements
+
+| Dependency | Why |
+|---|---|
+| **Unity 2022.3+** | Minimum editor / player target |
+| **Odin Inspector (Sirenix)** | Needed so this package compiles. Authoring ScriptableObjects use Odin attributes in the same assembly as the Tracker. |
+
+Install Odin from the Unity Asset Store (or your usual Sirenix workflow) into the **consuming project**. Odin is not on UPM and is **not** shipped in this repository (install per machine / per project).
+
+Tracker and definition types do not call Odin at runtime. You can build `QuestDefinition`s in code or from CSV and never use the ScriptableObject assets; Odin still has to be present for the assembly to build.
 
 ## Install
 
-Package Manager → **+ → Add package from git URL…**
+1. Install **Odin Inspector** into your Unity project.
+2. Package Manager → **+ → Add package from git URL…**
 
 ```text
 https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests
@@ -63,11 +75,10 @@ if (tracker.TryClaim(new QuestId(stage, 1), stepIndex: 0))
 tracker.CloseBoard(stage);
 ```
 
-## Authoring in the Inspector (optional)
+## Authoring ScriptableObjects
 
-`Assets → Create → Aerisyn → Quests → Quest` and `Quest Board`. The inspectors show validation
-errors (bad thresholds, duplicate local ids). Call `board.BuildDefinitions()` and hand the result to
-`OpenBoard`. CSV-driven games can skip these assets and build `QuestDefinition` directly.
+`Assets → Create → Aerisyn → Quests → Quest` and `Quest Board`. Layout and validation use **Odin**
+(conditional fields, list drawers, InfoBoxes). Identity on a board asset is `BoardId` (use `BoardId.Value` for the raw string). Call `board.BuildDefinitions()` and hand the result to `OpenBoard`. Prefer code or CSV? Build `QuestDefinition` directly and skip these assets.
 
 ## Rules worth knowing
 
@@ -86,6 +97,5 @@ Reward payloads, quest text and icons, go-to navigation, analytics, save files. 
 | Folder | Purpose |
 |---|---|
 | `Runtime/Core` | Tracker, definitions, snapshots, views (no UnityEngine) |
-| `Runtime/Authoring` | `QuestAsset`, `QuestBoardAsset` ScriptableObjects |
-| `Editor/` | Validation inspectors |
+| `Runtime/Authoring` | `QuestAsset`, `QuestBoardAsset` ScriptableObjects (Odin) |
 | `Samples~/BasicBoard` | Runnable demo with a temporary JSON store |

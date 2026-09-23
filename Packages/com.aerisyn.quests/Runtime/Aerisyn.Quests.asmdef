@@ -1,7 +1,9 @@
 {
   "name": "Aerisyn.Quests",
   "rootNamespace": "Aerisyn.Quests",
-  "references": [],
+  "references": [
+    "Sirenix.OdinInspector.Attributes"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

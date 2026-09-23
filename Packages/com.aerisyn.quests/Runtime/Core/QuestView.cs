@@ -30,7 +30,9 @@ namespace Aerisyn.Quests
 
         #endregion
 
-        internal QuestView(QuestId id, QuestDefinition definition, long progressValue, ulong claimedStepsMask, int completedCycles)
+
+        internal QuestView(QuestId id, QuestDefinition definition, long progressValue, ulong claimedStepsMask,
+            int completedCycles)
         {
             Id = id;
             Definition = definition;
@@ -39,19 +41,24 @@ namespace Aerisyn.Quests
             CompletedCycles = completedCycles;
         }
 
+
         #region Derived state
 
         public int StepCount => Definition.StepCount;
 
         /// <summary>Summary of the whole Quest: InProgress, Claimable, or Completed.</summary>
-        public QuestState State => QuestRules.GetQuestState(Definition, ProgressValue, ClaimedStepsMask, CompletedCycles);
+        public QuestState State =>
+            QuestRules.GetQuestState(Definition, ProgressValue, ClaimedStepsMask, CompletedCycles);
+
 
         /// <summary>Locked, Claimable, or Claimed for the Step at <paramref name="stepIndex"/> (0-based).</summary>
         public StepState GetStepState(int stepIndex) =>
             QuestRules.GetStepState(Definition, ProgressValue, ClaimedStepsMask, CompletedCycles, stepIndex);
 
+
         /// <summary>Progress value needed to reach the Step at <paramref name="stepIndex"/> (0-based).</summary>
         public long GetStepThreshold(int stepIndex) => Definition.Thresholds[stepIndex];
+
 
         /// <summary>
         /// Index of the first Step that is not yet claimed, or -1 when every Step is claimed.
@@ -73,22 +80,7 @@ namespace Aerisyn.Quests
 
         #endregion
 
-        public ProgressSnapshot ToSnapshot() => new ProgressSnapshot(Id.LocalId, ProgressValue, ClaimedStepsMask, CompletedCycles);
 
-        #region Obsolete aliases (removed in 0.2.0)
-
-        [Obsolete("Renamed to QuestView.ProgressValue for clarity. This alias is removed in 0.2.0.")]
-        public long Value => ProgressValue;
-
-        [Obsolete("Renamed to QuestView.CompletedCycles: it counts full cycles, not Step claims. This alias is removed in 0.2.0.")]
-        public int ClaimCount => CompletedCycles;
-
-        [Obsolete("Renamed to QuestView.FirstUnclaimedStepIndex for clarity. This alias is removed in 0.2.0.")]
-        public int CurrentStep => FirstUnclaimedStepIndex;
-
-        [Obsolete("Renamed to QuestView.GetStepThreshold for clarity. This alias is removed in 0.2.0.")]
-        public long GetThreshold(int step) => GetStepThreshold(step);
-
-        #endregion
+        public ProgressSnapshot ToSnapshot() => new(Id.LocalId, ProgressValue, ClaimedStepsMask, CompletedCycles);
     }
 }

@@ -1,8 +1,8 @@
 {
   "name": "com.aerisyn.quests",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "displayName": "Aerisyn Quests",
-  "description": "Game-agnostic quest tracker: authored quest definitions, board-scoped progress, accumulation and claim rules, and events for UI. Rewards and saving stay in the game.",
+  "description": "Game-agnostic quest tracker: authored quest definitions, board-scoped progress, accumulation and claim rules, and events for UI. Requires Odin Inspector (Sirenix) in the project. Rewards and saving stay in the game.",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.quests",
   "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.quests/CHANGELOG.md",
