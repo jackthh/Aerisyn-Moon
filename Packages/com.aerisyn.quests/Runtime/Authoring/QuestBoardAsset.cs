@@ -1,25 +1,64 @@
 using System;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Aerisyn.Quests.Authoring
 {
     /// <summary>
-    /// A Board authored as an asset: a stable name plus the Quests that open and close together.
+    /// A Board authored as an asset (Odin): a stable name plus the Quests that open and close together.
     /// Hand <see cref="BoardId"/> and <see cref="BuildDefinitions"/> to <see cref="QuestTracker.OpenBoard"/>.
     /// </summary>
     [CreateAssetMenu(fileName = "QuestBoard", menuName = "Aerisyn/Quests/Quest Board", order = 1)]
+    [InfoBox("@InspectorErrorSummary", InfoMessageType.Error, nameof(HasInspectorErrors))]
+    [InfoBox("@InspectorSuccessSummary", InfoMessageType.Info, nameof(IsInspectorValid))]
     public sealed class QuestBoardAsset : ScriptableObject
     {
         #region Serialized fields
 
+        [FoldoutGroup("Board")]
+        [LabelText("Board Id")]
         [Tooltip("Stable name used as the BoardId (e.g. stage.1.3, daily). Changing it orphans saved progress.")]
+        [Required]
         [SerializeField]
         private string boardName;
 
-        [Tooltip("Quests on this Board. Local ids must be unique within the list.")] [SerializeField]
+        [FoldoutGroup("Board")]
+        [Tooltip("Quests on this Board. Local ids must be unique within the list.")]
+        [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
+        [AssetsOnly]
+        [SerializeField]
         private QuestAsset[] quests = Array.Empty<QuestAsset>();
+
+        #endregion
+
+
+        #region Inspector status (Odin)
+
+        // Reused when Odin evaluates InfoBox members so repaint does not allocate a new list each time.
+        [NonSerialized] private readonly List<string> _inspectorErrors = new List<string>();
+
+
+        private bool IsInspectorValid => Validate(null);
+
+
+        private bool HasInspectorErrors => !IsInspectorValid;
+
+
+        private string InspectorErrorSummary
+        {
+            get
+            {
+                _inspectorErrors.Clear();
+                Validate(_inspectorErrors);
+                return string.Join("\n", _inspectorErrors);
+            }
+        }
+
+
+        // boardName is safe here: success InfoBox only shows when Validate passed.
+        private string InspectorSuccessSummary =>
+            "Valid board '" + boardName + "' with " + quests.Length + " quest(s).";
 
         #endregion
 

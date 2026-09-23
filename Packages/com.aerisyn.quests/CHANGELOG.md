@@ -5,11 +5,14 @@ All notable changes to `com.aerisyn.quests` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.3] - Unreleased
 
 ### Changed
 
-- `QuestBoardAsset` exposes a single identity, `BoardId`. `BoardName` is now an `[Obsolete]` alias (use `BoardId.Value` for the raw string) and is removed in 0.2.0.
+- **Requires [Odin Inspector](https://odininspector.com/).** Authoring ScriptableObjects use Odin attributes; `Aerisyn.Quests` references `Sirenix.OdinInspector.Attributes`. Install Odin in the consuming project (not via UPM; not shipped in this repo). The package will not compile without it.
+- `QuestAsset` / `QuestBoardAsset` Inspector UX moved to Odin (foldouts, conditional fields, list drawers, validation InfoBoxes). Unity `CustomEditor` inspectors removed; the package `Editor/` assembly is gone.
+- `QuestBoardAsset` identity is `BoardId` only. The interim `BoardName` property is **removed** (use `BoardId` / `BoardId.Value`). There is no obsolete alias.
+- Basic Board sample includes `SampleBoard.unity` in `Samples~/` so Package Manager imports ship the demo scene.
 
 ## [0.1.1] - 2026-09-23
 
@@ -22,7 +25,7 @@ compile as `[Obsolete]` aliases and are removed in 0.2.0.
 - `QuestId.Board` renamed to `QuestId.BoardId`.
 - `QuestTracker.TryGet` renamed to `TryGetQuest`; `QuestTracker.Export` renamed to `ExportBoard`.
 - `QuestView.Value` renamed to `ProgressValue`, `ClaimCount` to `CompletedCycles` (it counts full claim cycles, not Step claims), `CurrentStep` to `FirstUnclaimedStepIndex`, `GetThreshold` to `GetStepThreshold`.
-- `QuestBoardAsset.BoardIdValue` renamed to `BoardName`; `QuestBoardAsset.Id` renamed to `BoardId`.
+- `QuestBoardAsset.BoardIdValue` renamed to `BoardName`; `QuestBoardAsset.Id` renamed to `BoardId`. (Superseded in 0.1.3: `BoardName` removed in favor of `BoardId` alone.)
 - Parameter names spell out intent (`stepIndex`, `objectiveKind`, `objectiveParam`, `reportedValue`, `savedSnapshots`). Callers using named arguments need to update them.
 - Serialized authoring fields renamed (`_objectiveKind`, `_objectiveParam`, `_stepThresholds`, `_boardName`) with `[FormerlySerializedAs]`, so existing assets keep their data.
 - Summary comments on every public type and member, plus step outlines on `OpenBoard`, `Report`, and `TryClaim`.

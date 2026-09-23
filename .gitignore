@@ -35,3 +35,9 @@ ExportedObj/
 
 # npm / tooling noise (unused now, reserved)
 node_modules/
+
+# Odin Inspector (licensed) — install per machine / per project; do not commit
+DevHost/Assets/Plugins/Sirenix/
+DevHost/Assets/Plugins/Sirenix.meta
+DevHost/Assets/Plugins.meta
+
