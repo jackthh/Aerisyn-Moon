@@ -40,23 +40,23 @@ var stage = new BoardId("stage.1.3");
 tracker.OpenBoard(stage, new[]
 {
     // Serve 10 customers at any stall, claim once.
-    new QuestDefinition(1, Objective.Any((int)Kind.ServeCustomer), Accumulation.Sum, 10),
+    new QuestDefinition(1, Objective.AnyParam((int)Kind.ServeCustomer), Accumulation.Sum, 10),
 
     // Stall 2 reaches level 25 (report the level, keep the max).
     new QuestDefinition(2, new Objective((int)Kind.UpgradeStall, 2), Accumulation.HighWater, 25),
 }, savedSnapshots /* ProgressSnapshot[] from your save, or null */);
 
 // UI listens once.
-tracker.ProgressChanged     += id => RefreshRow(id);
-tracker.StepBecameClaimable += (id, step) => ShowClaimButton(id, step);
-tracker.BoardChanged        += board => Save(board, tracker.Export(board));
+tracker.ProgressChanged     += questId => RefreshRow(questId);
+tracker.StepBecameClaimable += (questId, stepIndex) => ShowClaimButton(questId, stepIndex);
+tracker.BoardChanged        += boardId => Save(boardId, tracker.ExportBoard(boardId));
 
 // Gameplay reports facts. No modes, no flags.
-tracker.Report((int)Kind.ServeCustomer, param: 2, value: 1);
-tracker.Report((int)Kind.UpgradeStall,  param: 2, value: 25);
+tracker.Report((int)Kind.ServeCustomer, objectiveParam: 2, reportedValue: 1);
+tracker.Report((int)Kind.UpgradeStall,  objectiveParam: 2, reportedValue: 25);
 
 // Claim button: a true return is the signal to grant.
-if (tracker.TryClaim(new QuestId(stage, 1), step: 0))
+if (tracker.TryClaim(new QuestId(stage, 1), stepIndex: 0))
     Grant(myRewardTable[(stage, 1, 0)]);
 
 // Stage over.

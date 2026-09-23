@@ -9,7 +9,7 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 
 | Package | Description | Status |
 |---|---|---|
-| [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events | `0.1.0` |
+| [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events | `0.1.1` |
 
 ## Install a package
 
@@ -26,7 +26,7 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests
 Pin a git tag when you release:
 
 ```text
-https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests#v0.1.0
+https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests#v0.1.1
 ```
 
 Private repo: configure Git credentials on the machine so Unity can clone.
