@@ -5,7 +5,6 @@
     "Aerisyn.DataConfigSheet",
     "BakingSheet",
     "BakingSheet.Google",
-    "BakingSheet.ScriptableObject",
     "BakingSheet.Csv"
   ],
   "includePlatforms": [

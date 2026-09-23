@@ -14,11 +14,13 @@ First release. BakingSheet-based editor bake: Google Sheet → optional CSV cach
 - Package scaffold (`package.json` 0.2.0, Runtime + Editor asmdefs).
 - Dependency on upstream `com.cathei.bakingsheet` **v4.1.3** (git URL; not vendored).
 - **Requires [Odin Inspector](https://odininspector.com/)** (repo-wide Aerisyn-Moon assumption). `BakeConfig` uses Odin drawers; `Aerisyn.DataConfigSheet` references `Sirenix.OdinInspector.Attributes`.
-- `BakeConfig` asset: spreadsheet id(s), credential path, SO output path, optional CSV cache path, `SheetContainerFactory` reference.
-- `SheetContainerFactory` abstract ScriptableObject so game-owned schema wires into the package menu.
-- Editor menus: bake selected BakeConfig / bake all BakeConfigs (Google → `ScriptableObjectSheetExporter`).
-- Sample `Samples~/BasicBake`: demo `Items` sheet, `DemoSheetContainer`, `DemoSheetContainerFactory`.
-- README: auth (service account Viewer), one-way policy, install Git URL, BakingSheet + Odin prerequisites.
+- **OAuth browser sign-in** as default Google auth (`GoogleAuthMode.OAuthUser`): Sign In / Sign Out menus, `authorized_user` token under `UserSettings/` for BakingSheet `FromJson`. Email-shared private sheets (Idle-like). Service account remains optional for CI.
+- **Editable single-file bake output** via game-owned `BakedSheetContainerAsset` (serializable lists). BakingSheet `ScriptableObjectSheetExporter` is not used (it produced read-only row sub-assets).
+- `BakeConfig` asset: spreadsheet id(s), auth mode + paths, optional CSV cache, `SheetContainerFactory` + `Baked Output` references.
+- `SheetContainerFactory` / `BakedSheetContainerAsset` so game-owned schema and SO shape wire into the package menu.
+- Editor menus: Sign In / Sign Out / bake selected / bake all.
+- Sample `Samples~/BasicBake` + DevHost demo: factory + `*BakedDataAsset` with editable Items list.
+- README: OAuth setup, editable SO policy, BakingSheet + Odin prerequisites.
 
 ### Security
 

@@ -5,12 +5,71 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Editor menus for one-way Google → ScriptableObject bake via BakingSheet.
+    /// Editor menus for OAuth sign-in and one-way Google → ScriptableObject bake.
     /// </summary>
     public static class DataConfigBakeMenu
     {
+        const string SignInMenu = "Aerisyn/Data Config Sheet/Sign In With Google";
+        const string SignOutMenu = "Aerisyn/Data Config Sheet/Sign Out";
         const string BakeSelectedMenu = "Aerisyn/Data Config Sheet/Bake From Google (Selected Config)";
         const string BakeAllMenu = "Aerisyn/Data Config Sheet/Bake From Google (All Configs)";
+
+
+        #region Auth menus
+
+        [MenuItem(SignInMenu, false, 50)]
+        static async void SignIn()
+        {
+            BakeConfig config = RequireSelectedBakeConfig(
+                "Select a BakeConfig asset (Auth Mode = OAuth User), then Sign In again.");
+            if (config == null)
+                return;
+
+            try
+            {
+                EditorUtility.DisplayProgressBar(
+                    "Data Config Sheet",
+                    "Waiting for Google sign-in in your browser…",
+                    0.4f);
+                await GoogleOAuthSession.SignInAsync(config);
+                EditorUtility.DisplayDialog(
+                    "Data Config Sheet",
+                    "Signed in. Share the spreadsheet with your Google email as Viewer, then bake.",
+                    "OK");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                EditorUtility.DisplayDialog("Data Config Sheet sign-in failed", exception.Message, "OK");
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+
+        [MenuItem(SignOutMenu, false, 51)]
+        static void SignOut()
+        {
+            BakeConfig config = RequireSelectedBakeConfig(
+                "Select a BakeConfig asset, then Sign Out again.");
+            if (config == null)
+                return;
+
+            try
+            {
+                GoogleOAuthSession.SignOut(config);
+                EditorUtility.DisplayDialog("Data Config Sheet", "Signed out.", "OK");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                EditorUtility.DisplayDialog("Data Config Sheet sign-out failed", exception.Message, "OK");
+            }
+        }
+
+        #endregion
 
 
         #region Bake menus
@@ -69,6 +128,17 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         #region Helpers
+
+        static BakeConfig RequireSelectedBakeConfig(string missingMessage)
+        {
+            BakeConfig config = Selection.activeObject as BakeConfig;
+            if (config != null)
+                return config;
+
+            EditorUtility.DisplayDialog("Data Config Sheet", missingMessage, "OK");
+            return null;
+        }
+
 
         /// <summary>
         /// Runs bake and surfaces failures in a dialog so menu async voids do not fail silently.

@@ -17,7 +17,7 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 | Package | Description | Status |
 |---|---|---|
 | [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events. | `0.1.3` |
-| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor bake: Google Sheet → optional CSV → ScriptableObjects via [BakingSheet](https://github.com/cathei/BakingSheet). One-way only; schema stays in the game. | `0.2.0` |
+| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor bake: Google Sheet → optional CSV → **one editable ScriptableObject** via [BakingSheet](https://github.com/cathei/BakingSheet) import. OAuth sign-in default. One-way; schema stays in the game. | `0.2.0` |
 
 ## Install a package
 

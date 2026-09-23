@@ -1,22 +1,20 @@
 # Basic Bake sample
 
-Minimal BakingSheet schema for exercising `com.aerisyn.dataconfigsheet`.
+Minimal BakingSheet schema + one editable baked ScriptableObject.
 
 ## Google Sheet shape
 
-Create a spreadsheet with a tab named **`Items`** and columns:
+Tab name **`Items`**:
 
 | Id | Name | Price |
 |---|---|---|
 | POTION_001 | Health Potion | 30 |
 | POTION_002 | Mana Potion | 50 |
 
-Share the sheet with your service account as **Viewer**.
-
 ## Wire-up
 
-1. Create **Demo Sheet Container Factory** (Assets → Create → Aerisyn → Data Config Sheet → Demo Sheet Container Factory).
-2. Create **Bake Config**; set spreadsheet id, credential path, SO output path; assign the factory.
-3. **Aerisyn → Data Config Sheet → Bake From Google (Selected Config)**.
+1. Create **Demo Sheet Container Factory**.
+2. Create **Demo Baked Data** (single editable SO).
+3. Create **Bake Config**; assign factory + baked data; set spreadsheet id; Sign In; Bake.
 
-Property name `Items` on `DemoSheetContainer` must match the Google Sheet tab name.
+Output is one `DemoBakedData` asset with an editable `Items` list (not BakingSheet row sub-assets).

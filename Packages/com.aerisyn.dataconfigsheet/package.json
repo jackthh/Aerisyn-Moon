@@ -2,7 +2,7 @@
   "name": "com.aerisyn.dataconfigsheet",
   "version": "0.2.0",
   "displayName": "Aerisyn Data Config Sheet",
-  "description": "Editor bake tooling: Google Sheet (official source of truth) → optional CSV cache → ScriptableObjects via BakingSheet. One-way only; schema lives in the consuming game. Requires com.cathei.bakingsheet and Odin Inspector (Sirenix).",
+  "description": "Editor bake tooling: Google Sheet (official source of truth) → optional CSV cache → ScriptableObjects via BakingSheet. Default auth is OAuth browser sign-in (email-shared sheets); service account optional for CI. One-way only; schema lives in the consuming game. Requires com.cathei.bakingsheet and Odin Inspector (Sirenix).",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.dataconfigsheet",
   "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.dataconfigsheet/CHANGELOG.md",

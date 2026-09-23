@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Editor bake settings: Google spreadsheet id(s), service-account credential path,
-    /// ScriptableObject output folder, and optional CSV cache. One-way: Google → SO only.
+    /// Editor bake settings: Google spreadsheet id(s), auth, optional CSV cache,
+    /// and a single editable baked ScriptableObject (game-owned). One-way: Google → SO only.
     /// </summary>
     [CreateAssetMenu(
         fileName = "BakeConfig",
@@ -13,8 +13,13 @@ namespace Aerisyn.DataConfigSheet
         order = 0)]
     [InfoBox(
         "One-way bake only: Google Sheet is the official source of truth. " +
-        "Local ScriptableObjects are runtime final and must never be pushed back to Google Sheets.",
+        "The baked ScriptableObject is runtime final and editable for fast local tests; " +
+        "never push SO edits back to Google Sheets. Re-bake overwrites local SO data.",
         InfoMessageType.Warning)]
+    [InfoBox(
+        "Default auth is OAuth (Sign In With Google). Share the sheet with your Google email as Viewer. " +
+        "Service account stays available for CI / headless bake.",
+        InfoMessageType.Info)]
     public sealed class BakeConfig : ScriptableObject
     {
 
@@ -29,10 +34,33 @@ namespace Aerisyn.DataConfigSheet
 
 
         [FoldoutGroup("Google source")]
-        [Tooltip("Project-relative path to the service-account JSON (Viewer on the sheet). Keep this file gitignored.")]
+        [Tooltip("OAuthUser = browser sign-in (default). ServiceAccount = robot JSON for CI.")]
+        [SerializeField]
+        GoogleAuthMode _authMode = GoogleAuthMode.OAuthUser;
+
+
+        [FoldoutGroup("Google source")]
+        [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
+        [Tooltip("Desktop OAuth client_secrets JSON from Google Cloud (one org setup). Gitignored.")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
         [SerializeField]
-        string _credentialPath = "Assets/AerisynDataConfig/Credentials/service-account.json";
+        string _oauthClientSecretsPath = "Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json";
+
+
+        [FoldoutGroup("Google source")]
+        [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
+        [Tooltip("Per-machine authorized_user token written after Sign In. Prefer UserSettings (gitignored).")]
+        [FilePath(Extensions = "json", RequireExistingPath = false)]
+        [SerializeField]
+        string _oauthUserTokenPath = "UserSettings/AerisynDataConfig/oauth-user-token.json";
+
+
+        [FoldoutGroup("Google source")]
+        [ShowIf(nameof(_authMode), GoogleAuthMode.ServiceAccount)]
+        [Tooltip("Service-account JSON. Share the sheet with that robot email as Viewer. Gitignored.")]
+        [FilePath(Extensions = "json", RequireExistingPath = false)]
+        [SerializeField]
+        string _serviceAccountCredentialPath = "Assets/AerisynDataConfig/Credentials/service-account.json";
 
         #endregion
 
@@ -40,10 +68,10 @@ namespace Aerisyn.DataConfigSheet
         #region Outputs
 
         [FoldoutGroup("Outputs")]
-        [Tooltip("Project-relative folder for ScriptableObjectSheetExporter output (runtime source of truth after bake).")]
-        [FolderPath(RequireExistingPath = false)]
+        [Tooltip("Single editable ScriptableObject that receives baked rows (no BakingSheet row sub-assets).")]
+        [Required]
         [SerializeField]
-        string _scriptableObjectOutputPath = "Assets/AerisynDataConfig/Baked";
+        BakedSheetContainerAsset _bakedOutput;
 
 
         [FoldoutGroup("Outputs")]
@@ -72,12 +100,24 @@ namespace Aerisyn.DataConfigSheet
         public string[] SpreadsheetIds => _spreadsheetIds;
 
 
-        /// <summary>Project-relative path to the service-account credential JSON.</summary>
-        public string CredentialPath => _credentialPath;
+        /// <summary>OAuth user (default) or service-account auth.</summary>
+        public GoogleAuthMode AuthMode => _authMode;
 
 
-        /// <summary>Project-relative output folder for ScriptableObject assets.</summary>
-        public string ScriptableObjectOutputPath => _scriptableObjectOutputPath;
+        /// <summary>Desktop OAuth client_secrets.json path (org setup, gitignored).</summary>
+        public string OAuthClientSecretsPath => _oauthClientSecretsPath;
+
+
+        /// <summary>Per-machine authorized_user token path written after browser sign-in.</summary>
+        public string OAuthUserTokenPath => _oauthUserTokenPath;
+
+
+        /// <summary>Service-account credential JSON path (CI / headless).</summary>
+        public string ServiceAccountCredentialPath => _serviceAccountCredentialPath;
+
+
+        /// <summary>Editable single-file bake destination (game-owned).</summary>
+        public BakedSheetContainerAsset BakedOutput => _bakedOutput;
 
 
         /// <summary>Optional CSV cache folder; empty means no CSV store step.</summary>

@@ -3,7 +3,8 @@
   "rootNamespace": "Aerisyn.DataConfigSheet.Samples.BasicBake",
   "references": [
     "Aerisyn.DataConfigSheet",
-    "BakingSheet"
+    "BakingSheet",
+    "Sirenix.OdinInspector.Attributes"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
