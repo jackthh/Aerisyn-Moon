@@ -13,13 +13,16 @@ namespace Aerisyn.Quests
         public static bool IsStepReached(QuestDefinition definition, long progressValue, int stepIndex) =>
             progressValue >= definition.Thresholds[stepIndex];
 
+
         public static bool IsStepClaimed(ulong claimedStepsMask, int stepIndex) =>
             (claimedStepsMask & (1UL << stepIndex)) != 0;
+
 
         public static bool AreAllStepsClaimed(QuestDefinition definition, ulong claimedStepsMask) =>
             (claimedStepsMask & definition.AllStepsMask) == definition.AllStepsMask;
 
         #endregion
+
 
         #region Derived states
 
@@ -35,6 +38,7 @@ namespace Aerisyn.Quests
             return AreAllStepsClaimed(definition, claimedStepsMask);
         }
 
+
         /// <summary>Claimed wins over everything; otherwise a Step is Claimable only if reached and the Quest is not Completed.</summary>
         public static StepState GetStepState(
             QuestDefinition definition, long progressValue, ulong claimedStepsMask, int completedCycles, int stepIndex)
@@ -47,6 +51,7 @@ namespace Aerisyn.Quests
 
             return IsStepReached(definition, progressValue, stepIndex) ? StepState.Claimable : StepState.Locked;
         }
+
 
         /// <summary>Completed if nothing is left to earn; Claimable if any reached Step is unclaimed; otherwise InProgress.</summary>
         public static QuestState GetQuestState(
@@ -65,6 +70,7 @@ namespace Aerisyn.Quests
         }
 
         #endregion
+
 
         #region Accumulation
 
@@ -88,6 +94,7 @@ namespace Aerisyn.Quests
 
             return false;
         }
+
 
         /// <summary>Apply one reported value to the current progress value under the given accumulation mode.</summary>
         public static long Accumulate(Accumulation accumulation, long currentValue, long reportedValue)

@@ -1,0 +1,17 @@
+{
+  "name": "Aerisyn.DataConfigSheet",
+  "rootNamespace": "Aerisyn.DataConfigSheet",
+  "references": [
+    "BakingSheet",
+    "Sirenix.OdinInspector.Attributes"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
