@@ -3,17 +3,34 @@ using System;
 namespace Aerisyn.Quests
 {
     /// <summary>
-    /// The fact a Quest listens for. <see cref="Kind"/> is an opaque integer the game defines
-    /// (cast your own enum); <see cref="Param"/> narrows it (a stall id, a currency id, ...).
-    /// With <see cref="MatchAnyParam"/> the Quest reacts to every report of that kind.
+    /// The gameplay fact a Quest listens for, e.g. "a customer was served at stall 2".
+    /// <list type="bullet">
+    /// <item><see cref="Kind"/>: what happened. An opaque int the game defines (cast your own enum).</item>
+    /// <item><see cref="Param"/>: which thing it happened to (a stall id, a currency id, ...).</item>
+    /// <item><see cref="MatchAnyParam"/>: when true, <see cref="Param"/> is ignored and every report of the kind matches.</item>
+    /// </list>
     /// </summary>
     public readonly struct Objective : IEquatable<Objective>
     {
+        #region Fields
+
+        /// <summary>Game-defined verb, e.g. <c>(int)MyKind.ServeCustomer</c>. The package never interprets it.</summary>
         public readonly int Kind;
+
+        /// <summary>
+        /// Game-defined target that narrows <see cref="Kind"/> (stall 2, currency "gems", ...).
+        /// Meaningless when <see cref="MatchAnyParam"/> is true.
+        /// </summary>
         public readonly int Param;
+
+        /// <summary>True when reports of <see cref="Kind"/> match regardless of their param.</summary>
         public readonly bool MatchAnyParam;
 
-        /// <summary>Exact match on kind and param.</summary>
+        #endregion
+
+        #region Construction
+
+        /// <summary>Matches only reports with exactly this kind and this param.</summary>
         public Objective(int kind, int param)
         {
             Kind = kind;
@@ -28,11 +45,19 @@ namespace Aerisyn.Quests
             MatchAnyParam = matchAnyParam;
         }
 
-        /// <summary>Matches every report of <paramref name="kind"/>, regardless of param.</summary>
-        public static Objective Any(int kind) => new Objective(kind, 0, true);
+        /// <summary>Matches every report of <paramref name="kind"/>, whatever its param ("serve a customer at any stall").</summary>
+        /// <remarks>Param is stored as 0 but never compared, so 0 stays a valid real param for exact Objectives.</remarks>
+        public static Objective AnyParam(int kind) => new Objective(kind, 0, true);
 
-        /// <summary>True when a report of (kind, param) should update a Quest with this Objective.</summary>
-        public bool Matches(int kind, int param) => Kind == kind && (MatchAnyParam || Param == param);
+        #endregion
+
+        #region Matching
+
+        /// <summary>True when a report of (<paramref name="reportedKind"/>, <paramref name="reportedParam"/>) should update a Quest with this Objective.</summary>
+        public bool Matches(int reportedKind, int reportedParam) =>
+            Kind == reportedKind && (MatchAnyParam || Param == reportedParam);
+
+        #endregion
 
         #region Equality
 
@@ -43,6 +68,7 @@ namespace Aerisyn.Quests
 
         public override int GetHashCode()
         {
+            // Standard prime-multiply combine; overflow is expected and harmless.
             unchecked
             {
                 var hash = Kind;
@@ -54,6 +80,14 @@ namespace Aerisyn.Quests
 
         #endregion
 
+        #region Obsolete aliases (removed in 0.2.0)
+
+        [Obsolete("Renamed to Objective.AnyParam for clarity. This alias is removed in 0.2.0.")]
+        public static Objective Any(int kind) => AnyParam(kind);
+
+        #endregion
+
+        /// <summary>Debug form: <c>kind(param)</c>, or <c>kind(*)</c> when any param matches.</summary>
         public override string ToString() => MatchAnyParam ? Kind + "(*)" : Kind + "(" + Param + ")";
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace Aerisyn.Quests
 {
     /// <summary>
@@ -6,48 +8,87 @@ namespace Aerisyn.Quests
     /// </summary>
     public readonly struct QuestView
     {
-        public readonly QuestId Id;
-        public readonly QuestDefinition Definition;
-        public readonly long Value;
-        public readonly ulong ClaimedStepsMask;
-        public readonly int ClaimCount;
+        #region Fields
 
-        internal QuestView(QuestId id, QuestDefinition definition, long value, ulong claimedStepsMask, int claimCount)
+        /// <summary>Board + local id of the viewed Quest.</summary>
+        public readonly QuestId Id;
+
+        /// <summary>The authored rules (Objective, Accumulation, thresholds, ClaimPolicy).</summary>
+        public readonly QuestDefinition Definition;
+
+        /// <summary>Accumulated value in the current cycle; compare against <see cref="GetStepThreshold"/>.</summary>
+        public readonly long ProgressValue;
+
+        /// <summary>Bit i set means Step i is claimed in the current cycle. Prefer <see cref="GetStepState"/> for UI.</summary>
+        public readonly ulong ClaimedStepsMask;
+
+        /// <summary>
+        /// Full claim cycles finished (every Step claimed). Not the number of individual Step claims.
+        /// Under RepeatWithReset the Quest is Completed once this reaches <see cref="QuestDefinition.RepeatLimit"/>.
+        /// </summary>
+        public readonly int CompletedCycles;
+
+        #endregion
+
+        internal QuestView(QuestId id, QuestDefinition definition, long progressValue, ulong claimedStepsMask, int completedCycles)
         {
             Id = id;
             Definition = definition;
-            Value = value;
+            ProgressValue = progressValue;
             ClaimedStepsMask = claimedStepsMask;
-            ClaimCount = claimCount;
+            CompletedCycles = completedCycles;
         }
+
+        #region Derived state
 
         public int StepCount => Definition.StepCount;
 
-        public QuestState State => QuestRules.GetQuestState(Definition, Value, ClaimedStepsMask, ClaimCount);
+        /// <summary>Summary of the whole Quest: InProgress, Claimable, or Completed.</summary>
+        public QuestState State => QuestRules.GetQuestState(Definition, ProgressValue, ClaimedStepsMask, CompletedCycles);
 
-        public StepState GetStepState(int step) =>
-            QuestRules.GetStepState(Definition, Value, ClaimedStepsMask, ClaimCount, step);
+        /// <summary>Locked, Claimable, or Claimed for the Step at <paramref name="stepIndex"/> (0-based).</summary>
+        public StepState GetStepState(int stepIndex) =>
+            QuestRules.GetStepState(Definition, ProgressValue, ClaimedStepsMask, CompletedCycles, stepIndex);
 
-        public long GetThreshold(int step) => Definition.Thresholds[step];
+        /// <summary>Progress value needed to reach the Step at <paramref name="stepIndex"/> (0-based).</summary>
+        public long GetStepThreshold(int stepIndex) => Definition.Thresholds[stepIndex];
 
         /// <summary>
         /// Index of the first Step that is not yet claimed, or -1 when every Step is claimed.
         /// Handy for "current target" UI (show 7 / 10, then 10 / 50).
         /// </summary>
-        public int CurrentStep
+        public int FirstUnclaimedStepIndex
         {
             get
             {
-                for (var i = 0; i < StepCount; i++)
+                for (var stepIndex = 0; stepIndex < StepCount; stepIndex++)
                 {
-                    if (!QuestRules.IsStepClaimed(ClaimedStepsMask, i))
-                        return i;
+                    if (!QuestRules.IsStepClaimed(ClaimedStepsMask, stepIndex))
+                        return stepIndex;
                 }
 
                 return -1;
             }
         }
 
-        public ProgressSnapshot ToSnapshot() => new ProgressSnapshot(Id.LocalId, Value, ClaimedStepsMask, ClaimCount);
+        #endregion
+
+        public ProgressSnapshot ToSnapshot() => new ProgressSnapshot(Id.LocalId, ProgressValue, ClaimedStepsMask, CompletedCycles);
+
+        #region Obsolete aliases (removed in 0.2.0)
+
+        [Obsolete("Renamed to QuestView.ProgressValue for clarity. This alias is removed in 0.2.0.")]
+        public long Value => ProgressValue;
+
+        [Obsolete("Renamed to QuestView.CompletedCycles: it counts full cycles, not Step claims. This alias is removed in 0.2.0.")]
+        public int ClaimCount => CompletedCycles;
+
+        [Obsolete("Renamed to QuestView.FirstUnclaimedStepIndex for clarity. This alias is removed in 0.2.0.")]
+        public int CurrentStep => FirstUnclaimedStepIndex;
+
+        [Obsolete("Renamed to QuestView.GetStepThreshold for clarity. This alias is removed in 0.2.0.")]
+        public long GetThreshold(int step) => GetStepThreshold(step);
+
+        #endregion
     }
 }
