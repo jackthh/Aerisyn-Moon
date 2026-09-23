@@ -6,49 +6,55 @@ using UnityEngine;
 namespace Aerisyn.Quests.Editor
 {
     /// <summary>
-    /// Inspectors for the authoring assets. They draw the default fields and surface the same
+    /// Inspector for <see cref="QuestAsset"/>. Draws the default fields and surfaces the same
     /// validation the Tracker applies at OpenBoard, so mistakes show up while editing instead of at runtime.
     /// Read-only: nothing here mutates assets, so no Undo registration is required.
     /// </summary>
     [CustomEditor(typeof(QuestAsset))]
     public sealed class QuestAssetInspector : UnityEditor.Editor
     {
-        private readonly List<string> _errors = new List<string>();
+        // Reused every repaint to avoid per-frame allocations.
+        private readonly List<string> _validationErrors = new List<string>();
 
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
-            _errors.Clear();
-            var asset = (QuestAsset)target;
-            if (asset.Validate(_errors))
+            _validationErrors.Clear();
+            var questAsset = (QuestAsset)target;
+            if (questAsset.Validate(_validationErrors))
             {
-                EditorGUILayout.HelpBox("Valid. Objective " + asset.Objective + ".", MessageType.Info);
+                EditorGUILayout.HelpBox("Valid. Objective " + questAsset.Objective + ".", MessageType.Info);
                 return;
             }
 
-            EditorGUILayout.HelpBox(string.Join("\n", _errors), MessageType.Error);
+            EditorGUILayout.HelpBox(string.Join("\n", _validationErrors), MessageType.Error);
         }
     }
 
+    /// <summary>
+    /// Inspector for <see cref="QuestBoardAsset"/>. Same idea as <see cref="QuestAssetInspector"/>, plus
+    /// board-level checks (empty name, empty slots, duplicate local ids). Read-only, so no Undo needed.
+    /// </summary>
     [CustomEditor(typeof(QuestBoardAsset))]
     public sealed class QuestBoardAssetInspector : UnityEditor.Editor
     {
-        private readonly List<string> _errors = new List<string>();
+        // Reused every repaint to avoid per-frame allocations.
+        private readonly List<string> _validationErrors = new List<string>();
 
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
-            _errors.Clear();
-            var board = (QuestBoardAsset)target;
-            if (board.Validate(_errors))
+            _validationErrors.Clear();
+            var boardAsset = (QuestBoardAsset)target;
+            if (boardAsset.Validate(_validationErrors))
             {
-                EditorGUILayout.HelpBox("Valid board '" + board.BoardIdValue + "' with " + board.Quests.Count + " quest(s).", MessageType.Info);
+                EditorGUILayout.HelpBox("Valid board '" + boardAsset.BoardName + "' with " + boardAsset.Quests.Count + " quest(s).", MessageType.Info);
                 return;
             }
 
-            EditorGUILayout.HelpBox(string.Join("\n", _errors), MessageType.Error);
+            EditorGUILayout.HelpBox(string.Join("\n", _validationErrors), MessageType.Error);
         }
     }
 }

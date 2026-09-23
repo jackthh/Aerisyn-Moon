@@ -11,29 +11,37 @@ namespace Aerisyn.Quests.Samples.BasicBoard
     ///   Report*    -> gameplay facts (use the component context menu in the Inspector)
     ///   ClaimAll   -> claims every claimable step and "grants" rewards from the game-side table
     ///   OnDisable  -> close the board
-    /// Rewards and their contents live here in the game, keyed by (localId, step); the package never sees them.
+    /// Rewards and their contents live here in the game, keyed by (localId, stepIndex); the package never sees them.
     /// </summary>
     public sealed class SampleStageBoard : MonoBehaviour
     {
         #region Local ids for the sample quests
 
-        private const int ServeTenCustomers = 1;
-        private const int EarnCashStepped = 2;
-        private const int StallOneToLevel25 = 3;
-        private const int UnlockStallTwo = 4;
-        private const int ServeThreeRepeatable = 5;
+        private const int ServeTenCustomersQuestId = 1;
+        private const int EarnCashSteppedQuestId = 2;
+        private const int StallOneToLevel25QuestId = 3;
+        private const int UnlockStallTwoQuestId = 4;
+        private const int ServeThreeRepeatableQuestId = 5;
 
         #endregion
 
         #region Fields
 
+        [Tooltip("Name of the Board this component opens. Also names the temp save file.")]
         [SerializeField] private string _boardName = "sample.stage";
+
+        [Tooltip("Save and restore progress through TempJsonProgressStore (sample only).")]
         [SerializeField] private bool _persistWithTempJson = true;
 
         private readonly QuestTracker _tracker = new QuestTracker();
-        private readonly List<QuestView> _viewBuffer = new List<QuestView>();
-        private readonly Dictionary<(int localId, int step), string> _rewards = new Dictionary<(int, int), string>();
-        private BoardId _board;
+
+        // Reused by ClaimAll and LogBoardSummary so reading the board does not allocate.
+        private readonly List<QuestView> _questViewsBuffer = new List<QuestView>();
+
+        /// <summary>Game-side reward table, keyed by (quest local id, step index). Plain labels; a real game stores item/currency data.</summary>
+        private readonly Dictionary<(int localId, int stepIndex), string> _rewardLabels = new Dictionary<(int, int), string>();
+
+        private BoardId _boardId;
 
         public QuestTracker Tracker => _tracker;
 
@@ -43,17 +51,17 @@ namespace Aerisyn.Quests.Samples.BasicBoard
 
         private void OnEnable()
         {
-            _board = new BoardId(_boardName);
+            _boardId = new BoardId(_boardName);
 
             _tracker.ProgressChanged += OnProgressChanged;
             _tracker.StepBecameClaimable += OnStepBecameClaimable;
             _tracker.BoardChanged += OnBoardChanged;
 
-            var saved = _persistWithTempJson ? TempJsonProgressStore.Load(_board) : null;
-            _tracker.OpenBoard(_board, BuildDefinitions(), saved);
+            var savedSnapshots = _persistWithTempJson ? TempJsonProgressStore.Load(_boardId) : null;
+            _tracker.OpenBoard(_boardId, BuildDefinitions(), savedSnapshots);
 
-            Debug.Log("[Quests sample] Opened board '" + _board + "'" + (saved != null ? " (restored " + saved.Length + " snapshot(s))" : ""));
-            LogBoard();
+            Debug.Log("[Quests sample] Opened board '" + _boardId + "'" + (savedSnapshots != null ? " (restored " + savedSnapshots.Length + " snapshot(s))" : ""));
+            LogBoardSummary();
         }
 
         private void OnDisable()
@@ -61,41 +69,42 @@ namespace Aerisyn.Quests.Samples.BasicBoard
             _tracker.ProgressChanged -= OnProgressChanged;
             _tracker.StepBecameClaimable -= OnStepBecameClaimable;
             _tracker.BoardChanged -= OnBoardChanged;
-            _tracker.CloseBoard(_board);
+            _tracker.CloseBoard(_boardId);
         }
 
         #endregion
 
         #region Definitions (would normally come from CSV or QuestBoardAsset)
 
+        /// <summary>Fill the reward table and return one definition per sample quest, covering every Accumulation and ClaimPolicy.</summary>
         private QuestDefinition[] BuildDefinitions()
         {
-            _rewards.Clear();
-            _rewards[(ServeTenCustomers, 0)] = "15 gold";
-            _rewards[(EarnCashStepped, 0)] = "1 gem";
-            _rewards[(EarnCashStepped, 1)] = "3 gems";
-            _rewards[(EarnCashStepped, 2)] = "10 gems";
-            _rewards[(StallOneToLevel25, 0)] = "40 gold";
-            _rewards[(UnlockStallTwo, 0)] = "1 crate";
-            _rewards[(ServeThreeRepeatable, 0)] = "1 ticket";
+            _rewardLabels.Clear();
+            _rewardLabels[(ServeTenCustomersQuestId, 0)] = "15 gold";
+            _rewardLabels[(EarnCashSteppedQuestId, 0)] = "1 gem";
+            _rewardLabels[(EarnCashSteppedQuestId, 1)] = "3 gems";
+            _rewardLabels[(EarnCashSteppedQuestId, 2)] = "10 gems";
+            _rewardLabels[(StallOneToLevel25QuestId, 0)] = "40 gold";
+            _rewardLabels[(UnlockStallTwoQuestId, 0)] = "1 crate";
+            _rewardLabels[(ServeThreeRepeatableQuestId, 0)] = "1 ticket";
 
             return new[]
             {
                 // Counter: any customer served counts.
-                new QuestDefinition(ServeTenCustomers, Objective.Any((int)SampleObjectiveKind.ServeCustomer), Accumulation.Sum, 10),
+                new QuestDefinition(ServeTenCustomersQuestId, Objective.AnyParam((int)SampleObjectiveKind.ServeCustomer), Accumulation.Sum, 10),
 
                 // Stepped achievement: progress never resets, three rewards.
-                new QuestDefinition(EarnCashStepped, Objective.Any((int)SampleObjectiveKind.EarnCash), Accumulation.Sum,
+                new QuestDefinition(EarnCashSteppedQuestId, Objective.AnyParam((int)SampleObjectiveKind.EarnCash), Accumulation.Sum,
                     new long[] { 100, 1_000, 10_000 }, ClaimPolicy.OncePerStep, 1),
 
                 // High-water: report the stall's level, quest completes when it reaches 25.
-                new QuestDefinition(StallOneToLevel25, new Objective((int)SampleObjectiveKind.UpgradeStall, 1), Accumulation.HighWater, 25),
+                new QuestDefinition(StallOneToLevel25QuestId, new Objective((int)SampleObjectiveKind.UpgradeStall, 1), Accumulation.HighWater, 25),
 
                 // Flag: unlocking stall 2 once is enough.
-                new QuestDefinition(UnlockStallTwo, new Objective((int)SampleObjectiveKind.UnlockStall, 2), Accumulation.Flag, 1),
+                new QuestDefinition(UnlockStallTwoQuestId, new Objective((int)SampleObjectiveKind.UnlockStall, 2), Accumulation.Flag, 1),
 
                 // Repeatable daily-style: claim, reset, up to 3 times.
-                new QuestDefinition(ServeThreeRepeatable, Objective.Any((int)SampleObjectiveKind.ServeCustomer), Accumulation.Sum,
+                new QuestDefinition(ServeThreeRepeatableQuestId, Objective.AnyParam((int)SampleObjectiveKind.ServeCustomer), Accumulation.Sum,
                     new long[] { 3 }, ClaimPolicy.RepeatWithReset, 3)
             };
         }
@@ -116,33 +125,35 @@ namespace Aerisyn.Quests.Samples.BasicBoard
         [ContextMenu("Report / Unlock stall 2")]
         public void ReportUnlockStallTwo() => _tracker.Report((int)SampleObjectiveKind.UnlockStall, 2, 1);
 
+        /// <summary>Try to claim every Claimable Step on the board and log the reward granted for each success.</summary>
         [ContextMenu("Claim all claimable steps")]
         public void ClaimAll()
         {
-            if (!_tracker.TryGetBoard(_board, _viewBuffer))
+            if (!_tracker.TryGetBoard(_boardId, _questViewsBuffer))
                 return;
 
-            for (var i = 0; i < _viewBuffer.Count; i++)
+            for (var questIndex = 0; questIndex < _questViewsBuffer.Count; questIndex++)
             {
-                var view = _viewBuffer[i];
-                for (var step = 0; step < view.StepCount; step++)
+                var questView = _questViewsBuffer[questIndex];
+                for (var stepIndex = 0; stepIndex < questView.StepCount; stepIndex++)
                 {
-                    if (view.GetStepState(step) != StepState.Claimable)
+                    if (questView.GetStepState(stepIndex) != StepState.Claimable)
                         continue;
 
                     // TryClaim returning true is the signal to grant. Rewards are game data.
-                    if (_tracker.TryClaim(view.Id, step))
-                        Debug.Log("[Quests sample] Claimed " + view.Id + " step " + step + " -> granted " + _rewards[(view.Id.LocalId, step)]);
+                    if (_tracker.TryClaim(questView.Id, stepIndex))
+                        Debug.Log("[Quests sample] Claimed " + questView.Id + " step " + stepIndex + " -> granted " + _rewardLabels[(questView.Id.LocalId, stepIndex)]);
                 }
             }
 
-            LogBoard();
+            LogBoardSummary();
         }
 
+        /// <summary>Delete the temp save, then toggle the component so OnDisable/OnEnable reopen a fresh board.</summary>
         [ContextMenu("Reset temp save and reopen")]
         public void ResetTempSave()
         {
-            TempJsonProgressStore.Delete(_board);
+            TempJsonProgressStore.Delete(_boardId);
             enabled = false;
             enabled = true;
         }
@@ -151,35 +162,43 @@ namespace Aerisyn.Quests.Samples.BasicBoard
 
         #region Tracker events
 
-        private void OnProgressChanged(QuestId id)
+        private void OnProgressChanged(QuestId questId)
         {
-            if (_tracker.TryGet(id, out var view))
-                Debug.Log("[Quests sample] " + id + " = " + view.Value + " (" + view.State + ")");
+            if (_tracker.TryGetQuest(questId, out var questView))
+                Debug.Log("[Quests sample] " + questId + " = " + questView.ProgressValue + " (" + questView.State + ")");
         }
 
-        private void OnStepBecameClaimable(QuestId id, int step) =>
-            Debug.Log("[Quests sample] " + id + " step " + step + " is claimable");
+        private void OnStepBecameClaimable(QuestId questId, int stepIndex) =>
+            Debug.Log("[Quests sample] " + questId + " step " + stepIndex + " is claimable");
 
         // Durable progress changed: export and hand to the (temporary) store.
-        private void OnBoardChanged(BoardId board)
+        private void OnBoardChanged(BoardId boardId)
         {
             if (_persistWithTempJson)
-                TempJsonProgressStore.Save(board, _tracker.Export(board));
+                TempJsonProgressStore.Save(boardId, _tracker.ExportBoard(boardId));
         }
 
         #endregion
 
-        private void LogBoard()
+        #region Logging
+
+        /// <summary>One line per quest: progress / current target, state, completed cycles.</summary>
+        private void LogBoardSummary()
         {
-            if (!_tracker.TryGetBoard(_board, _viewBuffer))
+            if (!_tracker.TryGetBoard(_boardId, _questViewsBuffer))
                 return;
 
-            for (var i = 0; i < _viewBuffer.Count; i++)
+            for (var questIndex = 0; questIndex < _questViewsBuffer.Count; questIndex++)
             {
-                var view = _viewBuffer[i];
-                var target = view.CurrentStep >= 0 ? view.GetThreshold(view.CurrentStep).ToString() : "-";
-                Debug.Log("[Quests sample]   quest " + view.Id.LocalId + ": " + view.Value + " / " + target + "  " + view.State + "  claims=" + view.ClaimCount);
+                var questView = _questViewsBuffer[questIndex];
+                var targetStepIndex = questView.FirstUnclaimedStepIndex;
+                // "-" once every Step is claimed and there is no next target.
+                var targetLabel = targetStepIndex >= 0 ? questView.GetStepThreshold(targetStepIndex).ToString() : "-";
+                Debug.Log("[Quests sample]   quest " + questView.Id.LocalId + ": " + questView.ProgressValue + " / " + targetLabel
+                          + "  " + questView.State + "  cycles=" + questView.CompletedCycles);
             }
         }
+
+        #endregion
     }
 }

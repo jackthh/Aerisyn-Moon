@@ -9,154 +9,175 @@ namespace Aerisyn.Quests
     /// derives claimability, and raises events for UI. It never grants rewards and never saves.
     ///
     /// Outline:
-    ///   OpenBoard / CloseBoard  -> register or drop a Board's Quests
-    ///   Report                  -> update every matching open Quest
-    ///   TryClaim                -> mark a Step claimed; caller grants the reward when it returns true
-    ///   Export / TryGet         -> read progress for saving or display
+    ///   OpenBoard / CloseBoard      -> register or drop a Board's Quests
+    ///   Report                      -> update every matching open Quest
+    ///   TryClaim                    -> mark a Step claimed; caller grants the reward when it returns true
+    ///   ExportBoard / TryGetQuest   -> read progress for saving or display
     /// Pure C#: no UnityEngine dependency.
     /// </summary>
     public sealed class QuestTracker
     {
         #region Nested types
 
-        private sealed class Entry
+        /// <summary>One Quest on an open Board: identity, immutable rules, and live progress.</summary>
+        private sealed class TrackedQuest
         {
             public QuestId Id;
             public QuestDefinition Definition;
             public QuestProgress Progress;
         }
 
-        private sealed class Board
+        /// <summary>An open Board and two views of the same Quests: ordered for export/UI, keyed for lookup.</summary>
+        private sealed class OpenBoardState
         {
             public BoardId Id;
-            public readonly List<Entry> Ordered = new List<Entry>();
-            public readonly Dictionary<int, Entry> ByLocalId = new Dictionary<int, Entry>();
+            public readonly List<TrackedQuest> QuestsInDefinitionOrder = new List<TrackedQuest>();
+            public readonly Dictionary<int, TrackedQuest> QuestsByLocalId = new Dictionary<int, TrackedQuest>();
         }
 
-        private struct PendingChange
+        /// <summary>A Quest whose value moved during the current <see cref="Report"/>, queued so events fire after all updates.</summary>
+        private struct ReportedChange
         {
-            public Entry Entry;
-            public ulong NewlyClaimableMask;
+            public TrackedQuest Quest;
+
+            /// <summary>Bit i set means Step i went from not reached to reached during this report.</summary>
+            public ulong NewlyClaimableStepsMask;
         }
 
         #endregion
 
         #region Fields
 
-        private readonly Dictionary<BoardId, Board> _boards = new Dictionary<BoardId, Board>();
-        private readonly Dictionary<int, List<Entry>> _byKind = new Dictionary<int, List<Entry>>();
+        private readonly Dictionary<BoardId, OpenBoardState> _openBoards = new Dictionary<BoardId, OpenBoardState>();
 
-        // Reused per Report so steady-state reporting does not allocate.
-        private readonly List<PendingChange> _pending = new List<PendingChange>();
-        private readonly HashSet<BoardId> _dirtyBoards = new HashSet<BoardId>();
+        /// <summary>Every open Quest grouped by <see cref="Objective.Kind"/>, so a Report only scans Quests that could match.</summary>
+        private readonly Dictionary<int, List<TrackedQuest>> _questsByObjectiveKind = new Dictionary<int, List<TrackedQuest>>();
+
+        // Scratch buffers reused per Report so steady-state reporting does not allocate.
+        private readonly List<ReportedChange> _reportedChangesBuffer = new List<ReportedChange>();
+        private readonly HashSet<BoardId> _changedBoardsBuffer = new HashSet<BoardId>();
 
         #endregion
 
         #region Events
 
-        /// <summary>A Quest's value or claimed Steps changed. Refresh its UI.</summary>
+        /// <summary>A Quest's value or claimed Steps changed. Refresh its UI. Argument: the Quest.</summary>
         public event Action<QuestId> ProgressChanged;
 
-        /// <summary>A Step just crossed its threshold and can be claimed. Show the claim button.</summary>
+        /// <summary>A Step just crossed its threshold and can be claimed. Show the claim button. Arguments: the Quest, the step index.</summary>
         public event Action<QuestId, int> StepBecameClaimable;
 
-        /// <summary>A Step was claimed via <see cref="TryClaim"/>. Rewards are granted by the caller of TryClaim, not here.</summary>
+        /// <summary>
+        /// A Step was claimed via <see cref="TryClaim"/>. Arguments: the Quest, the step index.
+        /// Rewards are granted by the caller of TryClaim, not here.
+        /// </summary>
         public event Action<QuestId, int> StepClaimed;
 
-        /// <summary>Durable progress on this Board changed. Export and hand it to your save pipeline.</summary>
+        /// <summary>Durable progress on this Board changed. Call <see cref="ExportBoard"/> and hand it to your save pipeline.</summary>
         public event Action<BoardId> BoardChanged;
 
         #endregion
 
         #region Boards
 
-        public bool IsBoardOpen(BoardId board) => _boards.ContainsKey(board);
+        public bool IsBoardOpen(BoardId boardId) => _openBoards.ContainsKey(boardId);
 
         /// <summary>
-        /// Register a Board's Quests. Local ids must be unique within the Board; duplicates throw.
-        /// Snapshots are matched by local id; unknown ids are ignored so stale saves load safely.
+        /// Register a Board's Quests so Reports reach them.
+        /// Steps: validate arguments, build the Board (rejecting null or duplicate local ids),
+        /// restore <paramref name="savedSnapshots"/> by local id, then commit to the indexes.
+        /// Unknown snapshot ids are ignored so stale saves load safely. Throws if the Board is already open.
         /// </summary>
-        public void OpenBoard(BoardId board, IReadOnlyList<QuestDefinition> quests, IReadOnlyList<ProgressSnapshot> saved = null)
+        public void OpenBoard(
+            BoardId boardId,
+            IReadOnlyList<QuestDefinition> definitions,
+            IReadOnlyList<ProgressSnapshot> savedSnapshots = null)
         {
-            if (!board.IsValid)
-                throw new ArgumentException("BoardId is not valid.", nameof(board));
-            if (quests == null)
-                throw new ArgumentNullException(nameof(quests));
-            if (_boards.ContainsKey(board))
-                throw new InvalidOperationException("Board '" + board + "' is already open. Close it before reopening.");
+            if (!boardId.IsValid)
+                throw new ArgumentException("BoardId is not valid.", nameof(boardId));
+            if (definitions == null)
+                throw new ArgumentNullException(nameof(definitions));
+            if (_openBoards.ContainsKey(boardId))
+                throw new InvalidOperationException("Board '" + boardId + "' is already open. Close it before reopening.");
 
-            var newBoard = new Board { Id = board };
+            // Build the Board off to the side; nothing is visible to Report until the final commit.
+            var newBoard = new OpenBoardState { Id = boardId };
 
-            for (var i = 0; i < quests.Count; i++)
+            for (var definitionIndex = 0; definitionIndex < definitions.Count; definitionIndex++)
             {
-                var def = quests[i];
-                if (def == null)
-                    throw new ArgumentException("Quest definition at index " + i + " is null.", nameof(quests));
-                if (newBoard.ByLocalId.ContainsKey(def.LocalId))
-                    throw new ArgumentException("Board '" + board + "' has duplicate quest local id " + def.LocalId + ".", nameof(quests));
+                var definition = definitions[definitionIndex];
+                if (definition == null)
+                    throw new ArgumentException("Quest definition at index " + definitionIndex + " is null.", nameof(definitions));
+                if (newBoard.QuestsByLocalId.ContainsKey(definition.LocalId))
+                    throw new ArgumentException("Board '" + boardId + "' has duplicate quest local id " + definition.LocalId + ".", nameof(definitions));
 
-                var entry = new Entry
+                var trackedQuest = new TrackedQuest
                 {
-                    Id = new QuestId(board, def.LocalId),
-                    Definition = def,
+                    Id = new QuestId(boardId, definition.LocalId),
+                    Definition = definition,
                     Progress = new QuestProgress()
                 };
-                newBoard.Ordered.Add(entry);
-                newBoard.ByLocalId.Add(def.LocalId, entry);
+                newBoard.QuestsInDefinitionOrder.Add(trackedQuest);
+                newBoard.QuestsByLocalId.Add(definition.LocalId, trackedQuest);
             }
 
-            if (saved != null)
+            // Restore saved progress; snapshots for Quests no longer on the Board are skipped.
+            if (savedSnapshots != null)
             {
-                for (var i = 0; i < saved.Count; i++)
+                for (var snapshotIndex = 0; snapshotIndex < savedSnapshots.Count; snapshotIndex++)
                 {
-                    var snapshot = saved[i];
-                    if (newBoard.ByLocalId.TryGetValue(snapshot.LocalId, out var entry))
-                        entry.Progress.Restore(in snapshot, entry.Definition);
+                    var snapshot = savedSnapshots[snapshotIndex];
+                    if (newBoard.QuestsByLocalId.TryGetValue(snapshot.LocalId, out var trackedQuest))
+                        trackedQuest.Progress.Restore(in snapshot, trackedQuest.Definition);
                 }
             }
 
             // Only commit to the indexes once validation passed, so a failed open leaves no partial state.
-            _boards.Add(board, newBoard);
-            for (var i = 0; i < newBoard.Ordered.Count; i++)
-                IndexEntry(newBoard.Ordered[i]);
+            _openBoards.Add(boardId, newBoard);
+            for (var questIndex = 0; questIndex < newBoard.QuestsInDefinitionOrder.Count; questIndex++)
+                AddToObjectiveKindIndex(newBoard.QuestsInDefinitionOrder[questIndex]);
         }
 
-        /// <summary>Drop a Board from the Tracker. Progress in memory is discarded; export first if you need it.</summary>
-        public bool CloseBoard(BoardId board)
+        /// <summary>
+        /// Drop a Board from the Tracker. Progress in memory is discarded; export first if you need it.
+        /// Returns false when the Board was not open.
+        /// </summary>
+        public bool CloseBoard(BoardId boardId)
         {
-            if (!_boards.TryGetValue(board, out var existing))
+            if (!_openBoards.TryGetValue(boardId, out var openBoard))
                 return false;
 
-            for (var i = 0; i < existing.Ordered.Count; i++)
-                UnindexEntry(existing.Ordered[i]);
+            for (var questIndex = 0; questIndex < openBoard.QuestsInDefinitionOrder.Count; questIndex++)
+                RemoveFromObjectiveKindIndex(openBoard.QuestsInDefinitionOrder[questIndex]);
 
-            _boards.Remove(board);
+            _openBoards.Remove(boardId);
             return true;
         }
 
-        /// <summary>Snapshot every Quest on the Board, in definition order. Throws if the Board is not open.</summary>
-        public ProgressSnapshot[] Export(BoardId board)
+        /// <summary>Snapshot every Quest on the Board, in definition order, ready to save. Throws if the Board is not open.</summary>
+        public ProgressSnapshot[] ExportBoard(BoardId boardId)
         {
-            var existing = GetOpenBoard(board);
-            var result = new ProgressSnapshot[existing.Ordered.Count];
-            for (var i = 0; i < result.Length; i++)
+            var openBoard = GetOpenBoardOrThrow(boardId);
+            var snapshots = new ProgressSnapshot[openBoard.QuestsInDefinitionOrder.Count];
+            for (var questIndex = 0; questIndex < snapshots.Length; questIndex++)
             {
-                var entry = existing.Ordered[i];
-                result[i] = entry.Progress.ToSnapshot(entry.Id.LocalId);
+                var trackedQuest = openBoard.QuestsInDefinitionOrder[questIndex];
+                snapshots[questIndex] = trackedQuest.Progress.ToSnapshot(trackedQuest.Id.LocalId);
             }
 
-            return result;
+            return snapshots;
         }
 
         #endregion
 
         #region Reading
 
-        public bool TryGet(QuestId id, out QuestView view)
+        /// <summary>Read one Quest. Returns false when its Board is not open or the local id is unknown.</summary>
+        public bool TryGetQuest(QuestId questId, out QuestView view)
         {
-            if (_boards.TryGetValue(id.Board, out var board) && board.ByLocalId.TryGetValue(id.LocalId, out var entry))
+            if (TryFindTrackedQuest(questId, out var trackedQuest))
             {
-                view = ToView(entry);
+                view = CreateView(trackedQuest);
                 return true;
             }
 
@@ -164,18 +185,21 @@ namespace Aerisyn.Quests
             return false;
         }
 
-        /// <summary>Fill <paramref name="results"/> with a view per Quest on the Board, in definition order.</summary>
-        public bool TryGetBoard(BoardId board, List<QuestView> results)
+        /// <summary>
+        /// Fill <paramref name="results"/> with a view per Quest on the Board, in definition order.
+        /// The list is always cleared first; returns false (list left empty) when the Board is not open.
+        /// </summary>
+        public bool TryGetBoard(BoardId boardId, List<QuestView> results)
         {
             if (results == null)
                 throw new ArgumentNullException(nameof(results));
 
             results.Clear();
-            if (!_boards.TryGetValue(board, out var existing))
+            if (!_openBoards.TryGetValue(boardId, out var openBoard))
                 return false;
 
-            for (var i = 0; i < existing.Ordered.Count; i++)
-                results.Add(ToView(existing.Ordered[i]));
+            for (var questIndex = 0; questIndex < openBoard.QuestsInDefinitionOrder.Count; questIndex++)
+                results.Add(CreateView(openBoard.QuestsInDefinitionOrder[questIndex]));
 
             return true;
         }
@@ -185,150 +209,181 @@ namespace Aerisyn.Quests
         #region Reporting and claiming
 
         /// <summary>
-        /// Gameplay reports a fact: "kind happened, about param, worth value". Every open Quest whose
-        /// Objective matches is updated under its own Accumulation. Events fire after all updates are
-        /// applied, so handlers observe a consistent state.
+        /// Gameplay reports a fact: "<paramref name="objectiveKind"/> happened, about <paramref name="objectiveParam"/>,
+        /// worth <paramref name="reportedValue"/>". Every open Quest whose Objective matches is updated under its own Accumulation.
+        /// Steps:
+        ///   1) scan Quests indexed under this kind, skipping ones that do not match or cannot move;
+        ///   2) apply accumulation and record which Steps became reached;
+        ///   3) after all Quests are updated, raise ProgressChanged / StepBecameClaimable per Quest,
+        ///      then BoardChanged once per affected Board, so handlers observe a consistent state.
         /// </summary>
-        public void Report(int kind, int param, long value)
+        public void Report(int objectiveKind, int objectiveParam, long reportedValue)
         {
-            if (!_byKind.TryGetValue(kind, out var candidates) || candidates.Count == 0)
+            if (!_questsByObjectiveKind.TryGetValue(objectiveKind, out var candidateQuests) || candidateQuests.Count == 0)
                 return;
 
-            _pending.Clear();
-            _dirtyBoards.Clear();
+            _reportedChangesBuffer.Clear();
+            _changedBoardsBuffer.Clear();
 
-            for (var i = 0; i < candidates.Count; i++)
+            // Phase 1 + 2: mutate progress, queue changes.
+            for (var candidateIndex = 0; candidateIndex < candidateQuests.Count; candidateIndex++)
             {
-                var entry = candidates[i];
-                var def = entry.Definition;
-                var progress = entry.Progress;
+                var trackedQuest = candidateQuests[candidateIndex];
+                var definition = trackedQuest.Definition;
+                var progress = trackedQuest.Progress;
 
-                if (!def.Objective.Matches(kind, param))
+                if (!definition.Objective.Matches(objectiveKind, objectiveParam))
                     continue;
-                if (!QuestRules.CanAccumulate(def, progress.Value, progress.ClaimedStepsMask, progress.ClaimCount))
-                    continue;
-
-                var before = progress.Value;
-                var after = QuestRules.Accumulate(def.Accumulation, before, value);
-                if (after == before)
+                if (!QuestRules.CanAccumulate(definition, progress.ProgressValue, progress.ClaimedStepsMask, progress.CompletedCycles))
                     continue;
 
-                progress.Value = after;
+                var valueBefore = progress.ProgressValue;
+                var valueAfter = QuestRules.Accumulate(definition.Accumulation, valueBefore, reportedValue);
+                if (valueAfter == valueBefore)
+                    continue;
 
-                // Steps that were locked before this report and are reached now.
-                ulong newlyClaimable = 0;
-                for (var step = 0; step < def.StepCount; step++)
+                progress.ProgressValue = valueAfter;
+
+                // Steps that were not reached before this report and are reached now.
+                ulong newlyClaimableStepsMask = 0;
+                for (var stepIndex = 0; stepIndex < definition.StepCount; stepIndex++)
                 {
-                    if (progress.IsStepClaimed(step))
+                    if (progress.IsStepClaimed(stepIndex))
                         continue;
-                    if (!QuestRules.IsStepReached(def, before, step) && QuestRules.IsStepReached(def, after, step))
-                        newlyClaimable |= 1UL << step;
+                    if (!QuestRules.IsStepReached(definition, valueBefore, stepIndex) && QuestRules.IsStepReached(definition, valueAfter, stepIndex))
+                        newlyClaimableStepsMask |= 1UL << stepIndex;
                 }
 
-                _pending.Add(new PendingChange { Entry = entry, NewlyClaimableMask = newlyClaimable });
-                _dirtyBoards.Add(entry.Id.Board);
+                _reportedChangesBuffer.Add(new ReportedChange { Quest = trackedQuest, NewlyClaimableStepsMask = newlyClaimableStepsMask });
+                _changedBoardsBuffer.Add(trackedQuest.Id.BoardId);
             }
 
-            if (_pending.Count == 0)
+            if (_reportedChangesBuffer.Count == 0)
                 return;
 
             // Copy out before raising events: a handler may Report again and reuse the buffers.
-            var changes = _pending.ToArray();
-            var dirty = new BoardId[_dirtyBoards.Count];
-            _dirtyBoards.CopyTo(dirty);
+            var reportedChanges = _reportedChangesBuffer.ToArray();
+            var changedBoards = new BoardId[_changedBoardsBuffer.Count];
+            _changedBoardsBuffer.CopyTo(changedBoards);
 
-            for (var i = 0; i < changes.Length; i++)
+            // Phase 3: notify.
+            for (var changeIndex = 0; changeIndex < reportedChanges.Length; changeIndex++)
             {
-                var change = changes[i];
-                ProgressChanged?.Invoke(change.Entry.Id);
+                var change = reportedChanges[changeIndex];
+                ProgressChanged?.Invoke(change.Quest.Id);
 
-                if (change.NewlyClaimableMask == 0)
+                if (change.NewlyClaimableStepsMask == 0)
                     continue;
 
-                for (var step = 0; step < change.Entry.Definition.StepCount; step++)
+                for (var stepIndex = 0; stepIndex < change.Quest.Definition.StepCount; stepIndex++)
                 {
-                    if ((change.NewlyClaimableMask & (1UL << step)) != 0)
-                        StepBecameClaimable?.Invoke(change.Entry.Id, step);
+                    if ((change.NewlyClaimableStepsMask & (1UL << stepIndex)) != 0)
+                        StepBecameClaimable?.Invoke(change.Quest.Id, stepIndex);
                 }
             }
 
-            for (var i = 0; i < dirty.Length; i++)
-                BoardChanged?.Invoke(dirty[i]);
+            for (var boardIndex = 0; boardIndex < changedBoards.Length; boardIndex++)
+                BoardChanged?.Invoke(changedBoards[boardIndex]);
         }
 
         /// <summary>
-        /// Claim a reached, unclaimed Step. Returns true when the claim was accepted; grant the reward
-        /// at that call site. Under <see cref="ClaimPolicy.RepeatWithReset"/>, claiming the last Step
-        /// starts a new cycle (value back to 0) unless the repeat limit is exhausted.
+        /// Claim a reached, unclaimed Step (<paramref name="stepIndex"/> is 0-based). Returns true when the
+        /// claim was accepted; grant the reward at that call site. When this claim completes the last Step,
+        /// the cycle counter increments, and under <see cref="ClaimPolicy.RepeatWithReset"/> a new cycle
+        /// starts (value back to 0) unless the repeat limit is now exhausted.
         /// </summary>
-        public bool TryClaim(QuestId id, int step)
+        public bool TryClaim(QuestId questId, int stepIndex)
         {
-            if (!_boards.TryGetValue(id.Board, out var board) || !board.ByLocalId.TryGetValue(id.LocalId, out var entry))
+            if (!TryFindTrackedQuest(questId, out var trackedQuest))
                 return false;
 
-            var def = entry.Definition;
-            if (step < 0 || step >= def.StepCount)
+            var definition = trackedQuest.Definition;
+            if (stepIndex < 0 || stepIndex >= definition.StepCount)
                 return false;
 
-            var progress = entry.Progress;
-            var state = QuestRules.GetStepState(def, progress.Value, progress.ClaimedStepsMask, progress.ClaimCount, step);
-            if (state != StepState.Claimable)
+            var progress = trackedQuest.Progress;
+            var stepState = QuestRules.GetStepState(definition, progress.ProgressValue, progress.ClaimedStepsMask, progress.CompletedCycles, stepIndex);
+            if (stepState != StepState.Claimable)
                 return false;
 
-            progress.MarkStepClaimed(step);
+            progress.MarkStepClaimed(stepIndex);
 
-            if (QuestRules.AreAllStepsClaimed(def, progress.ClaimedStepsMask))
+            if (QuestRules.AreAllStepsClaimed(definition, progress.ClaimedStepsMask))
             {
-                progress.ClaimCount++;
+                progress.CompletedCycles++;
 
                 // Repeatable quests start over until the limit is hit; then they stay Completed.
-                if (def.ClaimPolicy == ClaimPolicy.RepeatWithReset && progress.ClaimCount < def.RepeatLimit)
+                if (definition.ClaimPolicy == ClaimPolicy.RepeatWithReset && progress.CompletedCycles < definition.RepeatLimit)
                     progress.ResetCycle();
             }
 
-            StepClaimed?.Invoke(id, step);
-            ProgressChanged?.Invoke(id);
-            BoardChanged?.Invoke(id.Board);
+            StepClaimed?.Invoke(questId, stepIndex);
+            ProgressChanged?.Invoke(questId);
+            BoardChanged?.Invoke(questId.BoardId);
             return true;
         }
 
         #endregion
 
+        #region Obsolete aliases (removed in 0.2.0)
+
+        [Obsolete("Renamed to QuestTracker.TryGetQuest for clarity. This alias is removed in 0.2.0.")]
+        public bool TryGet(QuestId id, out QuestView view) => TryGetQuest(id, out view);
+
+        [Obsolete("Renamed to QuestTracker.ExportBoard for clarity. This alias is removed in 0.2.0.")]
+        public ProgressSnapshot[] Export(BoardId board) => ExportBoard(board);
+
+        #endregion
+
         #region Private helpers
 
-        private Board GetOpenBoard(BoardId board)
+        private OpenBoardState GetOpenBoardOrThrow(BoardId boardId)
         {
-            if (!_boards.TryGetValue(board, out var existing))
-                throw new InvalidOperationException("Board '" + board + "' is not open.");
+            if (!_openBoards.TryGetValue(boardId, out var openBoard))
+                throw new InvalidOperationException("Board '" + boardId + "' is not open.");
 
-            return existing;
+            return openBoard;
         }
 
-        private void IndexEntry(Entry entry)
+        private bool TryFindTrackedQuest(QuestId questId, out TrackedQuest trackedQuest)
         {
-            var kind = entry.Definition.Objective.Kind;
-            if (!_byKind.TryGetValue(kind, out var list))
+            if (_openBoards.TryGetValue(questId.BoardId, out var openBoard))
+                return openBoard.QuestsByLocalId.TryGetValue(questId.LocalId, out trackedQuest);
+
+            trackedQuest = null;
+            return false;
+        }
+
+        private void AddToObjectiveKindIndex(TrackedQuest trackedQuest)
+        {
+            var objectiveKind = trackedQuest.Definition.Objective.Kind;
+            if (!_questsByObjectiveKind.TryGetValue(objectiveKind, out var questsOfKind))
             {
-                list = new List<Entry>();
-                _byKind.Add(kind, list);
+                questsOfKind = new List<TrackedQuest>();
+                _questsByObjectiveKind.Add(objectiveKind, questsOfKind);
             }
 
-            list.Add(entry);
+            questsOfKind.Add(trackedQuest);
         }
 
-        private void UnindexEntry(Entry entry)
+        private void RemoveFromObjectiveKindIndex(TrackedQuest trackedQuest)
         {
-            var kind = entry.Definition.Objective.Kind;
-            if (!_byKind.TryGetValue(kind, out var list))
+            var objectiveKind = trackedQuest.Definition.Objective.Kind;
+            if (!_questsByObjectiveKind.TryGetValue(objectiveKind, out var questsOfKind))
                 return;
 
-            list.Remove(entry);
-            if (list.Count == 0)
-                _byKind.Remove(kind);
+            questsOfKind.Remove(trackedQuest);
+            if (questsOfKind.Count == 0)
+                _questsByObjectiveKind.Remove(objectiveKind);
         }
 
-        private static QuestView ToView(Entry entry) =>
-            new QuestView(entry.Id, entry.Definition, entry.Progress.Value, entry.Progress.ClaimedStepsMask, entry.Progress.ClaimCount);
+        private static QuestView CreateView(TrackedQuest trackedQuest) =>
+            new QuestView(
+                trackedQuest.Id,
+                trackedQuest.Definition,
+                trackedQuest.Progress.ProgressValue,
+                trackedQuest.Progress.ClaimedStepsMask,
+                trackedQuest.Progress.CompletedCycles);
 
         #endregion
     }

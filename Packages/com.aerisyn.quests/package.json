@@ -1,6 +1,6 @@
 {
   "name": "com.aerisyn.quests",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "Aerisyn Quests",
   "description": "Game-agnostic quest tracker: authored quest definitions, board-scoped progress, accumulation and claim rules, and events for UI. Rewards and saving stay in the game.",
   "unity": "2022.3",

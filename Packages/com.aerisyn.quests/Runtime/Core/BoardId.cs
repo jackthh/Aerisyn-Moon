@@ -4,12 +4,14 @@ namespace Aerisyn.Quests
 {
     /// <summary>
     /// Identity of a Board: a game-chosen name for a set of Quests that open and close together
-    /// (e.g. "stage.1.3", "daily", "event.boat-breaker").
+    /// (e.g. "stage.1.3", "daily", "event.boat-breaker"). Compared with ordinal (case-sensitive) string equality.
     /// </summary>
     public readonly struct BoardId : IEquatable<BoardId>
     {
+        /// <summary>The Board name. Keep it stable: saved progress is keyed by it.</summary>
         public readonly string Value;
 
+        /// <summary>Wraps a non-empty Board name. Throws on null or empty.</summary>
         public BoardId(string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -18,7 +20,7 @@ namespace Aerisyn.Quests
             Value = value;
         }
 
-        /// <summary>False for the default struct value; useful when a field was never assigned.</summary>
+        /// <summary>False for <c>default(BoardId)</c>, i.e. a field that was never assigned.</summary>
         public bool IsValid => !string.IsNullOrEmpty(Value);
 
         #region Equality
