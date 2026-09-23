@@ -1,0 +1,17 @@
+{
+  "name": "Aerisyn.DataConfigSheet.DevHost",
+  "rootNamespace": "Aerisyn.DataConfigSheet.DevHost",
+  "references": [
+    "Aerisyn.DataConfigSheet",
+    "BakingSheet"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

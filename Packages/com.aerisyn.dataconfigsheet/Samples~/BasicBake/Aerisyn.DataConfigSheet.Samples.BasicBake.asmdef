@@ -1,0 +1,17 @@
+{
+  "name": "Aerisyn.DataConfigSheet.Samples.BasicBake",
+  "rootNamespace": "Aerisyn.DataConfigSheet.Samples.BasicBake",
+  "references": [
+    "Aerisyn.DataConfigSheet",
+    "BakingSheet"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

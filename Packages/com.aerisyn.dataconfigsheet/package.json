@@ -1,0 +1,30 @@
+{
+  "name": "com.aerisyn.dataconfigsheet",
+  "version": "0.2.0",
+  "displayName": "Aerisyn Data Config Sheet",
+  "description": "Editor bake tooling: Google Sheet (official source of truth) → optional CSV cache → ScriptableObjects via BakingSheet. One-way only; schema lives in the consuming game. Requires com.cathei.bakingsheet and Odin Inspector (Sirenix).",
+  "unity": "2022.3",
+  "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.dataconfigsheet",
+  "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.dataconfigsheet/CHANGELOG.md",
+  "keywords": [
+    "aerisyn",
+    "bakingsheet",
+    "config",
+    "google-sheet",
+    "scriptableobject"
+  ],
+  "author": {
+    "name": "Aerisyn",
+    "url": "https://github.com/jackthh/Aerisyn-Moon"
+  },
+  "dependencies": {
+    "com.cathei.bakingsheet": "https://github.com/cathei/BakingSheet.git?path=UnityProject/Packages/com.cathei.bakingsheet#v4.1.3"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Bake",
+      "description": "Demo SheetContainer + one sheet and a SheetContainerFactory for Google → ScriptableObject bake.",
+      "path": "Samples~/BasicBake"
+    }
+  ]
+}

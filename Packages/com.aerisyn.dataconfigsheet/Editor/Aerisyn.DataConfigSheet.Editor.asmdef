@@ -1,0 +1,22 @@
+{
+  "name": "Aerisyn.DataConfigSheet.Editor",
+  "rootNamespace": "Aerisyn.DataConfigSheet.Editor",
+  "references": [
+    "Aerisyn.DataConfigSheet",
+    "BakingSheet",
+    "BakingSheet.Google",
+    "BakingSheet.ScriptableObject",
+    "BakingSheet.Csv"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -41,3 +41,11 @@ DevHost/Assets/Plugins/Sirenix/
 DevHost/Assets/Plugins/Sirenix.meta
 DevHost/Assets/Plugins.meta
 
+# Google service-account credentials for Data Config Sheet bake (never commit)
+DevHost/Assets/AerisynDataConfig/Credentials/**
+!DevHost/Assets/AerisynDataConfig/Credentials/.gitkeep
+!DevHost/Assets/AerisynDataConfig/Credentials/.gitkeep.meta
+**/service-account.json
+**/*-credentials.json
+**/*service-account*.json
+
