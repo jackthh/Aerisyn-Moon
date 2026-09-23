@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Aerisyn.Quests.Authoring
 {
@@ -19,18 +21,23 @@ namespace Aerisyn.Quests.Authoring
 
         [Header("Objective")]
         [Tooltip("Game-defined kind (cast your own enum to int).")]
-        [SerializeField] private int _kind;
+        [FormerlySerializedAs("_kind")]
+        [SerializeField] private int _objectiveKind;
 
         [Tooltip("Narrows the kind (stall id, currency id, ...). Ignored when Match Any Param is on.")]
-        [SerializeField] private int _param;
+        [FormerlySerializedAs("_param")]
+        [SerializeField] private int _objectiveParam;
 
+        [Tooltip("React to every report of this kind, whatever its param.")]
         [SerializeField] private bool _matchAnyParam;
 
         [Header("Progress")]
+        [Tooltip("Sum adds reports, High Water keeps the max, Flag sets 1 once.")]
         [SerializeField] private Accumulation _accumulation = Accumulation.Sum;
 
         [Tooltip("One threshold per Step, strictly ascending and > 0. Flag quests use a single 1.")]
-        [SerializeField] private long[] _thresholds = { 1 };
+        [FormerlySerializedAs("_thresholds")]
+        [SerializeField] private long[] _stepThresholds = { 1 };
 
         [Header("Claiming")]
         [SerializeField] private ClaimPolicy _claimPolicy = ClaimPolicy.OncePerStep;
@@ -43,15 +50,17 @@ namespace Aerisyn.Quests.Authoring
 
         #region Public API
 
+        /// <summary>Id of this Quest inside its Board.</summary>
         public int LocalId => _localId;
 
-        public Objective Objective => _matchAnyParam ? Objective.Any(_kind) : new Objective(_kind, _param);
+        /// <summary>The Objective built from the kind / param / match-any fields.</summary>
+        public Objective Objective => _matchAnyParam ? Objective.AnyParam(_objectiveKind) : new Objective(_objectiveKind, _objectiveParam);
 
         /// <summary>Build the immutable definition. Throws on invalid authoring; use <see cref="TryBuild"/> for a soft check.</summary>
         public QuestDefinition Build() =>
-            new QuestDefinition(_localId, Objective, _accumulation, _thresholds, _claimPolicy, _repeatLimit);
+            new QuestDefinition(_localId, Objective, _accumulation, _stepThresholds, _claimPolicy, _repeatLimit);
 
-        /// <summary>Non-throwing variant for validators and inspectors.</summary>
+        /// <summary>Non-throwing variant for validators and inspectors. <paramref name="error"/> is null on success.</summary>
         public bool TryBuild(out QuestDefinition definition, out string error)
         {
             try
@@ -60,15 +69,15 @@ namespace Aerisyn.Quests.Authoring
                 error = null;
                 return true;
             }
-            catch (System.ArgumentException ex)
+            catch (ArgumentException exception)
             {
                 definition = null;
-                error = ex.Message;
+                error = exception.Message;
                 return false;
             }
         }
 
-        /// <summary>Append human-readable problems with this asset. Returns true when none were found.</summary>
+        /// <summary>Append human-readable problems with this asset to <paramref name="errors"/> (may be null). Returns true when none were found.</summary>
         public bool Validate(List<string> errors)
         {
             if (TryBuild(out _, out var error))
