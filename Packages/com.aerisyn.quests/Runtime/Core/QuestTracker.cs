@@ -31,8 +31,8 @@ namespace Aerisyn.Quests
         private sealed class OpenBoardState
         {
             public BoardId Id;
-            public readonly List<TrackedQuest> QuestsInDefinitionOrder = new List<TrackedQuest>();
-            public readonly Dictionary<int, TrackedQuest> QuestsByLocalId = new Dictionary<int, TrackedQuest>();
+            public readonly List<TrackedQuest> QuestsInDefinitionOrder = new();
+            public readonly Dictionary<int, TrackedQuest> QuestsByLocalId = new();
         }
 
         /// <summary>A Quest whose value moved during the current <see cref="Report"/>, queued so events fire after all updates.</summary>
@@ -46,18 +46,20 @@ namespace Aerisyn.Quests
 
         #endregion
 
+
         #region Fields
 
         private readonly Dictionary<BoardId, OpenBoardState> _openBoards = new Dictionary<BoardId, OpenBoardState>();
 
         /// <summary>Every open Quest grouped by <see cref="Objective.Kind"/>, so a Report only scans Quests that could match.</summary>
-        private readonly Dictionary<int, List<TrackedQuest>> _questsByObjectiveKind = new Dictionary<int, List<TrackedQuest>>();
+        private readonly Dictionary<int, List<TrackedQuest>> _questsByObjectiveKind = new();
 
         // Scratch buffers reused per Report so steady-state reporting does not allocate.
-        private readonly List<ReportedChange> _reportedChangesBuffer = new List<ReportedChange>();
-        private readonly HashSet<BoardId> _changedBoardsBuffer = new HashSet<BoardId>();
+        private readonly List<ReportedChange> _reportedChangesBuffer = new();
+        private readonly HashSet<BoardId> _changedBoardsBuffer = new();
 
         #endregion
+
 
         #region Events
 
@@ -78,9 +80,11 @@ namespace Aerisyn.Quests
 
         #endregion
 
+
         #region Boards
 
         public bool IsBoardOpen(BoardId boardId) => _openBoards.ContainsKey(boardId);
+
 
         /// <summary>
         /// Register a Board's Quests so Reports reach them.
@@ -98,18 +102,22 @@ namespace Aerisyn.Quests
             if (definitions == null)
                 throw new ArgumentNullException(nameof(definitions));
             if (_openBoards.ContainsKey(boardId))
-                throw new InvalidOperationException("Board '" + boardId + "' is already open. Close it before reopening.");
+                throw new InvalidOperationException("Board '" + boardId +
+                                                    "' is already open. Close it before reopening.");
 
-            // Build the Board off to the side; nothing is visible to Report until the final commit.
+            //  NOTE:   Build the Board off to the side; nothing is visible to Report until the final commit.
             var newBoard = new OpenBoardState { Id = boardId };
 
             for (var definitionIndex = 0; definitionIndex < definitions.Count; definitionIndex++)
             {
                 var definition = definitions[definitionIndex];
                 if (definition == null)
-                    throw new ArgumentException("Quest definition at index " + definitionIndex + " is null.", nameof(definitions));
+                    throw new ArgumentException("Quest definition at index " + definitionIndex + " is null.",
+                        nameof(definitions));
                 if (newBoard.QuestsByLocalId.ContainsKey(definition.LocalId))
-                    throw new ArgumentException("Board '" + boardId + "' has duplicate quest local id " + definition.LocalId + ".", nameof(definitions));
+                    throw new ArgumentException(
+                        "Board '" + boardId + "' has duplicate quest local id " + definition.LocalId + ".",
+                        nameof(definitions));
 
                 var trackedQuest = new TrackedQuest
                 {
@@ -121,7 +129,7 @@ namespace Aerisyn.Quests
                 newBoard.QuestsByLocalId.Add(definition.LocalId, trackedQuest);
             }
 
-            // Restore saved progress; snapshots for Quests no longer on the Board are skipped.
+            //  NOTE:   Restore saved progress; snapshots for Quests no longer on the Board are skipped.
             if (savedSnapshots != null)
             {
                 for (var snapshotIndex = 0; snapshotIndex < savedSnapshots.Count; snapshotIndex++)
@@ -132,11 +140,12 @@ namespace Aerisyn.Quests
                 }
             }
 
-            // Only commit to the indexes once validation passed, so a failed open leaves no partial state.
+            //  NOTE:   Only commit to the indexes once validation passed, so a failed open leaves no partial state.
             _openBoards.Add(boardId, newBoard);
             for (var questIndex = 0; questIndex < newBoard.QuestsInDefinitionOrder.Count; questIndex++)
                 AddToObjectiveKindIndex(newBoard.QuestsInDefinitionOrder[questIndex]);
         }
+
 
         /// <summary>
         /// Drop a Board from the Tracker. Progress in memory is discarded; export first if you need it.
@@ -147,12 +156,13 @@ namespace Aerisyn.Quests
             if (!_openBoards.TryGetValue(boardId, out var openBoard))
                 return false;
 
-            for (var questIndex = 0; questIndex < openBoard.QuestsInDefinitionOrder.Count; questIndex++)
-                RemoveFromObjectiveKindIndex(openBoard.QuestsInDefinitionOrder[questIndex]);
+            for (var i = 0; i < openBoard.QuestsInDefinitionOrder.Count; i++)
+                RemoveFromObjectiveKindIndex(openBoard.QuestsInDefinitionOrder[i]);
 
             _openBoards.Remove(boardId);
             return true;
         }
+
 
         /// <summary>Snapshot every Quest on the Board, in definition order, ready to save. Throws if the Board is not open.</summary>
         public ProgressSnapshot[] ExportBoard(BoardId boardId)
@@ -170,6 +180,7 @@ namespace Aerisyn.Quests
 
         #endregion
 
+
         #region Reading
 
         /// <summary>Read one Quest. Returns false when its Board is not open or the local id is unknown.</summary>
@@ -184,6 +195,7 @@ namespace Aerisyn.Quests
             view = default;
             return false;
         }
+
 
         /// <summary>
         /// Fill <paramref name="results"/> with a view per Quest on the Board, in definition order.
@@ -206,6 +218,7 @@ namespace Aerisyn.Quests
 
         #endregion
 
+
         #region Reporting and claiming
 
         /// <summary>
@@ -219,13 +232,14 @@ namespace Aerisyn.Quests
         /// </summary>
         public void Report(int objectiveKind, int objectiveParam, long reportedValue)
         {
-            if (!_questsByObjectiveKind.TryGetValue(objectiveKind, out var candidateQuests) || candidateQuests.Count == 0)
+            if (!_questsByObjectiveKind.TryGetValue(objectiveKind, out var candidateQuests) ||
+                candidateQuests.Count == 0)
                 return;
 
             _reportedChangesBuffer.Clear();
             _changedBoardsBuffer.Clear();
 
-            // Phase 1 + 2: mutate progress, queue changes.
+            //  NOTE:   Phase 1 + 2: mutate progress, queue changes.
             for (var candidateIndex = 0; candidateIndex < candidateQuests.Count; candidateIndex++)
             {
                 var trackedQuest = candidateQuests[candidateIndex];
@@ -234,7 +248,8 @@ namespace Aerisyn.Quests
 
                 if (!definition.Objective.Matches(objectiveKind, objectiveParam))
                     continue;
-                if (!QuestRules.CanAccumulate(definition, progress.ProgressValue, progress.ClaimedStepsMask, progress.CompletedCycles))
+                if (!QuestRules.CanAccumulate(definition, progress.ProgressValue, progress.ClaimedStepsMask,
+                        progress.CompletedCycles))
                     continue;
 
                 var valueBefore = progress.ProgressValue;
@@ -244,17 +259,19 @@ namespace Aerisyn.Quests
 
                 progress.ProgressValue = valueAfter;
 
-                // Steps that were not reached before this report and are reached now.
+                //  NOTE:   Steps that were not reached before this report and are reached now.
                 ulong newlyClaimableStepsMask = 0;
                 for (var stepIndex = 0; stepIndex < definition.StepCount; stepIndex++)
                 {
                     if (progress.IsStepClaimed(stepIndex))
                         continue;
-                    if (!QuestRules.IsStepReached(definition, valueBefore, stepIndex) && QuestRules.IsStepReached(definition, valueAfter, stepIndex))
+                    if (!QuestRules.IsStepReached(definition, valueBefore, stepIndex) &&
+                        QuestRules.IsStepReached(definition, valueAfter, stepIndex))
                         newlyClaimableStepsMask |= 1UL << stepIndex;
                 }
 
-                _reportedChangesBuffer.Add(new ReportedChange { Quest = trackedQuest, NewlyClaimableStepsMask = newlyClaimableStepsMask });
+                _reportedChangesBuffer.Add(new ReportedChange
+                    { Quest = trackedQuest, NewlyClaimableStepsMask = newlyClaimableStepsMask });
                 _changedBoardsBuffer.Add(trackedQuest.Id.BoardId);
             }
 
@@ -266,7 +283,7 @@ namespace Aerisyn.Quests
             var changedBoards = new BoardId[_changedBoardsBuffer.Count];
             _changedBoardsBuffer.CopyTo(changedBoards);
 
-            // Phase 3: notify.
+            //  NOTE:   Phase 3: notify.
             for (var changeIndex = 0; changeIndex < reportedChanges.Length; changeIndex++)
             {
                 var change = reportedChanges[changeIndex];
@@ -286,6 +303,7 @@ namespace Aerisyn.Quests
                 BoardChanged?.Invoke(changedBoards[boardIndex]);
         }
 
+
         /// <summary>
         /// Claim a reached, unclaimed Step (<paramref name="stepIndex"/> is 0-based). Returns true when the
         /// claim was accepted; grant the reward at that call site. When this claim completes the last Step,
@@ -302,7 +320,8 @@ namespace Aerisyn.Quests
                 return false;
 
             var progress = trackedQuest.Progress;
-            var stepState = QuestRules.GetStepState(definition, progress.ProgressValue, progress.ClaimedStepsMask, progress.CompletedCycles, stepIndex);
+            var stepState = QuestRules.GetStepState(definition, progress.ProgressValue, progress.ClaimedStepsMask,
+                progress.CompletedCycles, stepIndex);
             if (stepState != StepState.Claimable)
                 return false;
 
@@ -313,7 +332,8 @@ namespace Aerisyn.Quests
                 progress.CompletedCycles++;
 
                 // Repeatable quests start over until the limit is hit; then they stay Completed.
-                if (definition.ClaimPolicy == ClaimPolicy.RepeatWithReset && progress.CompletedCycles < definition.RepeatLimit)
+                if (definition.ClaimPolicy == ClaimPolicy.RepeatWithReset &&
+                    progress.CompletedCycles < definition.RepeatLimit)
                     progress.ResetCycle();
             }
 
@@ -325,15 +345,6 @@ namespace Aerisyn.Quests
 
         #endregion
 
-        #region Obsolete aliases (removed in 0.2.0)
-
-        [Obsolete("Renamed to QuestTracker.TryGetQuest for clarity. This alias is removed in 0.2.0.")]
-        public bool TryGet(QuestId id, out QuestView view) => TryGetQuest(id, out view);
-
-        [Obsolete("Renamed to QuestTracker.ExportBoard for clarity. This alias is removed in 0.2.0.")]
-        public ProgressSnapshot[] Export(BoardId board) => ExportBoard(board);
-
-        #endregion
 
         #region Private helpers
 
@@ -345,6 +356,7 @@ namespace Aerisyn.Quests
             return openBoard;
         }
 
+
         private bool TryFindTrackedQuest(QuestId questId, out TrackedQuest trackedQuest)
         {
             if (_openBoards.TryGetValue(questId.BoardId, out var openBoard))
@@ -354,6 +366,10 @@ namespace Aerisyn.Quests
             return false;
         }
 
+
+        /// <summary>
+        /// Add a TrackedQuest to the list of Quests grouped by ObjectiveKind.
+        /// </summary>
         private void AddToObjectiveKindIndex(TrackedQuest trackedQuest)
         {
             var objectiveKind = trackedQuest.Definition.Objective.Kind;
@@ -366,6 +382,10 @@ namespace Aerisyn.Quests
             questsOfKind.Add(trackedQuest);
         }
 
+
+        /// <summary>
+        /// Remove a TrackedQuest from the list of Quests grouped by ObjectiveKind.
+        /// </summary>
         private void RemoveFromObjectiveKindIndex(TrackedQuest trackedQuest)
         {
             var objectiveKind = trackedQuest.Definition.Objective.Kind;
@@ -377,8 +397,9 @@ namespace Aerisyn.Quests
                 _questsByObjectiveKind.Remove(objectiveKind);
         }
 
+
         private static QuestView CreateView(TrackedQuest trackedQuest) =>
-            new QuestView(
+            new(
                 trackedQuest.Id,
                 trackedQuest.Definition,
                 trackedQuest.Progress.ProgressValue,

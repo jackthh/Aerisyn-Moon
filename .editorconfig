@@ -1,0 +1,15 @@
+# https://editorconfig.org
+root = true
+
+[*.cs]
+# Allow at least 2 blank lines so method/region spacing is not collapsed on reformat.
+resharper_csharp_keep_blank_lines_in_declarations = 2
+
+# Exactly 2 blank lines between consecutive methods (and other invocables).
+resharper_csharp_blank_lines_around_invocable = 2
+resharper_csharp_blank_lines_around_single_line_invocable = 2
+resharper_csharp_blank_lines_around_local_method = 2
+resharper_csharp_blank_lines_around_single_line_local_method = 2
+
+# Exactly 2 blank lines before #region and after #endregion.
+resharper_csharp_blank_lines_around_region = 2

@@ -50,7 +50,7 @@ namespace Aerisyn.Quests.Editor
             var boardAsset = (QuestBoardAsset)target;
             if (boardAsset.Validate(_validationErrors))
             {
-                EditorGUILayout.HelpBox("Valid board '" + boardAsset.BoardName + "' with " + boardAsset.Quests.Count + " quest(s).", MessageType.Info);
+                EditorGUILayout.HelpBox("Valid board '" + boardAsset.BoardId + "' with " + boardAsset.Quests.Count + " quest(s).", MessageType.Info);
                 return;
             }
 
