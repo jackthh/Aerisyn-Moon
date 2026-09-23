@@ -331,7 +331,7 @@ namespace Aerisyn.Quests
             {
                 progress.CompletedCycles++;
 
-                // Repeatable quests start over until the limit is hit; then they stay Completed.
+                //  NOTE:Repeatable quests start over until the limit is hit; then they stay Completed.
                 if (definition.ClaimPolicy == ClaimPolicy.RepeatWithReset &&
                     progress.CompletedCycles < definition.RepeatLimit)
                     progress.ResetCycle();
