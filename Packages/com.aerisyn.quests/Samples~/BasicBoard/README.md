@@ -24,4 +24,4 @@ Reporting one served customer moves quest 1 and quest 5 at the same time: that i
 ## Not for production
 
 `TempJsonProgressStore` exists only so the demo survives a restart. Real games pass `ProgressSnapshot[]`
-from `QuestTracker.Export` into their own save pipeline. See ADR-0001 in the repo root.
+from `QuestTracker.ExportBoard` into their own save pipeline. See ADR-0001 in the repo root.

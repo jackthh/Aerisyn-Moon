@@ -12,38 +12,48 @@ namespace Aerisyn.Quests.Samples.BasicBoard
     /// </summary>
     public static class TempJsonProgressStore
     {
-        // JsonUtility cannot serialize a bare array, so wrap it.
+        #region File format
+
+        // JsonUtility cannot serialize a bare array, so wrap it. The field name "Quests" is the JSON key; keep it.
         [Serializable]
-        private sealed class Envelope
+        private sealed class SaveFileEnvelope
         {
             public ProgressSnapshot[] Quests = new ProgressSnapshot[0];
         }
 
-        private static string PathFor(BoardId board) =>
-            Path.Combine(Application.persistentDataPath, "aerisyn-quests-sample." + board.Value + ".json");
+        private static string GetSaveFilePath(BoardId boardId) =>
+            Path.Combine(Application.persistentDataPath, "aerisyn-quests-sample." + boardId.Value + ".json");
 
-        public static void Save(BoardId board, ProgressSnapshot[] snapshots)
+        #endregion
+
+        #region Public API
+
+        /// <summary>Overwrite the Board's save file with <paramref name="snapshots"/>.</summary>
+        public static void Save(BoardId boardId, ProgressSnapshot[] snapshots)
         {
-            var json = JsonUtility.ToJson(new Envelope { Quests = snapshots }, prettyPrint: true);
-            File.WriteAllText(PathFor(board), json);
+            var json = JsonUtility.ToJson(new SaveFileEnvelope { Quests = snapshots }, prettyPrint: true);
+            File.WriteAllText(GetSaveFilePath(boardId), json);
         }
 
         /// <summary>Returns null when nothing was saved yet.</summary>
-        public static ProgressSnapshot[] Load(BoardId board)
+        public static ProgressSnapshot[] Load(BoardId boardId)
         {
-            var path = PathFor(board);
-            if (!File.Exists(path))
+            var saveFilePath = GetSaveFilePath(boardId);
+            if (!File.Exists(saveFilePath))
                 return null;
 
-            var envelope = JsonUtility.FromJson<Envelope>(File.ReadAllText(path));
+            var envelope = JsonUtility.FromJson<SaveFileEnvelope>(File.ReadAllText(saveFilePath));
             return envelope != null ? envelope.Quests : null;
         }
 
-        public static void Delete(BoardId board)
+        /// <summary>Remove the Board's save file if it exists.</summary>
+        public static void Delete(BoardId boardId)
         {
-            var path = PathFor(board);
-            if (File.Exists(path))
-                File.Delete(path);
+            var saveFilePath = GetSaveFilePath(boardId);
+            if (File.Exists(saveFilePath))
+                File.Delete(saveFilePath);
         }
+
+        #endregion
     }
 }
