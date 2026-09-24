@@ -27,3 +27,11 @@ _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the d
 **Pull Config**:
 Editor settings for one Pull job: spreadsheet id, auth, which tabs map to which Config Types / output assets.
 _Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema
+
+**Field Header**:
+A sheet column named for a C# field (e.g. `id`, `upgrade_level`, `bonus_stats`), not for a type or collection name. Headers map to Config Type fields; Vertical Nest uses blank parent cells.
+_Avoid_: PascalCase collection columns (`Weapons`, `UpgradeLevels`) as the default contract
+
+**Ignore Marker**:
+A sheet annotation (`!!` above a column in the legacy Idle flow) that marks a column as designer-only notes. Pull skips that column for parsing.
+_Avoid_: Using note columns as nest keys or runtime fields
