@@ -28,14 +28,12 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 2. Share the spreadsheet with your Google email as Viewer.
 3. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
 
-## Quick start
+## Quick start (shell)
 
-1. Subclass `ConfigTypeAsset` for each table (plus nested serializable types as needed).
+1. Subclass `ConfigTypeAsset` for each table.
 2. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list.
-3. Add matching Google tabs (tab title = type name by default) with Field Headers / optional aliases; use `!!!` for note columns and Vertical Nest blank parents for nests.
-4. Sign In → **Pull From Google (Selected Config)**.
-
-> **Status:** Pull Config shell + OAuth Sign In ship now. Vertical Nest parse, live Sheets fetch, and Baked Asset write land in follow-up tickets; Pull fails clearly until then.
+3. Select PullConfig → **Sign In With Google**.
+4. **Pull From Google** validates the config; parse and Baked Asset write land in follow-up tickets and fail clearly until then.
 
 ## Layout
 

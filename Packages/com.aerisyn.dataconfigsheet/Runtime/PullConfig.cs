@@ -25,6 +25,8 @@ namespace Aerisyn.DataConfigSheet
         InfoMessageType.Info)]
     public sealed class PullConfig : SerializedScriptableObject
     {
+
+
         #region Google source
 
         [FoldoutGroup("Google source")]
@@ -76,8 +78,8 @@ namespace Aerisyn.DataConfigSheet
 
         [FoldoutGroup("Pull targets")]
         [Tooltip(
-            "Explicit Config Types to Pull. No assembly auto-scan. " +
-            "Google tab title matches the type name unless a later tab-override attribute says otherwise.")]
+            "Explicit Config Types to Pull. Pull only processes this list (no auto-scan of work). " +
+            "Google tab title matches the type name by default.")]
         [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
         [TypeFilter(nameof(FilterConfigTypes))]
         [SerializeField]
@@ -121,8 +123,8 @@ namespace Aerisyn.DataConfigSheet
         #region Type filter
 
         /// <summary>
-        /// Odin TypeFilter candidates: concrete ConfigTypeAsset subclasses only.
-        /// Listing types here is explicit; Pull never auto-scans assemblies for work.
+        /// Odin picker candidates only (concrete ConfigTypeAsset subclasses).
+        /// Does not choose what Pull runs; that is the explicit serialized list above.
         /// </summary>
         static IEnumerable<Type> FilterConfigTypes()
         {
@@ -155,5 +157,7 @@ namespace Aerisyn.DataConfigSheet
         }
 
         #endregion
+
+
     }
 }

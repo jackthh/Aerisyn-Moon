@@ -9,6 +9,8 @@ namespace Aerisyn.DataConfigSheet.Editor
     /// </summary>
     public static class DataConfigPullRunner
     {
+
+
         #region Public API
 
         /// <summary>
@@ -32,7 +34,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Validation
 
         /// <summary>
-        /// Shared preconditions for Pull and auth menus: spreadsheet, output folder, Config Types, credentials.
+        /// Preconditions for Pull: spreadsheet, output folder, Config Types, and credential paths.
         /// </summary>
         internal static void Validate(PullConfig config)
         {
@@ -71,5 +73,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
         #endregion
+
+
     }
 }
