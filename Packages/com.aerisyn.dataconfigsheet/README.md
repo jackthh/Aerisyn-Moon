@@ -30,18 +30,21 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 
 ## Quick start (shell)
 
-1. Subclass `ConfigTypeAsset` for each table.
+1. Subclass `ConfigTypeAsset` for each table (root `items` list + nested serializable types).
 2. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list.
 3. Select PullConfig → **Sign In With Google**.
-4. **Pull From Google** validates the config; parse and Baked Asset write land in follow-up tickets and fail clearly until then.
+4. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s to create/overwrite `{TypeName}.asset` under the shared folder.
+5. Live Google Sheets fetch lands in a follow-up ticket; menu **Pull From Google** still fails clearly until then.
 
 ## Layout
 
 | Folder | Purpose |
 |---|---|
-| `Runtime/` | `PullConfig`, `ConfigTypeAsset`, `GoogleAuthMode` |
-| `Editor/` | OAuth, Pull menus/runner shell |
+| `Runtime/` | `PullConfig`, `ConfigTypeAsset`, Vertical Nest parse |
+| `Runtime/Parsing/` | `SheetGrid`, `VerticalNestParser`, Baked Asset path/copy helpers |
+| `Editor/` | OAuth, Pull menus/runner, `BakedAssetWriter` |
 | `Editor/Plugins/Google/` | Google.Apis* for Sheets/Drive |
+| `Tests~/VerticalNest.Tests/` | Pure fixture tests for the parse seam (`dotnet test`) |
 | `CONTEXT.md` | Domain glossary |
 
 ## Design

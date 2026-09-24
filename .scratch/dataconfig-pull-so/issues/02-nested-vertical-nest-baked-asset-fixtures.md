@@ -4,9 +4,21 @@
 
 **Blocked by:** 01 — Prefactor — Strip Luban; expose Pull Config shell
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Type-driven Vertical Nest parse covers Preamble skip, Header Row match by Field Headers, `!!!` ignore columns, and nested struct + primitive arrays
-- [ ] Fixture tests include a weapons-style nested grid with Preamble and `!!!` and assert the object graph (or structured errors with coordinates)
-- [ ] Pull creates a missing Baked Asset and re-Pull overwrites data in place (GUID stable) under the single output folder
-- [ ] End-to-end is verifiable via fixture/inject path without requiring a live Google spreadsheet for the automated seam
+- [x] Type-driven Vertical Nest parse covers Preamble skip, Header Row match by Field Headers, `!!!` ignore columns, and nested struct + primitive arrays
+- [x] Fixture tests include a weapons-style nested grid with Preamble and `!!!` and assert the object graph (or structured errors with coordinates)
+- [x] Pull creates a missing Baked Asset and re-Pull overwrites data in place (GUID stable) under the single output folder
+- [x] End-to-end is verifiable via fixture/inject path without requiring a live Google spreadsheet for the automated seam
+
+## Answer
+
+Shipped on branch `cursor/nested-vertical-nest-baked-asset-6541`:
+
+- `Runtime/Parsing`: `SheetGrid`, type-driven `VerticalNestParser` (Preamble, Field Headers, `!!!`, blank-parent struct nests, primitive arrays), structured errors with coordinates, `BakedAssetPath` + `BakedAssetItemsCopy` for in-place overwrite.
+- `Editor`: `BakedAssetWriter` (create missing / save existing) and `DataConfigPullRunner.PullFromGrids` inject path (parse all first, then write; re-Pull copies onto existing asset so GUID stays stable). Live Google `PullAsync` still deferred to ticket 03.
+- Fixture suite: `Tests~/VerticalNest.Tests` (`dotnet test`) locks the weapons → upgrades → bonus stats seam plus header/error/overwrite helpers.
+
+## Comments
+
+- Claimed for implement; Column Alias / live Sheets fetch remain ticket 03.

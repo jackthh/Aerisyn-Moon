@@ -18,7 +18,9 @@ Prefactor toward **Pull → ScriptableObject** (ADR 0010). Luban bake removed fr
 ### Added
 
 - `ConfigTypeAsset` base for hand-written Config Types.
-- Pull runner/menu shell (validates config; fails clearly until Vertical Nest + asset write land).
+- Type-driven **Vertical Nest** parse over in-memory grids (Preamble, Field Headers, `!!!` Ignore Marker, struct + primitive nests).
+- Fixture tests under `Tests~/VerticalNest.Tests` (weapons → upgrades → bonus stats).
+- `PullFromGrids` inject path: create missing Baked Assets or overwrite data in place (stable GUID); live Google fetch still deferred.
 
 ### Removed
 
