@@ -18,6 +18,7 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 |---|---|---|
 | [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events. | `0.1.3` |
 | [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor **Pull**: Google Sheet (OAuth) → Vertical Nest → ScriptableObject Baked Assets. One-way; schema in hand-written Config Types. | `0.3.0` |
+| [`com.aerisyn.tutorial`](Packages/com.aerisyn.tutorial) | Upcoming tutorial / onboarding gameplay package (scaffold only). | `0.0.1` |
 
 ## Install a package
 
@@ -55,6 +56,14 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfi
 
 Details: [`Packages/com.aerisyn.dataconfigsheet/README.md`](Packages/com.aerisyn.dataconfigsheet/README.md).
 
+### Tutorial
+
+```text
+https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.tutorial
+```
+
+Details: [`Packages/com.aerisyn.tutorial/README.md`](Packages/com.aerisyn.tutorial/README.md). Scaffold only; pin a release tag when the first usable version ships.
+
 Private repo: configure Git credentials on the machine so Unity can clone.
 
 ## DevHost
@@ -71,6 +80,7 @@ DevHost/                  # local Unity host (Odin / credentials installed local
 Packages/
   com.aerisyn.quests/           # quest tracker
   com.aerisyn.dataconfigsheet/  # Google Pull → ScriptableObject tooling
+  com.aerisyn.tutorial/         # tutorial / onboarding (scaffold)
 ```
 
 Each package is independently versioned and installable. Add new systems as sibling folders under `Packages/` with the `com.aerisyn.*` id.

@@ -2,6 +2,7 @@
   "dependencies": {
     "com.aerisyn.dataconfigsheet": "file:../../Packages/com.aerisyn.dataconfigsheet",
     "com.aerisyn.quests": "file:../../Packages/com.aerisyn.quests",
+    "com.aerisyn.tutorial": "file:../../Packages/com.aerisyn.tutorial",
     "com.besty.unity-skills": "https://github.com/Besty0728/Unity-Skills.git?path=/SkillsForUnity",
     "com.unity.collab-proxy": "2.12.4",
     "com.unity.ide.rider": "3.0.40",

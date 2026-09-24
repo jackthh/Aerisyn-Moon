@@ -1,0 +1,16 @@
+{
+  "name": "Aerisyn.Tutorial",
+  "rootNamespace": "Aerisyn.Tutorial",
+  "references": [
+    "Sirenix.OdinInspector.Attributes"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,20 @@
+{
+  "name": "com.aerisyn.tutorial",
+  "version": "0.0.1",
+  "displayName": "Aerisyn Tutorial",
+  "description": "Upcoming tutorial / onboarding gameplay package (scaffold). Requires Odin Inspector (Sirenix) in the project.",
+  "unity": "2022.3",
+  "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.tutorial",
+  "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.tutorial/CHANGELOG.md",
+  "keywords": [
+    "aerisyn",
+    "tutorial",
+    "onboarding",
+    "gameplay"
+  ],
+  "author": {
+    "name": "Aerisyn",
+    "url": "https://github.com/jackthh/Aerisyn-Moon"
+  },
+  "dependencies": {}
+}
