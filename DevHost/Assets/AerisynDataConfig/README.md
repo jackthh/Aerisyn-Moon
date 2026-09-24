@@ -1,22 +1,35 @@
-# DevHost: Data Config Sheet exercise
+# DevHost: Data Config Sheet (Pull → ScriptableObject)
 
-Local exercise for `com.aerisyn.dataconfigsheet` (Google → one editable ScriptableObject).
+Local exercise for `com.aerisyn.dataconfigsheet`: **Google Sheets → Pull → Baked Assets**.
 
-## Setup (OAuth default)
+Product direction is ADR 0010 (`0.3.0`).
 
-1. Place Desktop OAuth client JSON at `Credentials/oauth-client-secrets.json` (gitignored).
-2. Share your Google Sheet with **your Google email** as **Viewer**.
-3. Sheet tab **`Items`** with columns `Id`, `Name`, `Price`.
-4. Create assets:
-   - **DevHost Demo Factory** (Create → Aerisyn → Data Config Sheet → DevHost Demo Factory)
-   - **DevHost Baked Data** (Create → Aerisyn → Data Config Sheet → DevHost Baked Data) — **one** editable SO
-   - **Bake Config**
-5. On Bake Config: set spreadsheet id, Auth Mode = OAuth User, assign Factory + **Baked Output** (the DevHost Baked Data asset).
-6. Select BakeConfig → **Sign In With Google**, then **Bake From Google (Selected Config)**.
+For a copy-paste template (nested weapons Config Type + Pull Config steps), import package sample
+**Weapons Pull** (`Samples~/WeaponsPull`) and follow its README.
 
-Open the **DevHost Baked Data** asset: you can edit `Items` rows in the Inspector for fast tests. Re-bake overwrites them. Do not push SO edits to Google.
+## One-time setup
 
-You can delete the old BakingSheet `Baked/Items` + `POTION_*` sub-assets if they are leftover from the previous exporter.
+1. Install **[Odin Inspector](https://odininspector.com/)** in DevHost (not committed).
+2. Place OAuth Desktop client JSON at `Credentials/oauth-client-secrets.json` (gitignored).
+
+## Pull Config
+
+1. **Create → Aerisyn → Data Config Sheet → Pull Config**.
+2. Spreadsheet id; Auth = OAuth User.
+3. Output Folder: `Assets/AerisynDataConfig/Baked` (shared for all types on this config).
+4. Add explicit Config Types from the dropdown (subclasses of `ConfigTypeAsset`). No assembly auto-scan.
+5. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
+6. **Pull From Google**. The Pull report summarizes created/updated assets, or lists failures with **A1** sheet coordinates (nothing is written on failure).
+
+Fixture/inject Pull (no live spreadsheet): build `SheetGrid`s and call `DataConfigPullRunner.PullFromGrids`.
+
+## Layout
+
+| Path | Role |
+|---|---|
+| `Credentials/` | OAuth / service-account JSON (gitignored keys) |
+| `Baked/` | Shared output folder for Baked Assets |
+| `Demo/DataConfig.unity` | Optional scene placeholder |
 
 ## Optional: service account
 

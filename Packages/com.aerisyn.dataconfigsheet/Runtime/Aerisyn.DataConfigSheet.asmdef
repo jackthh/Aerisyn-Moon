@@ -2,7 +2,6 @@
   "name": "Aerisyn.DataConfigSheet",
   "rootNamespace": "Aerisyn.DataConfigSheet",
   "references": [
-    "BakingSheet",
     "Sirenix.OdinInspector.Attributes"
   ],
   "includePlatforms": [],

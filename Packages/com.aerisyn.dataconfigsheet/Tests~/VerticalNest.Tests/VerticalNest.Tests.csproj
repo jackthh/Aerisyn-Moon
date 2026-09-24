@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Aerisyn.DataConfigSheet.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+  </ItemGroup>
+
+  <!-- Link Unity Runtime parse seam sources so fixture tests run without the Editor. -->
+  <ItemGroup>
+    <Compile Include="..\..\Runtime\Parsing\*.cs" Link="Parsing\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Runtime\ColumnAliasAttribute.cs" Link="ColumnAliasAttribute.cs" />
+    <Compile Include="..\..\Runtime\SheetTabAttribute.cs" Link="SheetTabAttribute.cs" />
+  </ItemGroup>
+
+</Project>

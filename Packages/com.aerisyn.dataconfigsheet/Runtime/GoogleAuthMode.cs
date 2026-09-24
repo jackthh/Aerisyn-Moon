@@ -1,7 +1,7 @@
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// How the editor authenticates to Google Sheets for bake.
+    /// How the editor authenticates to Google Sheets for Pull.
     /// OAuthUser is the default Idle-like path (browser sign-in, email-shared sheets).
     /// </summary>
     public enum GoogleAuthMode

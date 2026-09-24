@@ -10,19 +10,19 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 | Prerequisite | Scope | Notes |
 |---|---|---|
 | **[Odin Inspector](https://odininspector.com/) (Sirenix)** | **All** `com.aerisyn.*` packages | Not on UPM; not vendored. Install in the consuming project (and DevHost) per machine. Packages may reference `Sirenix.OdinInspector.Attributes`. |
-| Package-specific deps | Per package README | e.g. BakingSheet for Data Config Sheet |
+| Package-specific deps | Per package README | See each package README |
 
 ## Packages
 
 | Package | Description | Status |
 |---|---|---|
 | [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events. | `0.1.3` |
-| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor bake: Google Sheet → optional CSV → **one editable ScriptableObject** via [BakingSheet](https://github.com/cathei/BakingSheet) import. OAuth sign-in default. One-way; schema stays in the game. | `0.2.0` |
+| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor **Pull**: Google Sheet (OAuth) → Vertical Nest → ScriptableObject Baked Assets. One-way; schema in hand-written Config Types. | `0.3.0` |
 
 ## Install a package
 
 1. Install **Odin Inspector** into your Unity project (required for every Aerisyn package in this repo).
-2. Install any **other package-specific prerequisites** (see the package row / README). BakingSheet is a UPM git dependency; add it to the consumer `manifest.json` if nested git deps fail to resolve.
+2. Install any **other package-specific prerequisites** (see the package row / README).
 3. Open **Window → Package Manager**
 4. Click **+ → Add package from git URL…**
 5. Paste a URL below
@@ -43,12 +43,6 @@ Details: [`Packages/com.aerisyn.quests/README.md`](Packages/com.aerisyn.quests/R
 
 ### Data Config Sheet
 
-**Extra prerequisite:** [BakingSheet](https://github.com/cathei/BakingSheet) `com.cathei.bakingsheet` **v4.1.3**. Pin in the consumer manifest if Package Manager does not auto-resolve nested git deps:
-
-```json
-"com.cathei.bakingsheet": "https://github.com/cathei/BakingSheet.git?path=UnityProject/Packages/com.cathei.bakingsheet#v4.1.3"
-```
-
 ```text
 https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet
 ```
@@ -56,7 +50,7 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfi
 Pin a release tag when you cut one:
 
 ```text
-https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet#com.aerisyn.dataconfigsheet@0.2.0
+https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet#com.aerisyn.dataconfigsheet@0.3.0
 ```
 
 Details: [`Packages/com.aerisyn.dataconfigsheet/README.md`](Packages/com.aerisyn.dataconfigsheet/README.md).
@@ -70,12 +64,13 @@ Private repo: configure Git credentials on the machine so Unity can clone.
 ## Repo layout
 
 ```text
-CONTEXT.md                # shared domain glossary
+CONTEXT.md                # Quests domain glossary
+CONTEXT-MAP.md            # points at per-context glossaries
 docs/adr/                 # architecture decisions
 DevHost/                  # local Unity host (Odin / credentials installed locally, not in git)
 Packages/
   com.aerisyn.quests/           # quest tracker
-  com.aerisyn.dataconfigsheet/  # BakingSheet Google → SO bake tooling
+  com.aerisyn.dataconfigsheet/  # Google Pull → ScriptableObject tooling
 ```
 
 Each package is independently versioned and installable. Add new systems as sibling folders under `Packages/` with the `com.aerisyn.*` id.

@@ -1,5 +1,9 @@
 # Samples
 
-Import **Basic Bake** from Package Manager → Data Config Sheet → Samples.
+Unity imports a folder here only when the user adds it from Package Manager.
 
-That sample ships a demo `Items` sheet, `DemoSheetContainer`, and `DemoSheetContainerFactory` for wiring a `BakeConfig`.
+| Sample | Folder | Shows |
+|---|---|---|
+| Weapons Pull | `WeaponsPull/` | Nested Config Type + Pull Config happy path (Vertical Nest weapons table) |
+
+Samples teach **Pull → ScriptableObject** only.
