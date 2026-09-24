@@ -1,78 +1,57 @@
 # Aerisyn Data Config Sheet (`com.aerisyn.dataconfigsheet`)
 
-Editor bake tooling on top of [BakingSheet](https://github.com/cathei/BakingSheet): **Google Sheet → (optional CSV cache) → one editable ScriptableObject**.
+Editor bake tooling: **Google Sheet → CSV → [Luban](https://github.com/focus-creative-games/luban)** (`cs-simple-json` + JSON).
 
-**Unity:** 2022.3+ · **Requires:** [BakingSheet](https://github.com/cathei/BakingSheet) `com.cathei.bakingsheet` **v4.1.3** + [Odin Inspector](https://odininspector.com/) (Sirenix) · **Version:** `0.2.0`
+**Unity:** 2022.3+ · **Version:** `0.3.0` · **Requires:** .NET SDK 8+ (or 9 with roll-forward), [Odin Inspector](https://odininspector.com/), [Luban Unity runtime](https://github.com/focus-creative-games/luban_unity) in the game, Luban CLI under `Tools/Luban`
 
 ## Product policy
 
 | Rule | Meaning |
 |---|---|
 | Google Sheet is source of truth | Cloud spreadsheet is the official authoring surface |
-| One-way bake only | Never push ScriptableObject edits back to Google Sheets |
-| Local SOs are runtime final | After bake, gameplay reads the baked SO; **Inspector edits are allowed for fast tests**; the next bake overwrites them |
-| One parent SO file | Bake writes into a game-owned `BakedSheetContainerAsset` (serializable lists). Not BakingSheet’s multi sub-asset SO layout |
-| Schema lives in the game | `Sheet` / `SheetContainer` + baked SO type stay in the consuming project; this package owns bake config, menus, and runner |
+| One-way bake only | Never push generated JSON/code back to Google |
+| Runtime final (0.3.0) | Luban `Tables` + JSON (editable SO paused; see ADR 0008/0009) |
+| Schema in sheet headers / Luban XML | `##var` / `##type` and/or `Defines/*.xml`; not BakingSheet `Sheet` types |
 
 ## Requirements
 
 | Dependency | Why |
 |---|---|
-| **Unity 2022.3+** | Minimum editor target |
-| **[BakingSheet](https://github.com/cathei/BakingSheet) `com.cathei.bakingsheet` v4.1.3** | Google (+ optional CSV) import. **Not vendored** in this repo. |
-| **[Odin Inspector](https://odininspector.com/) (Sirenix)** | `BakeConfig` / baked SO Inspector UX. Assumed installed in the consuming project. |
+| **.NET SDK 8+** | Runs `Luban.dll` (`DOTNET_ROLL_FORWARD=Major` allows net9 hosts) |
+| **Luban CLI v5.x** | Download release zip into repo `Tools/Luban/` (gitignored) |
+| **`com.code-philosophy.luban`** | Runtime `Luban` / `Luban.SimpleJSON` for generated code |
+| **Odin Inspector** | `BakeConfig` drawers |
+| **Google API Editor plugins** | Bundled under `Editor/Plugins/Google` (Sheets export) |
 
-### BakingSheet install (consumer projects)
+## Install Luban CLI
 
-If Package Manager does not resolve BakingSheet automatically, add to the consumer `Packages/manifest.json`:
+1. Install [.NET SDK](https://dotnet.microsoft.com/download) 8+.
+2. Download [Luban release](https://github.com/focus-creative-games/luban/releases) `Luban.7z`.
+3. Extract so `Tools/Luban/Luban/Luban.dll` exists (path configurable on BakeConfig).
 
-```json
-"com.cathei.bakingsheet": "https://github.com/cathei/BakingSheet.git?path=UnityProject/Packages/com.cathei.bakingsheet#v4.1.3"
-```
+## Auth (OAuth)
 
-## Install this package
-
-1. Install **Odin Inspector** and ensure BakingSheet is resolvable.
-2. Package Manager → **+ → Add package from git URL…**
-
-```text
-https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet
-```
-
-## Auth (default: OAuth browser sign-in)
-
-1. One-time org: Google Cloud **OAuth Desktop** client JSON → e.g. `Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json` (gitignored). Enable Sheets + Drive APIs; add team as consent test users.
-2. Share the spreadsheet with **your Google email** as Viewer (not public).
+1. Google Cloud **OAuth Desktop** client JSON → e.g. `Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json` (gitignored).
+2. Share the spreadsheet with your Google email as Viewer.
 3. Select BakeConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
-4. Bake.
-
-Optional **Service Account** Auth Mode for CI. Details in older BakingSheet docs.
 
 ## Quick start
 
-1. Define `Sheet` / `SheetContainer` in the game.
-2. Subclass `SheetContainerFactory` and `BakedSheetContainerAsset` (copy rows into `[Serializable]` lists in `ApplyFromContainer`).
-3. Create Bake Config; assign factory + **Baked Output**; set spreadsheet id(s).
-4. Sign In → Bake From Google.
-
-Bake flow:
-
-1. `GoogleSheetConverter` (OAuth or service-account JSON)  
-2. Optional `CsvSheetConverter` when CSV cache path is set  
-3. `BakedSheetContainerAsset.ApplyFromContainer` (Undo + SetDirty) into **one** editable SO  
+1. Create a Luban project (`luban.conf`, `Defines/`, `Data/`) — see DevHost `Assets/AerisynDataConfig/Luban`.
+2. Create **Bake Config**; set spreadsheet id, tab→CSV exports, Luban paths, output dirs.
+3. Put Luban headers in Google tabs (`##var` / `##type`), or keep seed CSVs until tabs match.
+4. Sign In → **Bake From Google (Selected Config)**.
+5. Load with `new cfg.Tables(file => JSON.Parse(File.ReadAllText(...)))`.
 
 ## Layout
 
 | Folder | Purpose |
 |---|---|
-| `Runtime/` | `BakeConfig`, `GoogleAuthMode`, `SheetContainerFactory`, `BakedSheetContainerAsset` |
-| `Editor/` | OAuth session, bake runner, menus |
-| `Samples~/BasicBake` | Demo sheet + factory + `DemoBakedDataAsset` |
-
-## Out of scope (0.2.0)
-
-Luban, two-way sync, runtime Google download, Addressables polish, IdleLotl CSV ports, forking BakingSheet, BakingSheet `ScriptableObjectSheetExporter` as the default output (read-only row sub-assets).
+| `Runtime/` | `BakeConfig`, `GoogleAuthMode` |
+| `Editor/` | OAuth, CSV export, Luban runner, menus |
+| `Editor/Plugins/Google/` | Google.Apis* for Sheets/Drive |
+| `CONTEXT.md` | Domain glossary |
 
 ## Design
 
-See [`docs/adr/0005`](../../docs/adr/0005-dataconfigsheet-one-way-google-bake.md), [`0007`](../../docs/adr/0007-dataconfigsheet-oauth-primary.md), [`0008`](../../docs/adr/0008-dataconfigsheet-editable-single-so.md).
+See [`docs/adr/0009`](../../docs/adr/0009-dataconfigsheet-luban-google-csv.md) (active), [`0007`](../../docs/adr/0007-dataconfigsheet-oauth-primary.md) (OAuth), [`0005`](../../docs/adr/0005-dataconfigsheet-one-way-google-bake.md) / [`0008`](../../docs/adr/0008-dataconfigsheet-editable-single-so.md) (superseded / paused).

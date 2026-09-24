@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Editor menus for OAuth sign-in and one-way Google → ScriptableObject bake.
+    /// Editor menus for OAuth sign-in and Google → CSV → Luban bake.
     /// </summary>
     public static class DataConfigBakeMenu
     {
@@ -147,8 +147,12 @@ namespace Aerisyn.DataConfigSheet.Editor
         {
             try
             {
-                EditorUtility.DisplayProgressBar("Data Config Sheet", $"Baking '{config.name}'…", 0.35f);
+                EditorUtility.DisplayProgressBar("Data Config Sheet", $"Baking '{config.name}'…", 0.2f);
                 await DataConfigBakeRunner.BakeAsync(config);
+                EditorUtility.DisplayDialog(
+                    "Data Config Sheet",
+                    $"Bake complete for '{config.name}'.",
+                    "OK");
                 return true;
             }
             catch (Exception exception)
@@ -167,7 +171,5 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
         #endregion
-
-
     }
 }

@@ -5,15 +5,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
+using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Util.Store;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Editor OAuth (browser sign-in) and credential resolution for Google bake.
-    /// Writes an authorized_user JSON that BakingSheet GoogleSheetConverter can FromJson.
+    /// Editor OAuth (browser sign-in) and credential resolution for Google Sheets API export.
     /// </summary>
     public static class GoogleOAuthSession
     {
@@ -23,7 +24,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Opens the system browser for Google sign-in, then saves an authorized_user token for bake.
+        /// Opens the system browser for Google sign-in, then saves an authorized_user token.
         /// Sheet sharing: Viewer to the signed-in Google email (no public link required).
         /// </summary>
         public static async Task SignInAsync(BakeConfig config)
@@ -102,13 +103,28 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Returns credential JSON for GoogleSheetConverter (authorized_user or service_account).
+        /// Builds a Sheets API client from BakeConfig OAuth or service-account credentials.
         /// </summary>
-        public static string ResolveCredentialJson(BakeConfig config)
+        public static async Task<SheetsService> CreateSheetsServiceAsync(BakeConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
+            GoogleCredential credential = await ResolveGoogleCredentialAsync(config);
+            return new SheetsService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Aerisyn DataConfigSheet",
+            });
+        }
+
+        #endregion
+
+
+        #region Credentials
+
+        static async Task<GoogleCredential> ResolveGoogleCredentialAsync(BakeConfig config)
+        {
             if (config.AuthMode == GoogleAuthMode.ServiceAccount)
             {
                 string path = DataConfigPathUtility.ResolveProjectPath(config.ServiceAccountCredentialPath);
@@ -118,7 +134,13 @@ namespace Aerisyn.DataConfigSheet.Editor
                         "share the sheet with the robot email as Viewer, or switch Auth Mode to OAuth User.",
                         path);
 
-                return File.ReadAllText(path);
+                using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read))
+                {
+                    GoogleCredential credential = GoogleCredential.FromStream(stream);
+                    return credential.CreateScoped(
+                        SheetsService.Scope.SpreadsheetsReadonly,
+                        DriveService.Scope.DriveReadonly);
+                }
             }
 
             string tokenPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
@@ -128,17 +150,16 @@ namespace Aerisyn.DataConfigSheet.Editor
                     "then bake again. Share the sheet with your Google email as Viewer.",
                     tokenPath);
 
-            return File.ReadAllText(tokenPath);
+            // authorized_user JSON written by Sign In
+            GoogleCredential userCredential = GoogleCredential.FromFile(tokenPath);
+            return await Task.FromResult(userCredential.CreateScoped(
+                SheetsService.Scope.SpreadsheetsReadonly,
+                DriveService.Scope.DriveReadonly));
         }
 
-        #endregion
-
-
-        #region Token file
 
         /// <summary>
-        /// BakingSheet uses GoogleCredential.FromJson; authorized_user shape is the user-OAuth equivalent
-        /// of a service-account key file.
+        /// Writes authorized_user JSON that GoogleCredential.FromFile / FromJson can load.
         /// </summary>
         static void WriteAuthorizedUserToken(string fullPath, string clientId, string clientSecret, string refreshToken)
         {
@@ -183,7 +204,5 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
         #endregion
-
-
     }
 }

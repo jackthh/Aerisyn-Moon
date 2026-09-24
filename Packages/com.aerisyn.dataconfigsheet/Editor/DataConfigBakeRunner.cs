@@ -1,26 +1,23 @@
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
-using Cathei.BakingSheet;
-using Cathei.BakingSheet.Unity;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Runs one-way bake: Google Sheet → optional CSV cache → one editable BakedSheetContainerAsset.
-    /// Never pushes ScriptableObject edits back to Google Sheets.
+    /// Runs one-way bake: Google tabs → CSV under Luban dataDir → Luban CLI → generated code/JSON.
     /// </summary>
     public static class DataConfigBakeRunner
     {
-
-
         #region Public API
 
         /// <summary>
-        /// Validates config, bakes from Google, optionally caches CSV, then applies rows into the baked SO.
+        /// Validates config, exports CSV, runs Luban, then refreshes the AssetDatabase.
         /// </summary>
         public static async Task BakeAsync(BakeConfig config)
         {
@@ -29,34 +26,41 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             Validate(config);
 
-            string credentialJson = GoogleOAuthSession.ResolveCredentialJson(config);
-            var logger = UnityLogger.Default;
-            SheetContainerBase container = config.SheetContainerFactory.Create(logger);
-            if (container == null)
-                throw new InvalidOperationException(
-                    $"SheetContainerFactory '{config.SheetContainerFactory.name}' returned null.");
+            string lubanProjectDir = DataConfigPathUtility.ResolveProjectPath(config.LubanProjectPath);
+            string lubanConf = Path.Combine(lubanProjectDir, "luban.conf");
+            if (!File.Exists(lubanConf))
+                throw new FileNotFoundException(
+                    $"luban.conf not found at '{lubanConf}'. Point BakeConfig Luban Project Path at a Luban project folder.",
+                    lubanConf);
 
-            ISheetImporter[] importers = BuildGoogleImporters(config.SpreadsheetIds, credentialJson);
-            await container.Bake(importers);
+            string dataDir = ResolveLubanDataDir(lubanProjectDir, lubanConf);
+            string lubanDll = DataConfigPathUtility.ResolveProjectPath(config.LubanDllPath);
+            if (!File.Exists(lubanDll))
+                throw new FileNotFoundException(
+                    $"Luban.dll not found at '{lubanDll}'. Download Luban from focus-creative-games/luban releases " +
+                    "into Tools/Luban (see package README).",
+                    lubanDll);
 
-            if (!string.IsNullOrWhiteSpace(config.CsvCachePath))
-            {
-                string csvPath = DataConfigPathUtility.ResolveProjectPath(config.CsvCachePath);
-                Directory.CreateDirectory(csvPath);
-                await container.Store(new CsvSheetConverter(csvPath));
-            }
+            string outputCodeDir = DataConfigPathUtility.ResolveProjectPath(config.OutputCodeDir);
+            string outputDataDir = DataConfigPathUtility.ResolveProjectPath(config.OutputDataDir);
+            Directory.CreateDirectory(outputCodeDir);
+            Directory.CreateDirectory(outputDataDir);
 
-            // One parent SO file with Inspector-editable lists (not BakingSheet row sub-assets)
-            BakedSheetContainerAsset bakedOutput = config.BakedOutput;
-            Undo.RecordObject(bakedOutput, "Bake Data Config Sheet");
-            bakedOutput.ApplyFromContainer(container);
-            EditorUtility.SetDirty(bakedOutput);
-            AssetDatabase.SaveAssets();
+            EditorUtility.DisplayProgressBar("Data Config Sheet", "Exporting Google Sheets to CSV…", 0.25f);
+            await GoogleSheetsCsvExporter.ExportAsync(config, dataDir);
+
+            EditorUtility.DisplayProgressBar("Data Config Sheet", "Running Luban…", 0.65f);
+            await RunLubanAsync(
+                lubanDll,
+                lubanConf,
+                config.LubanTarget,
+                outputCodeDir,
+                outputDataDir);
+
             AssetDatabase.Refresh();
-
             Debug.Log(
-                $"[DataConfigSheet] Bake complete → '{AssetDatabase.GetAssetPath(bakedOutput)}'",
-                bakedOutput);
+                $"[DataConfigSheet] Bake complete. Code → '{config.OutputCodeDir}', Data → '{config.OutputDataDir}'",
+                config);
         }
 
         #endregion
@@ -66,25 +70,20 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         static void Validate(BakeConfig config)
         {
-            if (config.SheetContainerFactory == null)
-                throw new InvalidOperationException(
-                    $"BakeConfig '{config.name}' has no SheetContainerFactory. Assign a game-owned factory asset.");
+            if (string.IsNullOrWhiteSpace(config.SpreadsheetId))
+                throw new InvalidOperationException($"BakeConfig '{config.name}' has no Spreadsheet Id.");
 
-            if (config.BakedOutput == null)
-                throw new InvalidOperationException(
-                    $"BakeConfig '{config.name}' has no Baked Output. Create a game-owned BakedSheetContainerAsset " +
-                    "(one editable SO file) and assign it.");
+            if (config.SheetExports == null || config.SheetExports.Length == 0)
+                throw new InvalidOperationException($"BakeConfig '{config.name}' has no Tab export entries.");
 
-            if (config.SpreadsheetIds == null || config.SpreadsheetIds.Length == 0)
-                throw new InvalidOperationException(
-                    $"BakeConfig '{config.name}' has no spreadsheet ids.");
+            if (string.IsNullOrWhiteSpace(config.LubanProjectPath))
+                throw new InvalidOperationException($"BakeConfig '{config.name}' has an empty Luban Project Path.");
 
-            for (int i = 0; i < config.SpreadsheetIds.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(config.SpreadsheetIds[i]))
-                    throw new InvalidOperationException(
-                        $"BakeConfig '{config.name}' spreadsheet id at index {i} is empty.");
-            }
+            if (string.IsNullOrWhiteSpace(config.LubanDllPath))
+                throw new InvalidOperationException($"BakeConfig '{config.name}' has an empty Luban Dll Path.");
+
+            if (string.IsNullOrWhiteSpace(config.OutputCodeDir) || string.IsNullOrWhiteSpace(config.OutputDataDir))
+                throw new InvalidOperationException($"BakeConfig '{config.name}' needs Output Code Dir and Output Data Dir.");
 
             if (config.AuthMode == GoogleAuthMode.OAuthUser)
             {
@@ -102,21 +101,110 @@ namespace Aerisyn.DataConfigSheet.Editor
         #endregion
 
 
-        #region Google importers
+        #region Luban process
 
-        static ISheetImporter[] BuildGoogleImporters(string[] spreadsheetIds, string credentialJson)
+        /// <summary>
+        /// Reads dataDir from luban.conf (JSON) so CSV lands where Luban expects input files.
+        /// </summary>
+        static string ResolveLubanDataDir(string lubanProjectDir, string lubanConfPath)
         {
-            var importers = new List<ISheetImporter>(spreadsheetIds.Length);
-            for (int i = 0; i < spreadsheetIds.Length; i++)
+            // Minimal parse: "dataDir": "Data" relative to luban project
+            string json = File.ReadAllText(lubanConfPath);
+            const string key = "\"dataDir\"";
+            int keyIndex = json.IndexOf(key, StringComparison.Ordinal);
+            if (keyIndex < 0)
+                return Path.Combine(lubanProjectDir, "Data");
+
+            int colon = json.IndexOf(':', keyIndex + key.Length);
+            int quote1 = json.IndexOf('"', colon + 1);
+            int quote2 = json.IndexOf('"', quote1 + 1);
+            if (colon < 0 || quote1 < 0 || quote2 < 0)
+                return Path.Combine(lubanProjectDir, "Data");
+
+            string relative = json.Substring(quote1 + 1, quote2 - quote1 - 1).Trim();
+            if (string.IsNullOrEmpty(relative))
+                relative = "Data";
+
+            return Path.GetFullPath(Path.Combine(lubanProjectDir, relative));
+        }
+
+
+        /// <summary>
+        /// Invokes: dotnet Luban.dll --conf … -t client -c cs-simple-json -d json -x output*Dir=…
+        /// </summary>
+        static Task RunLubanAsync(
+            string lubanDll,
+            string lubanConf,
+            string target,
+            string outputCodeDir,
+            string outputDataDir)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            string args =
+                $"\"{lubanDll}\" --conf \"{lubanConf}\" -t {target} -c cs-simple-json -d json " +
+                $"--strict " +
+                $"-x outputCodeDir=\"{outputCodeDir}\" -x outputDataDir=\"{outputDataDir}\"";
+
+            var startInfo = new ProcessStartInfo
             {
-                importers.Add(new GoogleSheetConverter(spreadsheetIds[i], credentialJson, TimeZoneInfo.Utc));
+                FileName = "dotnet",
+                Arguments = args,
+                WorkingDirectory = Path.GetDirectoryName(lubanDll) ?? Environment.CurrentDirectory,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
+            };
+
+            // Luban releases target net8; allow net9+ hosts without installing the 8.0 runtime
+            startInfo.Environment["DOTNET_ROLL_FORWARD"] = "Major";
+
+            var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            var log = new StringBuilder();
+
+            process.OutputDataReceived += (_, e) =>
+            {
+                if (e.Data != null)
+                    log.AppendLine(e.Data);
+            };
+            process.ErrorDataReceived += (_, e) =>
+            {
+                if (e.Data != null)
+                    log.AppendLine(e.Data);
+            };
+            process.Exited += (_, __) =>
+            {
+                string text = log.ToString();
+                if (process.ExitCode != 0)
+                {
+                    tcs.TrySetException(new InvalidOperationException(
+                        $"Luban failed (exit {process.ExitCode}).\n{text}"));
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(text))
+                        Debug.Log($"[DataConfigSheet] Luban:\n{text}");
+                    tcs.TrySetResult(true);
+                }
+
+                process.Dispose();
+            };
+
+            if (!process.Start())
+            {
+                tcs.TrySetException(new InvalidOperationException(
+                    "Failed to start 'dotnet'. Install .NET SDK 8+ and ensure it is on PATH."));
+                return tcs.Task;
             }
 
-            return importers.ToArray();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            return tcs.Task;
         }
 
         #endregion
-
-
     }
 }

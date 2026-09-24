@@ -1,20 +1,20 @@
+using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Editor bake settings: Google spreadsheet id(s), auth, optional CSV cache,
-    /// and a single editable baked ScriptableObject (game-owned). One-way: Google → SO only.
+    /// Editor bake settings: Google spreadsheet, OAuth/service-account auth, and Luban paths.
+    /// One-way: Google → CSV → Luban JSON/code. Never push generated data back to Google.
     /// </summary>
     [CreateAssetMenu(
         fileName = "BakeConfig",
         menuName = "Aerisyn/Data Config Sheet/Bake Config",
         order = 0)]
     [InfoBox(
-        "One-way bake only: Google Sheet is the official source of truth. " +
-        "The baked ScriptableObject is runtime final and editable for fast local tests; " +
-        "never push SO edits back to Google Sheets. Re-bake overwrites local SO data.",
+        "0.3.0: Google Sheet → CSV → Luban. Runtime final is Luban Tables + JSON (not editable SO). " +
+        "Put ##var / ##type headers in each Google tab. Never push generated data back to Google.",
         InfoMessageType.Warning)]
     [InfoBox(
         "Default auth is OAuth (Sign In With Google). Share the sheet with your Google email as Viewer. " +
@@ -22,15 +22,12 @@ namespace Aerisyn.DataConfigSheet
         InfoMessageType.Info)]
     public sealed class BakeConfig : ScriptableObject
     {
-
-
         #region Google source
 
         [FoldoutGroup("Google source")]
-        [Tooltip("Google Spreadsheet id(s) from the sheet URL (.../d/{id}/...). One id is enough for MVP.")]
-        [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
+        [Tooltip("Google Spreadsheet id from the URL (.../d/{id}/...).")]
         [SerializeField]
-        string[] _spreadsheetIds = System.Array.Empty<string>();
+        string _spreadsheetId = "";
 
 
         [FoldoutGroup("Google source")]
@@ -41,7 +38,7 @@ namespace Aerisyn.DataConfigSheet
 
         [FoldoutGroup("Google source")]
         [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
-        [Tooltip("Desktop OAuth client_secrets JSON from Google Cloud (one org setup). Gitignored.")]
+        [Tooltip("Desktop OAuth client_secrets JSON from Google Cloud (gitignored).")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
         [SerializeField]
         string _oauthClientSecretsPath = "Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json";
@@ -49,7 +46,7 @@ namespace Aerisyn.DataConfigSheet
 
         [FoldoutGroup("Google source")]
         [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
-        [Tooltip("Per-machine authorized_user token written after Sign In. Prefer UserSettings (gitignored).")]
+        [Tooltip("Per-machine authorized_user token written after Sign In (gitignored).")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
         [SerializeField]
         string _oauthUserTokenPath = "UserSettings/AerisynDataConfig/oauth-user-token.json";
@@ -57,7 +54,7 @@ namespace Aerisyn.DataConfigSheet
 
         [FoldoutGroup("Google source")]
         [ShowIf(nameof(_authMode), GoogleAuthMode.ServiceAccount)]
-        [Tooltip("Service-account JSON. Share the sheet with that robot email as Viewer. Gitignored.")]
+        [Tooltip("Service-account JSON. Share the sheet with that robot email as Viewer.")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
         [SerializeField]
         string _serviceAccountCredentialPath = "Assets/AerisynDataConfig/Credentials/service-account.json";
@@ -65,70 +62,117 @@ namespace Aerisyn.DataConfigSheet
         #endregion
 
 
-        #region Outputs
+        #region Tab export
 
-        [FoldoutGroup("Outputs")]
-        [Tooltip("Single editable ScriptableObject that receives baked rows (no BakingSheet row sub-assets).")]
-        [Required]
+        [FoldoutGroup("Tab export")]
+        [Tooltip("Google tab title → CSV file name under Luban dataDir (e.g. Items → items.csv).")]
+        [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
         [SerializeField]
-        BakedSheetContainerAsset _bakedOutput;
-
-
-        [FoldoutGroup("Outputs")]
-        [Tooltip("Optional project-relative folder for a CSV cache after Google bake. Leave empty to skip.")]
-        [FolderPath(RequireExistingPath = false)]
-        [SerializeField]
-        string _csvCachePath = "";
+        SheetExportEntry[] _sheetExports = Array.Empty<SheetExportEntry>();
 
         #endregion
 
 
-        #region Schema
+        #region Luban
 
-        [FoldoutGroup("Schema")]
-        [Tooltip("Game-owned factory that constructs the SheetContainer for this bake.")]
-        [Required]
+        [FoldoutGroup("Luban")]
+        [Tooltip("Folder containing luban.conf (project-relative).")]
+        [FolderPath(RequireExistingPath = false)]
         [SerializeField]
-        SheetContainerFactory _sheetContainerFactory;
+        string _lubanProjectPath = "Assets/AerisynDataConfig/Luban";
+
+
+        [FoldoutGroup("Luban")]
+        [Tooltip("Path to Luban.dll (dotnet run). Default: repo Tools/Luban/Luban/Luban.dll.")]
+        [FilePath(Extensions = "dll", RequireExistingPath = false)]
+        [SerializeField]
+        string _lubanDllPath = "Tools/Luban/Luban/Luban.dll";
+
+
+        [FoldoutGroup("Luban")]
+        [Tooltip("Luban -t target name from luban.conf.")]
+        [SerializeField]
+        string _lubanTarget = "client";
+
+
+        [FoldoutGroup("Luban")]
+        [Tooltip("Generated C# output directory (project-relative).")]
+        [FolderPath(RequireExistingPath = false)]
+        [SerializeField]
+        string _outputCodeDir = "Assets/AerisynDataConfig/Gen";
+
+
+        [FoldoutGroup("Luban")]
+        [Tooltip("Generated JSON data directory (project-relative).")]
+        [FolderPath(RequireExistingPath = false)]
+        [SerializeField]
+        string _outputDataDir = "Assets/AerisynDataConfig/GeneratedData";
 
         #endregion
 
 
         #region Public API
 
-        /// <summary>Spreadsheet document ids to import (order preserved).</summary>
-        public string[] SpreadsheetIds => _spreadsheetIds;
+        /// <summary>Single Google spreadsheet document id.</summary>
+        public string SpreadsheetId => _spreadsheetId;
 
 
         /// <summary>OAuth user (default) or service-account auth.</summary>
         public GoogleAuthMode AuthMode => _authMode;
 
 
-        /// <summary>Desktop OAuth client_secrets.json path (org setup, gitignored).</summary>
+        /// <summary>Desktop OAuth client_secrets.json path.</summary>
         public string OAuthClientSecretsPath => _oauthClientSecretsPath;
 
 
-        /// <summary>Per-machine authorized_user token path written after browser sign-in.</summary>
+        /// <summary>Per-machine authorized_user token path.</summary>
         public string OAuthUserTokenPath => _oauthUserTokenPath;
 
 
-        /// <summary>Service-account credential JSON path (CI / headless).</summary>
+        /// <summary>Service-account credential JSON path.</summary>
         public string ServiceAccountCredentialPath => _serviceAccountCredentialPath;
 
 
-        /// <summary>Editable single-file bake destination (game-owned).</summary>
-        public BakedSheetContainerAsset BakedOutput => _bakedOutput;
+        /// <summary>Tab title → CSV file mappings to write under Luban dataDir.</summary>
+        public SheetExportEntry[] SheetExports => _sheetExports;
 
 
-        /// <summary>Optional CSV cache folder; empty means no CSV store step.</summary>
-        public string CsvCachePath => _csvCachePath;
+        /// <summary>Directory that contains luban.conf.</summary>
+        public string LubanProjectPath => _lubanProjectPath;
 
 
-        /// <summary>Factory that creates the game SheetContainer for bake.</summary>
-        public SheetContainerFactory SheetContainerFactory => _sheetContainerFactory;
+        /// <summary>Filesystem path to Luban.dll.</summary>
+        public string LubanDllPath => _lubanDllPath;
+
+
+        /// <summary>Luban export target name (e.g. client).</summary>
+        public string LubanTarget => _lubanTarget;
+
+
+        /// <summary>Where Luban writes generated C#.</summary>
+        public string OutputCodeDir => _outputCodeDir;
+
+
+        /// <summary>Where Luban writes generated JSON.</summary>
+        public string OutputDataDir => _outputDataDir;
 
         #endregion
 
 
+        #region Nested types
+
+        /// <summary>One Google tab exported to one CSV file for Luban input.</summary>
+        [Serializable]
+        public sealed class SheetExportEntry
+        {
+            [Tooltip("Exact Google Sheet tab title.")]
+            public string TabTitle;
+
+
+            [Tooltip("CSV file name under Luban dataDir (e.g. items.csv).")]
+            public string CsvFileName;
+        }
+
+        #endregion
     }
 }

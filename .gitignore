@@ -52,3 +52,7 @@ DevHost/Assets/AerisynDataConfig/Credentials/**
 **/*-credentials.json
 **/*service-account*.json
 
+
+# Luban CLI (download from focus-creative-games/luban releases)
+/Tools/Luban/
+/Tools/Luban.7z

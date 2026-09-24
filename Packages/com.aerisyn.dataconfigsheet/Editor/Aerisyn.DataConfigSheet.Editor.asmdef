@@ -3,17 +3,24 @@
   "rootNamespace": "Aerisyn.DataConfigSheet.Editor",
   "references": [
     "Aerisyn.DataConfigSheet",
-    "BakingSheet",
-    "BakingSheet.Google",
-    "BakingSheet.Csv"
+    "Sirenix.OdinInspector.Attributes",
+    "Unity.Newtonsoft.Json"
   ],
   "includePlatforms": [
     "Editor"
   ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Google.Apis.dll",
+    "Google.Apis.Core.dll",
+    "Google.Apis.Auth.dll",
+    "Google.Apis.Auth.PlatformServices.dll",
+    "Google.Apis.Sheets.v4.dll",
+    "Google.Apis.Drive.v3.dll",
+    "Newtonsoft.Json.dll"
+  ],
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],
