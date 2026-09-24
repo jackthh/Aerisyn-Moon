@@ -25,7 +25,7 @@ Sheet authoring where a parent identity is written once and child rows leave par
 _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the default; Luban ##var/##type as the schema
 
 **Pull Config**:
-Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and an explicit list of Config Types to pull. Tab ↔ type pairing is by exact type name, or an optional tab-override attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
+Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and an explicit list of Config Types to pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
 _Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package; repeating asset folder per tab; assembly-wide auto-scan of every Config Type; suffix-guessing tab names
 
 **Field Header**:
@@ -33,7 +33,7 @@ A sheet column named for a C# field (e.g. `id`, `upgrade_level`, `bonus_stats`),
 _Avoid_: PascalCase collection columns (`Weapons`, `UpgradeLevels`) as the required contract
 
 **Column Alias**:
-An optional attribute on a Config Type field that lets the Header Row use a designer-friendly name (e.g. `Weapons`) while the C# field stays `id`. Header detection and parsing accept the field name or the alias.
+An optional `[ColumnAlias]` attribute on a Config Type field that lets the Header Row use a designer-friendly name (e.g. `Weapons`) while the C# field stays `id`. Header detection and parsing accept the field name or the alias.
 _Avoid_: Making aliases required; a second schema file just to rename columns
 
 **Ignore Marker**:

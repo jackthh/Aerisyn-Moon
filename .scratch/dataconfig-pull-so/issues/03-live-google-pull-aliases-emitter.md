@@ -4,10 +4,22 @@
 
 **Blocked by:** 02 — Nested Vertical Nest → Baked Asset (fixture-backed)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] OAuth → Sheets API → in-memory grid → parse → Baked Asset works for listed Config Types
-- [ ] Default tab title equals Config Type name; optional tab-override attribute works when titles differ
-- [ ] Column Alias is accepted on Header Row match and parse alongside Field Headers
-- [ ] Header Emitter produces a usable Header Row (and guidance for `!!!` note columns) from a Config Type
-- [ ] Cell values containing commas do not break Pull (CSV is not the required parse path)
+- [x] OAuth → Sheets API → in-memory grid → parse → Baked Asset works for listed Config Types
+- [x] Default tab title equals Config Type name; optional tab-override attribute works when titles differ
+- [x] Column Alias is accepted on Header Row match and parse alongside Field Headers
+- [x] Header Emitter produces a usable Header Row (and guidance for `!!!` note columns) from a Config Type
+- [x] Cell values containing commas do not break Pull (CSV is not the required parse path)
+
+## Answer
+
+Shipped on `feature/v0.3.0` (ticket 03):
+
+- `[ColumnAlias]` / `[SheetTab]`; parse seam accepts Field Header or alias; `ConfigTypeTabName` + `HeaderEmitter` (+ Copy Header Row menu).
+- `GoogleSheetsGridFetcher` → in-memory `SheetGrid` (no CSV); `PullAsync` fetches then `PullFromGrids`.
+- Fixture tests: aliases, comma-in-cell, Header Emitter / tab resolve (`Tests~/VerticalNest.Tests`, net9).
+
+## Comments
+
+- Claimed for implement. Seams: Vertical Nest parse (aliases + comma); pure Header Emitter / tab resolve; Sheets fetch stays adapter (no automated Google HTTP suite per spec).

@@ -18,9 +18,11 @@ Prefactor toward **Pull → ScriptableObject** (ADR 0010). Luban bake removed fr
 ### Added
 
 - `ConfigTypeAsset` base for hand-written Config Types.
-- Type-driven **Vertical Nest** parse over in-memory grids (Preamble, Field Headers, `!!!` Ignore Marker, struct + primitive nests).
-- Fixture tests under `Tests~/VerticalNest.Tests` (weapons → upgrades → bonus stats).
-- `PullFromGrids` inject path: create missing Baked Assets or overwrite data in place (stable GUID); live Google fetch still deferred.
+- Type-driven **Vertical Nest** parse over in-memory grids (Preamble, Field Headers, Column Aliases, `!!!` Ignore Marker, struct + primitive nests).
+- Optional `[ColumnAlias]` / `[SheetTab]` attributes; Header Emitter menu copies a pasteable Header Row.
+- Live Google Pull: OAuth → Sheets API cell grids → parse → Baked Assets (no CSV; commas in cells are safe).
+- Fixture tests under `Tests~/VerticalNest.Tests` (weapons → upgrades → bonus stats, aliases, Header Emitter).
+- `PullFromGrids` inject path: create missing Baked Assets or overwrite data in place (stable GUID).
 
 ### Removed
 

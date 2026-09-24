@@ -14,6 +14,7 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 | One-way Pull only | Never push Baked Assets back to Google |
 | Runtime final | ScriptableObject Baked Assets (one asset per matching tab) |
 | Schema in C# Config Types | Hand-written Odin `ConfigTypeAsset` subclasses; nest shape is type-driven |
+| No CSV required | Sheets API cells stay in memory; commas inside cells do not break Pull |
 
 ## Requirements
 
@@ -28,21 +29,22 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 2. Share the spreadsheet with your Google email as Viewer.
 3. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
 
-## Quick start (shell)
+## Quick start
 
 1. Subclass `ConfigTypeAsset` for each table (root `items` list + nested serializable types).
-2. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list.
-3. Select PullConfig → **Sign In With Google**.
-4. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s to create/overwrite `{TypeName}.asset` under the shared folder.
-5. Live Google Sheets fetch lands in a follow-up ticket; menu **Pull From Google** still fails clearly until then.
+2. Optional: `[ColumnAlias("Friendly Name")]` on fields; `[SheetTab("Tab Title")]` on the type when the Google tab differs from the type name.
+3. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list.
+4. Select a Config Type asset (or its script) → **Copy Header Row** to paste headers into Google (guidance covers `!!!` note columns).
+5. Select PullConfig → **Sign In With Google**, then **Pull From Google**.
+6. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s.
 
 ## Layout
 
 | Folder | Purpose |
 |---|---|
-| `Runtime/` | `PullConfig`, `ConfigTypeAsset`, Vertical Nest parse |
-| `Runtime/Parsing/` | `SheetGrid`, `VerticalNestParser`, Baked Asset path/copy helpers |
-| `Editor/` | OAuth, Pull menus/runner, `BakedAssetWriter` |
+| `Runtime/` | `PullConfig`, `ConfigTypeAsset`, `[ColumnAlias]` / `[SheetTab]` |
+| `Runtime/Parsing/` | `SheetGrid`, `VerticalNestParser`, Header Emitter, tab resolver, Baked Asset helpers |
+| `Editor/` | OAuth, Sheets fetch, Pull menus/runner, `BakedAssetWriter` |
 | `Editor/Plugins/Google/` | Google.Apis* for Sheets/Drive |
 | `Tests~/VerticalNest.Tests/` | Pure fixture tests for the parse seam (`dotnet test`) |
 | `CONTEXT.md` | Domain glossary |

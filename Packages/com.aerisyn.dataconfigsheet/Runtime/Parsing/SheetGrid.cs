@@ -73,6 +73,40 @@ namespace Aerisyn.DataConfigSheet
             return new SheetGrid(cells);
         }
 
+
+        /// <summary>
+        /// Builds a grid from Sheets API-style object rows (cell values stay intact; commas are not delimiters).
+        /// </summary>
+        public static SheetGrid FromObjectRows(IList<IList<object>> rows)
+        {
+            if (rows == null || rows.Count == 0)
+                return new SheetGrid(new string[0, 0]);
+
+            int rowCount = rows.Count;
+            int columnCount = 0;
+            for (int r = 0; r < rowCount; r++)
+            {
+                IList<object> row = rows[r];
+                if (row != null && row.Count > columnCount)
+                    columnCount = row.Count;
+            }
+
+            string[,] cells = new string[rowCount, columnCount];
+            for (int r = 0; r < rowCount; r++)
+            {
+                IList<object> row = rows[r];
+                for (int c = 0; c < columnCount; c++)
+                {
+                    if (row != null && c < row.Count && row[c] != null)
+                        cells[r, c] = row[c].ToString();
+                    else
+                        cells[r, c] = "";
+                }
+            }
+
+            return new SheetGrid(cells);
+        }
+
         #endregion
 
 

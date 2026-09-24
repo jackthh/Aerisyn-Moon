@@ -6,8 +6,7 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Runs one-way Pull: cell grids → Vertical Nest → Baked Assets.
-    /// Live Google fetch lands in a follow-up ticket; fixture/inject uses <see cref="PullFromGrids"/>.
+    /// Runs one-way Pull: Google Sheets (or injected grids) → Vertical Nest → Baked Assets.
     /// </summary>
     public static class DataConfigPullRunner
     {
@@ -16,9 +15,10 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Live Google Pull (ticket 03). Validates config, then fails clearly until Sheets fetch lands.
+        /// Live Google Pull: OAuth/service-account → Sheets API cell grids → parse → Baked Assets.
+        /// Commas inside cells do not break Pull (no CSV required).
         /// </summary>
-        public static Task PullAsync(PullConfig config)
+        public static async Task<VerticalNestParseResult> PullAsync(PullConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
@@ -26,10 +26,8 @@ namespace Aerisyn.DataConfigSheet.Editor
             ValidateTargets(config);
             ValidateGoogle(config);
 
-            throw new InvalidOperationException(
-                $"Live Google Pull for '{config.name}' is not implemented yet. " +
-                "Use PullFromGrids with fixture/injected cell grids to parse and write Baked Assets. " +
-                "OAuth Sign In remains available.");
+            Dictionary<Type, SheetGrid> grids = await GoogleSheetsGridFetcher.FetchGridsAsync(config);
+            return PullFromGrids(config, grids);
         }
 
 
@@ -165,14 +163,6 @@ namespace Aerisyn.DataConfigSheet.Editor
                 throw new InvalidOperationException(
                     $"PullConfig '{config.name}' has an empty service-account credential path.");
             }
-        }
-
-
-        /// <summary>Full live-Pull preconditions (targets + Google).</summary>
-        internal static void Validate(PullConfig config)
-        {
-            ValidateTargets(config);
-            ValidateGoogle(config);
         }
 
         #endregion

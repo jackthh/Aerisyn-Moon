@@ -16,7 +16,8 @@ namespace Aerisyn.DataConfigSheet
         menuName = "Aerisyn/Data Config Sheet/Pull Config",
         order = 0)]
     [InfoBox(
-        "Pull → ScriptableObject (ADR 0010). List Config Types explicitly; tabs match type name by default. " +
+        "Pull → ScriptableObject (ADR 0010). List Config Types explicitly; tabs match type name by default " +
+        "(optional [SheetTab] override). Optional [ColumnAlias] on fields for designer headers. " +
         "One shared output folder for all Baked Assets. Never push generated data back to Google.",
         InfoMessageType.Info)]
     [InfoBox(
@@ -79,7 +80,7 @@ namespace Aerisyn.DataConfigSheet
         [FoldoutGroup("Pull targets")]
         [Tooltip(
             "Explicit Config Types to Pull. Pull only processes this list (no auto-scan of work). " +
-            "Google tab title matches the type name by default.")]
+            "Google tab title matches the type name by default, or [SheetTab(\"...\")] when titles differ.")]
         [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
         [TypeFilter(nameof(FilterConfigTypes))]
         [SerializeField]

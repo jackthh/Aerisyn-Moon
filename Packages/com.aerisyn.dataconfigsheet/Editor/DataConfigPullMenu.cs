@@ -1,11 +1,12 @@
 using System;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Editor menus for OAuth sign-in and Google → Baked Asset Pull.
+    /// Editor menus for OAuth sign-in, Google → Baked Asset Pull, and Header Emitter.
     /// </summary>
     public static class DataConfigPullMenu
     {
@@ -15,6 +16,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         const string SignOutMenu = "Aerisyn/Data Config Sheet/Sign Out";
         const string PullSelectedMenu = "Aerisyn/Data Config Sheet/Pull From Google (Selected Config)";
         const string PullAllMenu = "Aerisyn/Data Config Sheet/Pull From Google (All Configs)";
+        const string EmitHeaderMenu = "Aerisyn/Data Config Sheet/Copy Header Row (Selected Config Type)";
 
 
         #region Auth menus
@@ -129,6 +131,51 @@ namespace Aerisyn.DataConfigSheet.Editor
         #endregion
 
 
+        #region Header Emitter
+
+        [MenuItem(EmitHeaderMenu, false, 150)]
+        static void CopyHeaderRow()
+        {
+            Type configType = ResolveSelectedConfigType();
+            if (configType == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Data Config Sheet",
+                    "Select a Config Type ScriptableObject asset (or its MonoScript), then run this menu again.",
+                    "OK");
+                return;
+            }
+
+            try
+            {
+                HeaderEmitResult result = HeaderEmitter.Emit(configType);
+                EditorGUIUtility.systemCopyBuffer = result.ToTabSeparatedRow();
+
+                string tabHint = ConfigTypeTabName.Resolve(configType);
+                EditorUtility.DisplayDialog(
+                    "Data Config Sheet: Header Row copied",
+                    "Header Row for '" + configType.Name + "' is on the clipboard (tab-separated).\n" +
+                    "Paste into Google tab '" + tabHint + "'.\n\n" +
+                    result.IgnoreMarkerGuidance,
+                    "OK");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                EditorUtility.DisplayDialog("Data Config Sheet Header Emitter failed", exception.Message, "OK");
+            }
+        }
+
+
+        [MenuItem(EmitHeaderMenu, true)]
+        static bool CopyHeaderRowValidate()
+        {
+            return ResolveSelectedConfigType() != null;
+        }
+
+        #endregion
+
+
         #region Helpers
 
         static PullConfig RequireSelectedPullConfig(string missingMessage)
@@ -143,6 +190,31 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
+        /// Resolves a concrete ConfigTypeAsset type from the Project selection (asset or script).
+        /// </summary>
+        static Type ResolveSelectedConfigType()
+        {
+            UnityEngine.Object selected = Selection.activeObject;
+            if (selected == null)
+                return null;
+
+            ConfigTypeAsset asset = selected as ConfigTypeAsset;
+            if (asset != null)
+                return asset.GetType();
+
+            MonoScript script = selected as MonoScript;
+            if (script != null)
+            {
+                Type type = script.GetClass();
+                if (type != null && !type.IsAbstract && typeof(ConfigTypeAsset).IsAssignableFrom(type))
+                    return type;
+            }
+
+            return null;
+        }
+
+
+        /// <summary>
         /// Runs Pull and surfaces failures in a dialog so menu async voids do not fail silently.
         /// </summary>
         static async System.Threading.Tasks.Task<bool> RunPullSafe(PullConfig config)
@@ -150,7 +222,16 @@ namespace Aerisyn.DataConfigSheet.Editor
             try
             {
                 EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pulling '{config.name}'…", 0.2f);
-                await DataConfigPullRunner.PullAsync(config);
+                VerticalNestParseResult result = await DataConfigPullRunner.PullAsync(config);
+                if (!result.Success)
+                {
+                    EditorUtility.DisplayDialog(
+                        "Data Config Sheet Pull failed",
+                        FormatParseErrors(result),
+                        "OK");
+                    return false;
+                }
+
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
                     $"Pull complete for '{config.name}'.",
@@ -170,6 +251,30 @@ namespace Aerisyn.DataConfigSheet.Editor
             {
                 EditorUtility.ClearProgressBar();
             }
+        }
+
+
+        static string FormatParseErrors(VerticalNestParseResult result)
+        {
+            if (result.Errors == null || result.Errors.Count == 0)
+                return "Pull failed with no structured errors.";
+
+            StringBuilder builder = new StringBuilder(256);
+            builder.AppendLine("Parse failed. Fix the sheet cells and Pull again:");
+            int limit = Math.Min(result.Errors.Count, 12);
+            for (int i = 0; i < limit; i++)
+            {
+                VerticalNestParseError error = result.Errors[i];
+                builder.Append("• ");
+                if (error.Row >= 0 || error.Column >= 0)
+                    builder.Append("R").Append(error.Row).Append(":C").Append(error.Column).Append(' ');
+                builder.AppendLine(error.Message);
+            }
+
+            if (result.Errors.Count > limit)
+                builder.Append("(and ").Append(result.Errors.Count - limit).Append(" more)");
+
+            return builder.ToString();
         }
 
         #endregion

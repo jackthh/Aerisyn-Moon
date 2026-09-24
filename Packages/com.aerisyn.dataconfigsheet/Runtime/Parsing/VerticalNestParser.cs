@@ -8,8 +8,9 @@ using System.Reflection;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Type-driven Vertical Nest parse: Preamble skip, Header Row by Field Headers,
-    /// !!! Ignore Marker columns, blank-parent struct nests, and primitive array columns.
+    /// Type-driven Vertical Nest parse: Preamble skip, Header Row by Field Headers
+    /// and optional Column Aliases, !!! Ignore Marker columns, blank-parent struct nests,
+    /// and primitive array columns.
     /// </summary>
     public static class VerticalNestParser
     {
@@ -23,6 +24,7 @@ namespace Aerisyn.DataConfigSheet
         /// <summary>
         /// Clears and fills the target Config Type's root items list from the grid.
         /// Nest shape comes from reflection over serializable fields (type-driven).
+        /// Header Row may use Field Headers or Column Aliases.
         /// </summary>
         public static VerticalNestParseResult ParseInto(object target, SheetGrid grid)
         {
@@ -172,16 +174,54 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
-        static void CollectExpectedHeaders(NestLevelSchema level, List<string> headers)
+        /// <summary>
+        /// Collects human-readable expected header labels (field name, plus alias when set)
+        /// for error messages.
+        /// </summary>
+        static void CollectExpectedHeaderLabels(NestLevelSchema level, List<string> labels)
         {
             for (int i = 0; i < level.ScalarFields.Count; i++)
-                headers.Add(level.ScalarFields[i].Name);
+                labels.Add(FormatExpectedLabel(level.ScalarFields[i]));
 
             for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
-                headers.Add(level.PrimitiveArrayFields[i].Name);
+                labels.Add(FormatExpectedLabel(level.PrimitiveArrayFields[i]));
 
             if (level.Child != null)
-                CollectExpectedHeaders(level.Child, headers);
+                CollectExpectedHeaderLabels(level.Child, labels);
+        }
+
+
+        static string FormatExpectedLabel(FieldInfo field)
+        {
+            string alias = FieldHeaderNames.GetAlias(field);
+            if (alias == null)
+                return field.Name;
+
+            return field.Name + " (or " + alias + ")";
+        }
+
+
+        /// <summary>True when every schema Field Header is present by name or Column Alias.</summary>
+        static bool AllExpectedHeadersPresent(NestLevelSchema level, Dictionary<string, int> allHeaders)
+        {
+            for (int i = 0; i < level.ScalarFields.Count; i++)
+            {
+                int unusedColumn;
+                if (!FieldHeaderNames.TryFindColumn(level.ScalarFields[i], allHeaders, out unusedColumn))
+                    return false;
+            }
+
+            for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
+            {
+                int unusedColumn;
+                if (!FieldHeaderNames.TryFindColumn(level.PrimitiveArrayFields[i], allHeaders, out unusedColumn))
+                    return false;
+            }
+
+            if (level.Child != null)
+                return AllExpectedHeadersPresent(level.Child, allHeaders);
+
+            return true;
         }
 
         #endregion
@@ -190,7 +230,8 @@ namespace Aerisyn.DataConfigSheet
         #region Header binding
 
         /// <summary>
-        /// Finds the Header Row by matching Field Headers; row above supplies !!! Ignore Marker columns.
+        /// Finds the Header Row by matching Field Headers / Column Aliases;
+        /// row above supplies !!! Ignore Marker columns.
         /// </summary>
         static bool TryBindHeader(
             SheetGrid grid,
@@ -202,9 +243,9 @@ namespace Aerisyn.DataConfigSheet
             headerRow = -1;
             columns = null;
 
-            List<string> expected = new List<string>();
-            CollectExpectedHeaders(rootSchema, expected);
-            if (expected.Count == 0)
+            List<string> expectedLabels = new List<string>();
+            CollectExpectedHeaderLabels(rootSchema, expectedLabels);
+            if (expectedLabels.Count == 0)
             {
                 errors.Add(new VerticalNestParseError(-1, -1, "Config type shape has no Field Headers to match."));
                 return false;
@@ -213,7 +254,7 @@ namespace Aerisyn.DataConfigSheet
             for (int row = 0; row < grid.RowCount; row++)
             {
                 List<ColumnBinding> bound;
-                if (!TryMatchHeaderRow(grid, row, rootSchema, expected, out bound))
+                if (!TryMatchHeaderRow(grid, row, rootSchema, out bound))
                     continue;
 
                 headerRow = row;
@@ -224,7 +265,7 @@ namespace Aerisyn.DataConfigSheet
             errors.Add(new VerticalNestParseError(
                 -1,
                 -1,
-                "Could not find Header Row matching Field Headers: " + string.Join(", ", expected) + "."));
+                "Could not find Header Row matching Field Headers: " + string.Join(", ", expectedLabels) + "."));
             return false;
         }
 
@@ -233,7 +274,6 @@ namespace Aerisyn.DataConfigSheet
             SheetGrid grid,
             int row,
             NestLevelSchema rootSchema,
-            List<string> expectedHeaders,
             out List<ColumnBinding> columns)
         {
             columns = null;
@@ -266,11 +306,8 @@ namespace Aerisyn.DataConfigSheet
                     parseHeaders[header] = col;
             }
 
-            for (int i = 0; i < expectedHeaders.Count; i++)
-            {
-                if (!allHeaders.ContainsKey(expectedHeaders[i]))
-                    return false;
-            }
+            if (!AllExpectedHeadersPresent(rootSchema, allHeaders))
+                return false;
 
             columns = new List<ColumnBinding>();
             BindLevelColumns(rootSchema, 0, parseHeaders, columns);
@@ -288,7 +325,7 @@ namespace Aerisyn.DataConfigSheet
             {
                 FieldInfo field = level.ScalarFields[i];
                 int column;
-                if (!parseHeaders.TryGetValue(field.Name, out column))
+                if (!FieldHeaderNames.TryFindColumn(field, parseHeaders, out column))
                     continue;
 
                 columns.Add(new ColumnBinding
@@ -305,7 +342,7 @@ namespace Aerisyn.DataConfigSheet
             {
                 FieldInfo field = level.PrimitiveArrayFields[i];
                 int column;
-                if (!parseHeaders.TryGetValue(field.Name, out column))
+                if (!FieldHeaderNames.TryFindColumn(field, parseHeaders, out column))
                     continue;
 
                 columns.Add(new ColumnBinding

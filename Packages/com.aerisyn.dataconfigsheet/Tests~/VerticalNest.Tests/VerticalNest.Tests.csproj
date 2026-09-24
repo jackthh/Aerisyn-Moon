@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -20,6 +20,8 @@
   <!-- Link Unity Runtime parse seam sources so fixture tests run without the Editor. -->
   <ItemGroup>
     <Compile Include="..\..\Runtime\Parsing\*.cs" Link="Parsing\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Runtime\ColumnAliasAttribute.cs" Link="ColumnAliasAttribute.cs" />
+    <Compile Include="..\..\Runtime\SheetTabAttribute.cs" Link="SheetTabAttribute.cs" />
   </ItemGroup>
 
 </Project>
