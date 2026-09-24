@@ -26,7 +26,7 @@ _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the d
 
 **Pull Config**:
 Editor settings for one Pull job: spreadsheet id, auth, which tabs map to which Config Types / output assets.
-_Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema
+_Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package
 
 **Field Header**:
 A sheet column named for a C# field (e.g. `id`, `upgrade_level`, `bonus_stats`), not for a type or collection name. Canonical header contract. Vertical Nest uses blank parent cells.
