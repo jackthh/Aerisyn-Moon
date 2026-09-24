@@ -1,6 +1,6 @@
 # Aerisyn Data Config Sheet (`com.aerisyn.dataconfigsheet`)
 
-> **Redesign in progress (ADR 0010):** product direction is **Pull → ScriptableObject** (Idle-inspired). See [`SPEC.md`](./SPEC.md), [`TICKETS.md`](./TICKETS.md), [`CONTEXT.md`](./CONTEXT.md), and [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md). The Luban bake flow below is **obsolete** and scheduled for removal (ticket T1).
+> **Redesign in progress (ADR 0010):** product direction is **Pull → ScriptableObject**. See [agent spec](../../.scratch/dataconfig-pull-so/spec.md), [`CONTEXT.md`](./CONTEXT.md), and [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md). The Luban bake flow below is **obsolete**.
 
 Editor bake tooling: **Google Sheet → CSV → [Luban](https://github.com/focus-creative-games/luban)** (`cs-simple-json` + JSON).
 
