@@ -17,10 +17,15 @@ Thumbs.db
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
+# .NET test project outputs under package Tests~
+**/Tests~/**/bin/
+**/Tests~/**/obj/
 [Uu]ser[Ss]ettings/
 MemoryCaptures/
 *.csproj
 *.sln
+# Keep pure fixture test projects under package Tests~ folders
+!Packages/**/Tests~/**/*.csproj
 *.pidb
 *.pdb
 *.mdb

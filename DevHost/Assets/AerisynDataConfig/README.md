@@ -17,7 +17,7 @@ Product direction is ADR 0010. Luban / CSV bake is no longer part of this packag
 4. Add explicit Config Types (subclasses of `ConfigTypeAsset`). No assembly auto-scan.
 5. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
 
-Pull From Google validates the config today and fails clearly until Vertical Nest parse and Baked Asset write land (later tickets). Sign In already works.
+Fixture/inject Pull (no live spreadsheet): build `SheetGrid`s and call `DataConfigPullRunner.PullFromGrids` to create or overwrite Baked Assets under the shared output folder (GUID stable on re-Pull). Menu **Pull From Google** still waits on the live Sheets fetch ticket.
 
 ## Layout
 
