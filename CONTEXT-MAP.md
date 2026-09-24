@@ -3,7 +3,7 @@
 ## Contexts
 
 - [Quests](./CONTEXT.md): authored goals, progress tracking, claim signals (`com.aerisyn.quests`)
-- [Data Config](./Packages/com.aerisyn.dataconfigsheet/CONTEXT.md): Google-authored game config baked for Unity (`com.aerisyn.dataconfigsheet`)
+- [Data Config](./Packages/com.aerisyn.dataconfigsheet/CONTEXT.md): Google-authored game tables pulled into ScriptableObject assets (`com.aerisyn.dataconfigsheet`)
 
 ## Relationships
 
