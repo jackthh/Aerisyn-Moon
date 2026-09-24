@@ -16,7 +16,6 @@ namespace Aerisyn.DataConfigSheet
 
 
         const string IgnoreMarker = "!!!";
-        const string RootItemsFieldName = "items";
 
 
         #region Public API
@@ -36,8 +35,12 @@ namespace Aerisyn.DataConfigSheet
 
             FieldInfo rootListField;
             Type rootElementType;
-            if (!TryResolveRootItemsField(target.GetType(), out rootListField, out rootElementType, errors))
+            string resolveError;
+            if (!ConfigTypeItemsField.TryResolve(target.GetType(), out rootListField, out rootElementType, out resolveError))
+            {
+                errors.Add(new VerticalNestParseError(-1, -1, resolveError));
                 return VerticalNestParseResult.Fail(errors);
+            }
 
             NestLevelSchema rootSchema;
             if (!TryBuildSchema(rootElementType, rootListField, out rootSchema, errors))
@@ -48,7 +51,8 @@ namespace Aerisyn.DataConfigSheet
             if (!TryBindHeader(grid, rootSchema, out headerRow, out columns, errors))
                 return VerticalNestParseResult.Fail(errors);
 
-            IList itemsList = EnsureClearedList(target, rootListField, rootElementType);
+            IList itemsList = ConfigTypeItemsField.EnsureList(target, rootListField, rootElementType);
+            itemsList.Clear();
             object[] currentByLevel = new object[CountLevels(rootSchema)];
 
             for (int row = headerRow + 1; row < grid.RowCount; row++)
@@ -63,79 +67,6 @@ namespace Aerisyn.DataConfigSheet
             return errors.Count > 0
                 ? VerticalNestParseResult.Fail(errors)
                 : VerticalNestParseResult.Ok();
-        }
-
-        #endregion
-
-
-        #region Root items field
-
-        /// <summary>
-        /// Config Types expose one root list (prefer field name "items") of nested row elements.
-        /// </summary>
-        static bool TryResolveRootItemsField(
-            Type configType,
-            out FieldInfo rootListField,
-            out Type rootElementType,
-            List<VerticalNestParseError> errors)
-        {
-            rootListField = null;
-            rootElementType = null;
-
-            List<FieldInfo> candidates = new List<FieldInfo>();
-            FieldInfo[] fields = configType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            for (int i = 0; i < fields.Length; i++)
-            {
-                FieldInfo field = fields[i];
-                if (!IsSerializableField(field))
-                    continue;
-
-                Type elementType;
-                if (!TryGetCollectionElementType(field.FieldType, out elementType))
-                    continue;
-
-                if (IsPrimitiveOrString(elementType))
-                    continue;
-
-                candidates.Add(field);
-            }
-
-            if (candidates.Count == 0)
-            {
-                errors.Add(new VerticalNestParseError(
-                    -1,
-                    -1,
-                    $"Config type '{configType.Name}' needs a root items list of nested serializable elements."));
-                return false;
-            }
-
-            FieldInfo preferred = null;
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                if (string.Equals(candidates[i].Name, RootItemsFieldName, StringComparison.Ordinal))
-                {
-                    preferred = candidates[i];
-                    break;
-                }
-            }
-
-            if (preferred == null)
-            {
-                if (candidates.Count > 1)
-                {
-                    errors.Add(new VerticalNestParseError(
-                        -1,
-                        -1,
-                        $"Config type '{configType.Name}' has multiple list fields; name the root list '{RootItemsFieldName}'."));
-                    return false;
-                }
-
-                preferred = candidates[0];
-            }
-
-            rootListField = preferred;
-            TryGetCollectionElementType(preferred.FieldType, out rootElementType);
-            return true;
         }
 
         #endregion
@@ -185,13 +116,13 @@ namespace Aerisyn.DataConfigSheet
             for (int i = 0; i < fields.Length; i++)
             {
                 FieldInfo field = fields[i];
-                if (!IsSerializableField(field))
+                if (!ConfigTypeItemsField.IsSerializableField(field))
                     continue;
 
                 Type collectionElement;
-                if (TryGetCollectionElementType(field.FieldType, out collectionElement))
+                if (ConfigTypeItemsField.TryGetCollectionElementType(field.FieldType, out collectionElement))
                 {
-                    if (IsPrimitiveOrString(collectionElement))
+                    if (ConfigTypeItemsField.IsPrimitiveOrString(collectionElement))
                     {
                         schema.PrimitiveArrayFields.Add(field);
                         continue;
@@ -318,31 +249,31 @@ namespace Aerisyn.DataConfigSheet
                 }
             }
 
-            Dictionary<string, int> headerToColumn = new Dictionary<string, int>(StringComparer.Ordinal);
+            // All headers participate in Header Row discovery; !!! columns are omitted from parse bindings
+            Dictionary<string, int> allHeaders = new Dictionary<string, int>(StringComparer.Ordinal);
+            Dictionary<string, int> parseHeaders = new Dictionary<string, int>(StringComparer.Ordinal);
             for (int col = 0; col < grid.ColumnCount; col++)
             {
-                if (ignored[col])
-                    continue;
-
                 string header = grid.GetCell(row, col);
                 if (header.Length == 0)
                     continue;
 
-                // Ambiguous duplicate headers cannot uniquely bind fields
-                if (headerToColumn.ContainsKey(header))
+                if (allHeaders.ContainsKey(header))
                     return false;
 
-                headerToColumn[header] = col;
+                allHeaders[header] = col;
+                if (!ignored[col])
+                    parseHeaders[header] = col;
             }
 
             for (int i = 0; i < expectedHeaders.Count; i++)
             {
-                if (!headerToColumn.ContainsKey(expectedHeaders[i]))
+                if (!allHeaders.ContainsKey(expectedHeaders[i]))
                     return false;
             }
 
             columns = new List<ColumnBinding>();
-            BindLevelColumns(rootSchema, 0, headerToColumn, columns);
+            BindLevelColumns(rootSchema, 0, parseHeaders, columns);
             return true;
         }
 
@@ -350,15 +281,19 @@ namespace Aerisyn.DataConfigSheet
         static void BindLevelColumns(
             NestLevelSchema level,
             int levelIndex,
-            Dictionary<string, int> headerToColumn,
+            Dictionary<string, int> parseHeaders,
             List<ColumnBinding> columns)
         {
             for (int i = 0; i < level.ScalarFields.Count; i++)
             {
                 FieldInfo field = level.ScalarFields[i];
+                int column;
+                if (!parseHeaders.TryGetValue(field.Name, out column))
+                    continue;
+
                 columns.Add(new ColumnBinding
                 {
-                    Column = headerToColumn[field.Name],
+                    Column = column,
                     Level = level,
                     LevelIndex = levelIndex,
                     Field = field,
@@ -369,9 +304,13 @@ namespace Aerisyn.DataConfigSheet
             for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
             {
                 FieldInfo field = level.PrimitiveArrayFields[i];
+                int column;
+                if (!parseHeaders.TryGetValue(field.Name, out column))
+                    continue;
+
                 columns.Add(new ColumnBinding
                 {
-                    Column = headerToColumn[field.Name],
+                    Column = column,
                     Level = level,
                     LevelIndex = levelIndex,
                     Field = field,
@@ -380,7 +319,7 @@ namespace Aerisyn.DataConfigSheet
             }
 
             if (level.Child != null)
-                BindLevelColumns(level.Child, levelIndex + 1, headerToColumn, columns);
+                BindLevelColumns(level.Child, levelIndex + 1, parseHeaders, columns);
         }
 
         #endregion
@@ -456,7 +395,10 @@ namespace Aerisyn.DataConfigSheet
                         return false;
                     }
 
-                    IList parentList = EnsureList(parent, levels[levelIndex].ListFieldOnParent, levels[levelIndex].ElementType);
+                    IList parentList = ConfigTypeItemsField.EnsureList(
+                        parent,
+                        levels[levelIndex].ListFieldOnParent,
+                        levels[levelIndex].ElementType);
                     parentList.Add(instance);
                 }
 
@@ -547,7 +489,7 @@ namespace Aerisyn.DataConfigSheet
             List<VerticalNestParseError> errors)
         {
             Type elementType;
-            if (!TryGetCollectionElementType(field.FieldType, out elementType))
+            if (!ConfigTypeItemsField.TryGetCollectionElementType(field.FieldType, out elementType))
             {
                 errors.Add(new VerticalNestParseError(row, column, $"Field '{field.Name}' is not a primitive collection."));
                 return false;
@@ -563,7 +505,7 @@ namespace Aerisyn.DataConfigSheet
                 return false;
             }
 
-            IList list = EnsureList(instance, field, elementType);
+            IList list = ConfigTypeItemsField.EnsureList(instance, field, elementType);
             list.Add(converted);
             return true;
         }
@@ -644,85 +586,5 @@ namespace Aerisyn.DataConfigSheet
         #endregion
 
 
-        #region Collections + reflection helpers
-
-        static IList EnsureClearedList(object owner, FieldInfo listField, Type elementType)
-        {
-            IList list = EnsureList(owner, listField, elementType);
-            list.Clear();
-            return list;
         }
-
-
-        static IList EnsureList(object owner, FieldInfo listField, Type elementType)
-        {
-            object existing = listField.GetValue(owner);
-            IList list = existing as IList;
-            if (list != null && !list.IsFixedSize)
-                return list;
-
-            Type listType = typeof(List<>).MakeGenericType(elementType);
-            list = (IList)Activator.CreateInstance(listType);
-            listField.SetValue(owner, list);
-            return list;
-        }
-
-
-        static bool TryGetCollectionElementType(Type type, out Type elementType)
-        {
-            elementType = null;
-            if (type == null)
-                return false;
-
-            if (type.IsArray)
-            {
-                elementType = type.GetElementType();
-                return elementType != null;
-            }
-
-            if (type.IsGenericType)
-            {
-                Type def = type.GetGenericTypeDefinition();
-                if (def == typeof(List<>) || def == typeof(IList<>) || def == typeof(ICollection<>) || def == typeof(IEnumerable<>))
-                {
-                    elementType = type.GetGenericArguments()[0];
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-
-        static bool IsPrimitiveOrString(Type type)
-        {
-            Type t = Nullable.GetUnderlyingType(type) ?? type;
-            return t.IsPrimitive || t.IsEnum || t == typeof(string) || t == typeof(decimal);
-        }
-
-
-        static bool IsSerializableField(FieldInfo field)
-        {
-            if (field.IsStatic)
-                return false;
-
-            // Public fields are the default Config Type contract; private needs SerializeField-like intent
-            if (field.IsPublic)
-                return true;
-
-            object[] attrs = field.GetCustomAttributes(true);
-            for (int i = 0; i < attrs.Length; i++)
-            {
-                string name = attrs[i].GetType().Name;
-                if (name == "SerializeField" || name == "SerializeFieldAttribute")
-                    return true;
-            }
-
-            return false;
-        }
-
-        #endregion
-
-
-    }
 }

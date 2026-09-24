@@ -49,7 +49,7 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             ValidateTargets(config);
 
-            List<PendingBake> pending = new List<PendingBake>();
+            List<PendingWrite> pending = new List<PendingWrite>();
             List<VerticalNestParseError> errors = new List<VerticalNestParseError>();
 
             // Parse every tab into scratch instances first so a failure does not partially write
@@ -85,7 +85,7 @@ namespace Aerisyn.DataConfigSheet.Editor
                     continue;
                 }
 
-                pending.Add(new PendingBake
+                pending.Add(new PendingWrite
                 {
                     ConfigType = configType,
                     Scratch = scratch,
@@ -103,17 +103,17 @@ namespace Aerisyn.DataConfigSheet.Editor
             // All parses succeeded: create missing assets or overwrite data in place
             for (int i = 0; i < pending.Count; i++)
             {
-                PendingBake bake = pending[i];
-                ConfigTypeAsset existing = BakedAssetWriter.LoadExisting(bake.ConfigType, config.OutputFolder);
+                PendingWrite write = pending[i];
+                ConfigTypeAsset existing = BakedAssetWriter.LoadExisting(write.ConfigType, config.OutputFolder);
                 if (existing == null)
                 {
-                    BakedAssetWriter.CreateNew(bake.Scratch, bake.ConfigType, config.OutputFolder);
+                    BakedAssetWriter.CreateNew(write.Scratch, write.ConfigType, config.OutputFolder);
                 }
                 else
                 {
-                    BakedAssetItemsCopy.CopyRootItems(bake.Scratch, existing);
+                    BakedAssetItemsCopy.CopyRootItems(write.Scratch, existing);
                     BakedAssetWriter.SaveExisting(existing);
-                    UnityEngine.Object.DestroyImmediate(bake.Scratch);
+                    UnityEngine.Object.DestroyImmediate(write.Scratch);
                 }
             }
 
@@ -180,7 +180,7 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Helpers
 
-        struct PendingBake
+        struct PendingWrite
         {
             public Type ConfigType;
             public ConfigTypeAsset Scratch;

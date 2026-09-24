@@ -22,6 +22,20 @@ namespace Aerisyn.DataConfigSheet.Tests
             public int power;
         }
 
+
+        public sealed class NotesConfig
+        {
+            public List<NotesRow> items = new List<NotesRow>();
+        }
+
+
+        public sealed class NotesRow
+        {
+            public string id = "";
+            public int power;
+            public string notes = "";
+        }
+
         #endregion
 
 
@@ -45,6 +59,28 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.That(target.items, Has.Count.EqualTo(1));
             Assert.That(target.items[0].id, Is.EqualTo("a"));
             Assert.That(target.items[0].power, Is.EqualTo(3));
+        }
+
+
+        [Test]
+        public void ParseInto_IgnoreMarkerOnFieldHeader_SkipsThatColumn()
+        {
+            // !!! on Field Header `notes`: header still matches; data must not populate notes
+            SheetGrid grid = SheetGrid.FromRows(new[]
+            {
+                new[] { "", "", "!!!" },
+                new[] { "id", "power", "notes" },
+                new[] { "a", "3", "SECRET" },
+            });
+
+            NotesConfig target = new NotesConfig();
+            VerticalNestParseResult result = VerticalNestParser.ParseInto(target, grid);
+
+            Assert.That(result.Success, Is.True, () => result.Errors[0].Message);
+            Assert.That(target.items, Has.Count.EqualTo(1));
+            Assert.That(target.items[0].id, Is.EqualTo("a"));
+            Assert.That(target.items[0].power, Is.EqualTo(3));
+            Assert.That(target.items[0].notes, Is.EqualTo(""));
         }
 
 

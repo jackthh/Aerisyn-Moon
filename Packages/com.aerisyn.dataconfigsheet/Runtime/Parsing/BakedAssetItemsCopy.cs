@@ -1,7 +1,6 @@
 #nullable disable
 using System;
 using System.Collections;
-using System.Reflection;
 
 namespace Aerisyn.DataConfigSheet
 {
@@ -11,9 +10,6 @@ namespace Aerisyn.DataConfigSheet
     /// </summary>
     public static class BakedAssetItemsCopy
     {
-
-
-        const string RootItemsFieldName = "items";
 
 
         /// <summary>
@@ -31,103 +27,20 @@ namespace Aerisyn.DataConfigSheet
                     $"Source type '{source.GetType().Name}' must match destination '{destination.GetType().Name}'.");
             }
 
-            FieldInfo field = ResolveRootItemsField(source.GetType());
+            System.Reflection.FieldInfo field;
+            Type elementType;
+            string error;
+            if (!ConfigTypeItemsField.TryResolve(source.GetType(), out field, out elementType, out error))
+                throw new InvalidOperationException(error);
+
             IList sourceList = field.GetValue(source) as IList;
             if (sourceList == null)
                 throw new InvalidOperationException($"Source '{source.GetType().Name}.{field.Name}' is not a list.");
 
-            Type elementType = GetListElementType(field.FieldType);
-            IList destinationList = field.GetValue(destination) as IList;
-            if (destinationList == null || destinationList.IsFixedSize)
-            {
-                Type listType = typeof(System.Collections.Generic.List<>).MakeGenericType(elementType);
-                destinationList = (IList)Activator.CreateInstance(listType);
-                field.SetValue(destination, destinationList);
-            }
-
+            IList destinationList = ConfigTypeItemsField.EnsureList(destination, field, elementType);
             destinationList.Clear();
             for (int i = 0; i < sourceList.Count; i++)
                 destinationList.Add(sourceList[i]);
-        }
-
-
-        static FieldInfo ResolveRootItemsField(Type configType)
-        {
-            FieldInfo named = configType.GetField(
-                RootItemsFieldName,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (named != null)
-                return named;
-
-            FieldInfo[] fields = configType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            FieldInfo found = null;
-            for (int i = 0; i < fields.Length; i++)
-            {
-                FieldInfo field = fields[i];
-                if (!field.IsPublic && !HasSerializeField(field))
-                    continue;
-
-                if (!IsComplexListField(field))
-                    continue;
-
-                if (found != null)
-                {
-                    throw new InvalidOperationException(
-                        $"Type '{configType.Name}' has multiple list fields; name the root list '{RootItemsFieldName}'.");
-                }
-
-                found = field;
-            }
-
-            if (found == null)
-            {
-                throw new InvalidOperationException(
-                    $"Type '{configType.Name}' has no root items list to copy.");
-            }
-
-            return found;
-        }
-
-
-        static bool IsComplexListField(FieldInfo field)
-        {
-            Type type = field.FieldType;
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(System.Collections.Generic.List<>))
-            {
-                Type element = type.GetGenericArguments()[0];
-                return element != typeof(string) && !element.IsPrimitive && !element.IsEnum;
-            }
-
-            if (type.IsArray)
-            {
-                Type element = type.GetElementType();
-                return element != null && element != typeof(string) && !element.IsPrimitive && !element.IsEnum;
-            }
-
-            return false;
-        }
-
-
-        static Type GetListElementType(Type listType)
-        {
-            if (listType.IsArray)
-                return listType.GetElementType();
-
-            return listType.GetGenericArguments()[0];
-        }
-
-
-        static bool HasSerializeField(FieldInfo field)
-        {
-            object[] attrs = field.GetCustomAttributes(true);
-            for (int i = 0; i < attrs.Length; i++)
-            {
-                string name = attrs[i].GetType().Name;
-                if (name == "SerializeField" || name == "SerializeFieldAttribute")
-                    return true;
-            }
-
-            return false;
         }
 
 
