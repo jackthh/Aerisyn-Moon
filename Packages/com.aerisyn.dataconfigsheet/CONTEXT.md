@@ -9,12 +9,12 @@ One editor pass that signs into Google, downloads the configured tabs, parses ne
 _Avoid_: Sync; Bake (Luban-era name for this pass); Export as the everyday name for the whole pipeline; delete-and-recreate of Baked Assets on each Pull
 
 **Config Type**:
-A hand-written ScriptableObject subclass (plus nested serializable types) the game owns. It defines field names, nesting, and data types. Developers control shape here; the package does not generate these types. Pull creates or fills the `.asset` file only. Nest shape for Vertical Nest comes from the type (type-driven parse), not from a second schema language.
-_Avoid_: DTO as the product name when the type is the schema itself; plain POCOs behind a package SO shell as the default; Luban bean; BakingSheet SheetRow
+A hand-written Odin `SerializedScriptableObject` subclass (plus nested serializable types) the game owns. It defines field names, nesting, and data types. Developers control shape here; the package does not generate these types. Pull creates or fills the `.asset` file only. Nest shape for Vertical Nest comes from the type (type-driven parse), not from a second schema language.
+_Avoid_: DTO as the product name when the type is the schema itself; plain POCOs behind a package SO shell as the default; Luban bean; BakingSheet SheetRow; requiring only Unity ScriptableObject when Odin nested inspector UX is the template default
 
 **Baked Asset**:
-The ScriptableObject asset file produced or refreshed by a Pull. One asset per Source Sheet tab by default. Runtime games load these assets; they are the runtime final.
-_Avoid_: Tables (Luban); generated JSON as the default runtime final; treating the Google sheet as a runtime dependency; one asset per top-level row as the default
+The ScriptableObject asset file produced or refreshed by a Pull. One asset per matching Source Sheet tab. All assets for one Pull Config land in that config’s single output folder; the file name follows the tab / Config Type naming convention. Runtime games load these assets; they are the runtime final.
+_Avoid_: Tables (Luban); generated JSON as the default runtime final; treating the Google sheet as a runtime dependency; one asset per top-level row as the default; per-tab output path fields
 
 **Source Sheet**:
 The Google Spreadsheet (and its tabs) that designers edit. Official source of truth for values, not for C# type shape. Pull reads cell values via the Sheets API (in memory); CSV is not required for a correct Pull.
@@ -25,8 +25,8 @@ Sheet authoring where a parent identity is written once and child rows leave par
 _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the default; Luban ##var/##type as the schema
 
 **Pull Config**:
-Editor settings for one Pull job: spreadsheet id, auth, which tabs map to which Config Types / output assets.
-_Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package
+Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and which Config Types participate. Tab ↔ type pairing uses a name convention (not a per-tab path). Per-tab output paths are not configured.
+_Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package; repeating asset folder per tab
 
 **Field Header**:
 A sheet column named for a C# field (e.g. `id`, `upgrade_level`, `bonus_stats`), not for a type or collection name. Canonical header contract. Vertical Nest uses blank parent cells.
