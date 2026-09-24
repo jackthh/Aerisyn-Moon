@@ -7,14 +7,13 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
-using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Util.Store;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Editor OAuth (browser sign-in) and credential resolution for Google Sheets API export.
+    /// Editor OAuth (browser sign-in) and credential resolution for Google Sheets API Pull.
     /// </summary>
     public static class GoogleOAuthSession
     {
@@ -27,19 +26,19 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// Opens the system browser for Google sign-in, then saves an authorized_user token.
         /// Sheet sharing: Viewer to the signed-in Google email (no public link required).
         /// </summary>
-        public static async Task SignInAsync(BakeConfig config)
+        public static async Task SignInAsync(PullConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
             if (config.AuthMode != GoogleAuthMode.OAuthUser)
                 throw new InvalidOperationException(
-                    "BakeConfig Auth Mode must be OAuth User to sign in. Switch Auth Mode, or use a service-account JSON instead.");
+                    "PullConfig Auth Mode must be OAuth User to sign in. Switch Auth Mode, or use a service-account JSON instead.");
 
             string clientSecretsFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthClientSecretsPath);
             if (!File.Exists(clientSecretsFullPath))
                 throw new FileNotFoundException(
                     "OAuth client_secrets JSON not found. Create an OAuth Desktop client in Google Cloud, " +
-                    "download the JSON, save it at the BakeConfig client-secrets path (gitignored), then Sign In again.",
+                    "download the JSON, save it at the PullConfig client-secrets path (gitignored), then Sign In again.",
                     clientSecretsFullPath);
 
             string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
@@ -73,8 +72,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        /// <summary>Deletes the local OAuth token and FileDataStore so the next bake requires Sign In.</summary>
-        public static void SignOut(BakeConfig config)
+        /// <summary>Deletes the local OAuth token and FileDataStore so the next Pull requires Sign In.</summary>
+        public static void SignOut(PullConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
@@ -91,8 +90,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        /// <summary>True when the BakeConfig OAuth user-token file exists.</summary>
-        public static bool IsSignedIn(BakeConfig config)
+        /// <summary>True when the PullConfig OAuth user-token file exists.</summary>
+        public static bool IsSignedIn(PullConfig config)
         {
             if (config == null || config.AuthMode != GoogleAuthMode.OAuthUser)
                 return false;
@@ -103,9 +102,9 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Builds a Sheets API client from BakeConfig OAuth or service-account credentials.
+        /// Builds a Sheets API client from PullConfig OAuth or service-account credentials.
         /// </summary>
-        public static async Task<SheetsService> CreateSheetsServiceAsync(BakeConfig config)
+        public static async Task<SheetsService> CreateSheetsServiceAsync(PullConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
@@ -123,14 +122,14 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Credentials
 
-        static async Task<GoogleCredential> ResolveGoogleCredentialAsync(BakeConfig config)
+        static async Task<GoogleCredential> ResolveGoogleCredentialAsync(PullConfig config)
         {
             if (config.AuthMode == GoogleAuthMode.ServiceAccount)
             {
                 string path = DataConfigPathUtility.ResolveProjectPath(config.ServiceAccountCredentialPath);
                 if (!File.Exists(path))
                     throw new FileNotFoundException(
-                        "Service-account credential JSON not found. Place the key at the BakeConfig path, " +
+                        "Service-account credential JSON not found. Place the key at the PullConfig path, " +
                         "share the sheet with the robot email as Viewer, or switch Auth Mode to OAuth User.",
                         path);
 
@@ -147,7 +146,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             if (!File.Exists(tokenPath))
                 throw new FileNotFoundException(
                     "Not signed in. Use Aerisyn → Data Config Sheet → Sign In With Google, " +
-                    "then bake again. Share the sheet with your Google email as Viewer.",
+                    "then Pull again. Share the sheet with your Google email as Viewer.",
                     tokenPath);
 
             // authorized_user JSON written by Sign In

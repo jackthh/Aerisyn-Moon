@@ -5,14 +5,14 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Editor menus for OAuth sign-in and Google → CSV → Luban bake.
+    /// Editor menus for OAuth sign-in and Google → Baked Asset Pull.
     /// </summary>
-    public static class DataConfigBakeMenu
+    public static class DataConfigPullMenu
     {
         const string SignInMenu = "Aerisyn/Data Config Sheet/Sign In With Google";
         const string SignOutMenu = "Aerisyn/Data Config Sheet/Sign Out";
-        const string BakeSelectedMenu = "Aerisyn/Data Config Sheet/Bake From Google (Selected Config)";
-        const string BakeAllMenu = "Aerisyn/Data Config Sheet/Bake From Google (All Configs)";
+        const string PullSelectedMenu = "Aerisyn/Data Config Sheet/Pull From Google (Selected Config)";
+        const string PullAllMenu = "Aerisyn/Data Config Sheet/Pull From Google (All Configs)";
 
 
         #region Auth menus
@@ -20,8 +20,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         [MenuItem(SignInMenu, false, 50)]
         static async void SignIn()
         {
-            BakeConfig config = RequireSelectedBakeConfig(
-                "Select a BakeConfig asset (Auth Mode = OAuth User), then Sign In again.");
+            PullConfig config = RequireSelectedPullConfig(
+                "Select a PullConfig asset (Auth Mode = OAuth User), then Sign In again.");
             if (config == null)
                 return;
 
@@ -34,7 +34,7 @@ namespace Aerisyn.DataConfigSheet.Editor
                 await GoogleOAuthSession.SignInAsync(config);
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
-                    "Signed in. Share the spreadsheet with your Google email as Viewer, then bake.",
+                    "Signed in. Share the spreadsheet with your Google email as Viewer, then Pull.",
                     "OK");
             }
             catch (Exception exception)
@@ -52,8 +52,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         [MenuItem(SignOutMenu, false, 51)]
         static void SignOut()
         {
-            BakeConfig config = RequireSelectedBakeConfig(
-                "Select a BakeConfig asset, then Sign Out again.");
+            PullConfig config = RequireSelectedPullConfig(
+                "Select a PullConfig asset, then Sign Out again.");
             if (config == null)
                 return;
 
@@ -72,41 +72,41 @@ namespace Aerisyn.DataConfigSheet.Editor
         #endregion
 
 
-        #region Bake menus
+        #region Pull menus
 
-        [MenuItem(BakeSelectedMenu, false, 100)]
-        static async void BakeSelected()
+        [MenuItem(PullSelectedMenu, false, 100)]
+        static async void PullSelected()
         {
-            BakeConfig config = Selection.activeObject as BakeConfig;
+            PullConfig config = Selection.activeObject as PullConfig;
             if (config == null)
             {
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
-                    "Select a BakeConfig asset in the Project window, then run this menu again.",
+                    "Select a PullConfig asset in the Project window, then run this menu again.",
                     "OK");
                 return;
             }
 
-            await RunBakeSafe(config);
+            await RunPullSafe(config);
         }
 
 
-        [MenuItem(BakeSelectedMenu, true)]
-        static bool BakeSelectedValidate()
+        [MenuItem(PullSelectedMenu, true)]
+        static bool PullSelectedValidate()
         {
-            return Selection.activeObject is BakeConfig;
+            return Selection.activeObject is PullConfig;
         }
 
 
-        [MenuItem(BakeAllMenu, false, 101)]
-        static async void BakeAll()
+        [MenuItem(PullAllMenu, false, 101)]
+        static async void PullAll()
         {
-            string[] guids = AssetDatabase.FindAssets("t:BakeConfig");
+            string[] guids = AssetDatabase.FindAssets("t:PullConfig");
             if (guids == null || guids.Length == 0)
             {
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
-                    "No BakeConfig assets found. Create one via Assets → Create → Aerisyn → Data Config Sheet → Bake Config.",
+                    "No PullConfig assets found. Create one via Assets → Create → Aerisyn → Data Config Sheet → Pull Config.",
                     "OK");
                 return;
             }
@@ -114,11 +114,11 @@ namespace Aerisyn.DataConfigSheet.Editor
             for (int i = 0; i < guids.Length; i++)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                BakeConfig config = AssetDatabase.LoadAssetAtPath<BakeConfig>(path);
+                PullConfig config = AssetDatabase.LoadAssetAtPath<PullConfig>(path);
                 if (config == null)
                     continue;
 
-                bool ok = await RunBakeSafe(config);
+                bool ok = await RunPullSafe(config);
                 if (!ok)
                     return;
             }
@@ -129,9 +129,9 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Helpers
 
-        static BakeConfig RequireSelectedBakeConfig(string missingMessage)
+        static PullConfig RequireSelectedPullConfig(string missingMessage)
         {
-            BakeConfig config = Selection.activeObject as BakeConfig;
+            PullConfig config = Selection.activeObject as PullConfig;
             if (config != null)
                 return config;
 
@@ -141,17 +141,17 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Runs bake and surfaces failures in a dialog so menu async voids do not fail silently.
+        /// Runs Pull and surfaces failures in a dialog so menu async voids do not fail silently.
         /// </summary>
-        static async System.Threading.Tasks.Task<bool> RunBakeSafe(BakeConfig config)
+        static async System.Threading.Tasks.Task<bool> RunPullSafe(PullConfig config)
         {
             try
             {
-                EditorUtility.DisplayProgressBar("Data Config Sheet", $"Baking '{config.name}'…", 0.2f);
-                await DataConfigBakeRunner.BakeAsync(config);
+                EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pulling '{config.name}'…", 0.2f);
+                await DataConfigPullRunner.PullAsync(config);
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
-                    $"Bake complete for '{config.name}'.",
+                    $"Pull complete for '{config.name}'.",
                     "OK");
                 return true;
             }
@@ -159,7 +159,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             {
                 Debug.LogException(exception);
                 EditorUtility.DisplayDialog(
-                    "Data Config Sheet bake failed",
+                    "Data Config Sheet Pull failed",
                     exception.Message,
                     "OK");
                 return false;

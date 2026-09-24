@@ -1,59 +1,51 @@
 # Aerisyn Data Config Sheet (`com.aerisyn.dataconfigsheet`)
 
-> **Redesign in progress (ADR 0010):** product direction is **Pull → ScriptableObject**. See [agent spec](../../.scratch/dataconfig-pull-so/spec.md), [`CONTEXT.md`](./CONTEXT.md), and [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md). The Luban bake flow below is **obsolete**.
+Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven Vertical Nest → ScriptableObject Baked Assets**.
 
-Editor bake tooling: **Google Sheet → CSV → [Luban](https://github.com/focus-creative-games/luban)** (`cs-simple-json` + JSON).
+**Unity:** 2022.3+ · **Version:** `0.3.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
-**Unity:** 2022.3+ · **Version:** `0.3.0` · **Requires:** .NET SDK 8+ (or 9 with roll-forward), [Odin Inspector](https://odininspector.com/), [Luban Unity runtime](https://github.com/focus-creative-games/luban_unity) in the game, Luban CLI under `Tools/Luban`
+See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md). Agent spec: [`.scratch/dataconfig-pull-so/spec.md`](../../.scratch/dataconfig-pull-so/spec.md).
 
 ## Product policy
 
 | Rule | Meaning |
 |---|---|
-| Google Sheet is source of truth | Cloud spreadsheet is the official authoring surface |
-| One-way bake only | Never push generated JSON/code back to Google |
-| Runtime final (0.3.0) | Luban `Tables` + JSON (editable SO paused; see ADR 0008/0009) |
-| Schema in sheet headers / Luban XML | `##var` / `##type` and/or `Defines/*.xml`; not BakingSheet `Sheet` types |
+| Google Sheet is source of truth | Cloud spreadsheet is the official authoring surface for values |
+| One-way Pull only | Never push Baked Assets back to Google |
+| Runtime final | ScriptableObject Baked Assets (one asset per matching tab) |
+| Schema in C# Config Types | Hand-written Odin `ConfigTypeAsset` subclasses; nest shape is type-driven |
 
 ## Requirements
 
 | Dependency | Why |
 |---|---|
-| **.NET SDK 8+** | Runs `Luban.dll` (`DOTNET_ROLL_FORWARD=Major` allows net9 hosts) |
-| **Luban CLI v5.x** | Download release zip into repo `Tools/Luban/` (gitignored) |
-| **`com.code-philosophy.luban`** | Runtime `Luban` / `Luban.SimpleJSON` for generated code |
-| **Odin Inspector** | `BakeConfig` drawers |
-| **Google API Editor plugins** | Bundled under `Editor/Plugins/Google` (Sheets export) |
-
-## Install Luban CLI
-
-1. Install [.NET SDK](https://dotnet.microsoft.com/download) 8+.
-2. Download [Luban release](https://github.com/focus-creative-games/luban/releases) `Luban.7z`.
-3. Extract so `Tools/Luban/Luban/Luban.dll` exists (path configurable on BakeConfig).
+| **Odin Inspector** | `PullConfig` / `ConfigTypeAsset` drawers and serialization |
+| **Google API Editor plugins** | Bundled under `Editor/Plugins/Google` (Sheets + OAuth) |
 
 ## Auth (OAuth)
 
 1. Google Cloud **OAuth Desktop** client JSON → e.g. `Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json` (gitignored).
 2. Share the spreadsheet with your Google email as Viewer.
-3. Select BakeConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
+3. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
 
 ## Quick start
 
-1. Create a Luban project (`luban.conf`, `Defines/`, `Data/`) — see DevHost `Assets/AerisynDataConfig/Luban`.
-2. Create **Bake Config**; set spreadsheet id, tab→CSV exports, Luban paths, output dirs.
-3. Put Luban headers in Google tabs (`##var` / `##type`), or keep seed CSVs until tabs match.
-4. Sign In → **Bake From Google (Selected Config)**.
-5. Load with `new cfg.Tables(file => JSON.Parse(File.ReadAllText(...)))`.
+1. Subclass `ConfigTypeAsset` for each table (plus nested serializable types as needed).
+2. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list.
+3. Add matching Google tabs (tab title = type name by default) with Field Headers / optional aliases; use `!!!` for note columns and Vertical Nest blank parents for nests.
+4. Sign In → **Pull From Google (Selected Config)**.
+
+> **Status:** Pull Config shell + OAuth Sign In ship now. Vertical Nest parse, live Sheets fetch, and Baked Asset write land in follow-up tickets; Pull fails clearly until then.
 
 ## Layout
 
 | Folder | Purpose |
 |---|---|
-| `Runtime/` | `BakeConfig`, `GoogleAuthMode` |
-| `Editor/` | OAuth, CSV export, Luban runner, menus |
+| `Runtime/` | `PullConfig`, `ConfigTypeAsset`, `GoogleAuthMode` |
+| `Editor/` | OAuth, Pull menus/runner shell |
 | `Editor/Plugins/Google/` | Google.Apis* for Sheets/Drive |
 | `CONTEXT.md` | Domain glossary |
 
 ## Design
 
-See [`docs/adr/0009`](../../docs/adr/0009-dataconfigsheet-luban-google-csv.md) (active), [`0007`](../../docs/adr/0007-dataconfigsheet-oauth-primary.md) (OAuth), [`0005`](../../docs/adr/0005-dataconfigsheet-one-way-google-bake.md) / [`0008`](../../docs/adr/0008-dataconfigsheet-editable-single-so.md) (superseded / paused).
+See [`docs/adr/0010`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md) (active), [`0007`](../../docs/adr/0007-dataconfigsheet-oauth-primary.md) (OAuth), [`0009`](../../docs/adr/0009-dataconfigsheet-luban-google-csv.md) (superseded Luban path).

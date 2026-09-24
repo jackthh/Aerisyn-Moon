@@ -1,48 +1,31 @@
-# DevHost: Data Config Sheet (Luban 0.3.0)
+# DevHost: Data Config Sheet (Pull → ScriptableObject)
 
-Local exercise for `com.aerisyn.dataconfigsheet`: **Google → CSV → Luban → `cfg.Tables`**.
+Local exercise for `com.aerisyn.dataconfigsheet`: **Google Sheets → Pull → Baked Assets**.
+
+Product direction is ADR 0010. Luban / CSV bake is no longer part of this package.
 
 ## One-time setup
 
-1. Install **.NET SDK 8+** (9 works; bake sets `DOTNET_ROLL_FORWARD=Major`).
-2. Download [Luban](https://github.com/focus-creative-games/luban/releases) `Luban.7z` → extract to repo `Tools/Luban/` so `Tools/Luban/Luban/Luban.dll` exists (gitignored).
-3. DevHost already references `com.code-philosophy.luban` (Unity runtime).
-4. Place OAuth Desktop client JSON at `Credentials/oauth-client-secrets.json` (gitignored).
+1. Install **[Odin Inspector](https://odininspector.com/)** in DevHost (not committed).
+2. Place OAuth Desktop client JSON at `Credentials/oauth-client-secrets.json` (gitignored).
 
-## Luban project (already scaffolded)
+## Pull Config (shell)
+
+1. **Create → Aerisyn → Data Config Sheet → Pull Config**.
+2. Spreadsheet id; Auth = OAuth User.
+3. Output Folder: `Assets/AerisynDataConfig/Baked` (shared for all types on this config).
+4. Add explicit Config Types (subclasses of `ConfigTypeAsset`). No assembly auto-scan.
+5. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
+
+Pull From Google validates the config today and fails clearly until Vertical Nest parse and Baked Asset write land (later tickets). Sign In already works.
+
+## Layout
 
 | Path | Role |
 |---|---|
-| `Luban/luban.conf` | Luban project entry |
-| `Luban/Defines/tables.xml` | Table + nested bean registration |
-| `Luban/Data/items.csv` | Flat Items seed (schema-from-file headers) |
-| `Luban/Data/demo_nested.csv` | Nested DemoNested seed (compact `list#sep` cells) |
-| `Gen/` | Generated C# (`cfg.*`) |
-| `GeneratedData/` | Generated JSON |
-
-Offline generation (no Google) was verified with the seed CSVs.
-
-### Nested note
-
-Sparse multi-row `*levels` + nested `*bonus_stats` in **CSV** did not parse cleanly in this spike. DevHost uses **compact sep** for levels (`list#sep=;` of `Level`, with `bonus_stats` as `5|10|15`). You can later move designers to Excel/xlsx multi-row layouts or tune CSV headers.
-
-## Bake Config
-
-1. **Create → Aerisyn → Data Config Sheet → Bake Config**.
-2. Spreadsheet id; Auth = OAuth User.
-3. Tab export examples:
-   - Tab `Items` → `items.csv`
-   - Tab `DemoNested` → `demo_nested.csv`
-4. Luban Project Path: `Assets/AerisynDataConfig/Luban`
-5. Luban Dll Path: `Tools/Luban/Luban/Luban.dll`
-6. Output Code: `Assets/AerisynDataConfig/Gen` · Output Data: `Assets/AerisynDataConfig/GeneratedData`
-7. Select BakeConfig → **Sign In With Google** → **Bake From Google (Selected Config)**.
-
-Google tabs must match Luban-compatible headers (or you will overwrite seed CSVs with incompatible exports).
-
-## Smoke test
-
-Add `DataConfigLubanSmoke` to a scene object (e.g. `Demo/DataConfig.unity`). Play Mode logs `TbItem` / `TbDemoNested` counts.
+| `Credentials/` | OAuth / service-account JSON (gitignored keys) |
+| `Baked/` | Shared output folder for Baked Assets |
+| `Demo/DataConfig.unity` | Scene placeholder for upcoming Pull sample |
 
 ## Optional: service account
 
