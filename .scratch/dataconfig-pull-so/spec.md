@@ -99,7 +99,7 @@ Replace the Luban-centric bake with a one-way **Pull**: OAuth into Google, read 
 - Domain vocabulary: `Packages/com.aerisyn.dataconfigsheet/CONTEXT.md` and root `CONTEXT-MAP.md`.
 - Earlier draft notes: package `SPEC.md` / `TICKETS.md` were grilling artifacts; this tracker spec is the agent-ready source for `/to-tickets` and `/implement`.
 - Design PR context: https://github.com/jackthh/Aerisyn-Moon/pull/9
-- After this spec: run `/to-tickets` to produce tracer-bullet issues under `.scratch/dataconfig-pull-so/issues/` with blocking edges.
+- After this spec: `/to-tickets` produced `.scratch/dataconfig-pull-so/issues/01`–`04` (03 merges live Google Pull with aliases / tab override / Header Emitter).
 
 ## Comments
 
