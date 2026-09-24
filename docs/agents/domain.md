@@ -5,7 +5,7 @@ How the engineering skills should consume this repo's domain documentation when 
 ## Before exploring, read these
 
 - **`CONTEXT-MAP.md`** at the repo root: it points at one `CONTEXT.md` per context. Read each one relevant to the topic.
-- Per-context glossaries (today): root `CONTEXT.md` (Quests), `Packages/com.aerisyn.dataconfigsheet/CONTEXT.md` (Data Config).
+- Per-context glossaries (today): root `CONTEXT.md` (Quests), `Packages/com.aerisyn.dataconfigsheet/CONTEXT.md` (Data Config), `Packages/com.aerisyn.tutorial/CONTEXT.md` (Tutorial, scaffold).
 - **`docs/adr/`**: read ADRs that touch the area you're about to work in. Package-scoped ADRs may appear later under a package `docs/adr/` if needed.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
@@ -20,8 +20,10 @@ Multi-context repo (this repo):
 ├── CONTEXT.md                              ← Quests context
 ├── docs/adr/                               ← system-wide decisions
 └── Packages/
-    └── com.aerisyn.dataconfigsheet/
-        └── CONTEXT.md                      ← Data Config context
+    ├── com.aerisyn.dataconfigsheet/
+    │   └── CONTEXT.md                      ← Data Config context
+    └── com.aerisyn.tutorial/
+        └── CONTEXT.md                      ← Tutorial context (scaffold)
 ```
 
 ## Use the glossary's vocabulary
