@@ -20,5 +20,11 @@
   "dependencies": {
     "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
-  "samples": []
+  "samples": [
+    {
+      "displayName": "Weapons Pull",
+      "description": "Nested weapons Config Type + documented Pull Config happy path (Vertical Nest → Baked Asset). No Luban.",
+      "path": "Samples~/WeaponsPull"
+    }
+  ]
 }

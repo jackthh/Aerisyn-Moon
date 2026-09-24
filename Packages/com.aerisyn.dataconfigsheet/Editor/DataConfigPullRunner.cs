@@ -7,6 +7,7 @@ namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
     /// Runs one-way Pull: Google Sheets (or injected grids) → Vertical Nest → Baked Assets.
+    /// Returns a PullReport (success summary or failures with sheet coordinates).
     /// </summary>
     public static class DataConfigPullRunner
     {
@@ -18,7 +19,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// Live Google Pull: OAuth/service-account → Sheets API cell grids → parse → Baked Assets.
         /// Commas inside cells do not break Pull (no CSV required).
         /// </summary>
-        public static async Task<VerticalNestParseResult> PullAsync(PullConfig config)
+        public static async Task<PullReport> PullAsync(PullConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
@@ -35,8 +36,9 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// Fixture/inject Pull: parse provided grids and create or overwrite Baked Assets
         /// under the Pull Config's shared output folder (GUID stable on re-Pull).
         /// Does not require Google spreadsheet id or credentials.
+        /// Failed Pulls write nothing and return a report with sheet coordinates when available.
         /// </summary>
-        public static VerticalNestParseResult PullFromGrids(
+        public static PullReport PullFromGrids(
             PullConfig config,
             IReadOnlyDictionary<Type, SheetGrid> gridsByConfigType)
         {
@@ -55,12 +57,13 @@ namespace Aerisyn.DataConfigSheet.Editor
             {
                 Type configType = config.ConfigTypes[i];
                 SheetGrid grid;
+                string tabTitle = ConfigTypeTabName.Resolve(configType);
                 if (!gridsByConfigType.TryGetValue(configType, out grid) || grid == null)
                 {
                     errors.Add(new VerticalNestParseError(
                         -1,
                         -1,
-                        $"No injected grid for Config Type '{configType.Name}'."));
+                        $"[{tabTitle}] No injected grid for Config Type '{configType.Name}'."));
                     continue;
                 }
 
@@ -70,7 +73,7 @@ namespace Aerisyn.DataConfigSheet.Editor
                     errors.Add(new VerticalNestParseError(
                         -1,
                         -1,
-                        $"Could not create Config Type instance '{configType.FullName}'."));
+                        $"[{tabTitle}] Could not create Config Type instance '{configType.FullName}'."));
                     continue;
                 }
 
@@ -79,7 +82,7 @@ namespace Aerisyn.DataConfigSheet.Editor
                 {
                     UnityEngine.Object.DestroyImmediate(scratch);
                     for (int e = 0; e < parseResult.Errors.Count; e++)
-                        errors.Add(PrefixType(configType, parseResult.Errors[e]));
+                        errors.Add(PrefixTab(tabTitle, parseResult.Errors[e]));
                     continue;
                 }
 
@@ -95,27 +98,31 @@ namespace Aerisyn.DataConfigSheet.Editor
                 for (int i = 0; i < pending.Count; i++)
                     UnityEngine.Object.DestroyImmediate(pending[i].Scratch);
 
-                return VerticalNestParseResult.Fail(errors);
+                return PullReport.Failed(config.name, errors);
             }
 
             // All parses succeeded: create missing assets or overwrite data in place
+            List<PullWriteAction> writes = new List<PullWriteAction>(pending.Count);
             for (int i = 0; i < pending.Count; i++)
             {
                 PendingWrite write = pending[i];
+                string assetPath = BakedAssetPath.ForConfigType(config.OutputFolder, write.ConfigType);
                 ConfigTypeAsset existing = BakedAssetWriter.LoadExisting(write.ConfigType, config.OutputFolder);
                 if (existing == null)
                 {
                     BakedAssetWriter.CreateNew(write.Scratch, write.ConfigType, config.OutputFolder);
+                    writes.Add(new PullWriteAction(write.ConfigType.Name, assetPath, PullWriteKind.Created));
                 }
                 else
                 {
                     BakedAssetItemsCopy.CopyRootItems(write.Scratch, existing);
                     BakedAssetWriter.SaveExisting(existing);
                     UnityEngine.Object.DestroyImmediate(write.Scratch);
+                    writes.Add(new PullWriteAction(write.ConfigType.Name, assetPath, PullWriteKind.Updated));
                 }
             }
 
-            return VerticalNestParseResult.Ok();
+            return PullReport.Succeeded(config.name, writes);
         }
 
         #endregion
@@ -177,12 +184,13 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        static VerticalNestParseError PrefixType(Type configType, VerticalNestParseError error)
+        /// <summary>Prefixes parse errors with the Google tab title designers will open.</summary>
+        static VerticalNestParseError PrefixTab(string tabTitle, VerticalNestParseError error)
         {
             return new VerticalNestParseError(
                 error.Row,
                 error.Column,
-                $"[{configType.Name}] {error.Message}");
+                $"[{tabTitle}] {error.Message}");
         }
 
         #endregion

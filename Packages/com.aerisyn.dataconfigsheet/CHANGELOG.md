@@ -21,8 +21,10 @@ Prefactor toward **Pull → ScriptableObject** (ADR 0010). Luban bake removed fr
 - Type-driven **Vertical Nest** parse over in-memory grids (Preamble, Field Headers, Column Aliases, `!!!` Ignore Marker, struct + primitive nests).
 - Optional `[ColumnAlias]` / `[SheetTab]` attributes; Header Emitter menu copies a pasteable Header Row.
 - Live Google Pull: OAuth → Sheets API cell grids → parse → Baked Assets (no CSV; commas in cells are safe).
-- Fixture tests under `Tests~/VerticalNest.Tests` (weapons → upgrades → bonus stats, aliases, Header Emitter).
+- Fixture tests under `Tests~/VerticalNest.Tests` (weapons → upgrades → bonus stats, aliases, Header Emitter, Pull report).
 - `PullFromGrids` inject path: create missing Baked Assets or overwrite data in place (stable GUID).
+- `PullReport`: success summary (created/updated assets) and failures with A1 sheet coordinates; menus log and show the report.
+- Sample `Samples~/WeaponsPull`: nested Config Type template + Pull Config happy-path docs and acceptance checklist.
 
 ### Removed
 
