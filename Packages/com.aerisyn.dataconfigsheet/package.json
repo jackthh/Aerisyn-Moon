@@ -2,16 +2,16 @@
   "name": "com.aerisyn.dataconfigsheet",
   "version": "0.3.0",
   "displayName": "Aerisyn Data Config Sheet",
-  "description": "Editor bake: Google Sheet (OAuth) → CSV → Luban (cs-simple-json). One-way only. Schema headers live in Google sheets; runtime final is Luban Tables + JSON. Requires .NET 8+ SDK for Luban CLI, Odin Inspector, and Google API Editor plugins (bundled).",
+  "description": "Editor Pull: Google Sheet (OAuth) → Vertical Nest parse → ScriptableObject Baked Assets. One-way only. Schema lives in hand-written Config Types. Requires Odin Inspector and Google API Editor plugins (bundled).",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.dataconfigsheet",
   "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.dataconfigsheet/CHANGELOG.md",
   "keywords": [
     "aerisyn",
-    "luban",
     "config",
     "google-sheet",
-    "csv"
+    "scriptableobject",
+    "pull"
   ],
   "author": {
     "name": "Aerisyn",

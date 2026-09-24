@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
-    /// <summary>Shared project-relative path helpers for bake and OAuth.</summary>
+    /// <summary>Shared project-relative path helpers for Pull and OAuth.</summary>
     public static class DataConfigPathUtility
     {
         /// <summary>Maps a project-relative path (Assets/... or UserSettings/...) to an absolute filesystem path.</summary>

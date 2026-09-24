@@ -1,5 +1,0 @@
-##var,id,name,price
-##type,string,string,int
-##,id,name,price
-,POTION_001,Health Potion,30
-,POTION_002,Mana Potion,50

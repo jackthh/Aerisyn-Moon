@@ -2,7 +2,7 @@ namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
     /// Package marker for com.aerisyn.dataconfigsheet.
-    /// Editor owns Google→CSV→Luban bake; schema headers live in Google sheets.
+    /// Editor owns Google → Vertical Nest → Baked Asset Pull; schema lives in hand-written Config Types.
     /// </summary>
     public static class DataConfigSheetPackage
     {
