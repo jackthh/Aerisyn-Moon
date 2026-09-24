@@ -4,6 +4,7 @@
   "references": [
     "Aerisyn.DataConfigSheet",
     "Sirenix.OdinInspector.Attributes",
+    "Sirenix.Serialization",
     "Unity.Newtonsoft.Json"
   ],
   "includePlatforms": [
@@ -19,7 +20,9 @@
     "Google.Apis.Auth.PlatformServices.dll",
     "Google.Apis.Sheets.v4.dll",
     "Google.Apis.Drive.v3.dll",
-    "Newtonsoft.Json.dll"
+    "Newtonsoft.Json.dll",
+    "Sirenix.Serialization.dll",
+    "Sirenix.OdinInspector.Attributes.dll"
   ],
   "autoReferenced": true,
   "defineConstraints": [],

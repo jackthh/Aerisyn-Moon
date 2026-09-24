@@ -1,4 +1,4 @@
-# DataConfigSheet: Pull → ScriptableObject (post-0.3.0)
+# DataConfigSheet: Pull → ScriptableObject (0.3.0)
 
 Editor workflow is **OAuth Google Sheets → in-memory cell grid → type-driven Vertical Nest parse → ScriptableObject Baked Assets**. Hand-written Odin `SerializedScriptableObject` Config Types own schema shape. Luban and CSV-as-required-bridge are removed from this package.
 

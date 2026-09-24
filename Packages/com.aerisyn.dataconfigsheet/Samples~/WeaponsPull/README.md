@@ -3,8 +3,6 @@
 Copy-paste template for **Pull → ScriptableObject**: one nested Config Type (`WeaponsConfig`),
 one Pull Config, and a Google tab shaped for Vertical Nest.
 
-Luban / CSV bake is not part of this workflow.
-
 ## Import
 
 1. Package Manager → **Aerisyn Data Config Sheet** → Samples → **Weapons Pull** → Import.
@@ -39,7 +37,7 @@ No sample `.asset` is shipped (keep credentials and spreadsheet ids out of the p
 2. Spreadsheet id from the Google URL (`…/d/{id}/…`).
 3. Auth = **OAuth User**; client secrets JSON path (gitignored).
 4. Output Folder: e.g. `Assets/AerisynDataConfig/Baked` (one shared folder).
-5. Config Types list: add **`WeaponsConfig`** only (explicit list; no auto-scan).
+5. Config Types list: add **`WeaponsConfig`** from the dropdown (explicit list; no auto-scan).
 6. Select `WeaponsConfig` script → **Aerisyn → Data Config Sheet → Copy Header Row** → paste into the sheet.
 7. Select PullConfig → **Sign In With Google**, then **Pull From Google**.
 
@@ -50,7 +48,7 @@ coordinates (e.g. `B5`) so you can fix the sheet; nothing is written until every
 
 Use this sample + the package README to verify:
 
-- [ ] One documented Pull path (Google → Vertical Nest → Baked Asset); no Luban steps
+- [ ] One documented Pull path (Google → Vertical Nest → Baked Asset)
 - [ ] Nested weapons → upgrades → bonus stats round-trips into `WeaponsConfig.asset`
 - [ ] Re-Pull overwrites the same asset path (stable GUID / references)
 - [ ] Failed Pull leaves a clear report with sheet coordinates; no partial write

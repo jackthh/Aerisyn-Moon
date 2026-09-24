@@ -2,7 +2,7 @@
 
 Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven Vertical Nest → ScriptableObject Baked Assets**.
 
-That is the only product path. Luban, BakingSheet, and CSV bridges are not supported workflows.
+That is the only supported product path for this package.
 
 **Unity:** 2022.3+ · **Version:** `0.3.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
@@ -35,7 +35,7 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 
 1. Subclass `ConfigTypeAsset` for each table (root `items` list + nested serializable types).
 2. Optional: `[ColumnAlias("Friendly Name")]` on fields; `[SheetTab("Tab Title")]` on the type when the Google tab differs from the type name.
-3. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list.
+3. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses).
 4. Select a Config Type asset (or its script) → **Copy Header Row** to paste headers into Google (guidance covers `!!!` note columns).
 5. Select PullConfig → **Sign In With Google**, then **Pull From Google**.
 6. Read the **Pull report**: success lists created/updated assets; failures include **A1** sheet coordinates. Failed Pulls write nothing.
@@ -46,7 +46,7 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 
 After installing the package and importing **Weapons Pull**, you should be able to:
 
-- [ ] Complete one Pull without learning Luban or maintaining CSV/XML schema
+- [ ] Complete one Pull using only the documented Google → Vertical Nest → Baked Asset path
 - [ ] Round-trip nested weapons → upgrades → bonus stats into a Baked Asset
 - [ ] Re-Pull and keep the same asset GUID / references
 - [ ] Fix a bad cell using the Pull report’s A1 coordinate
@@ -66,4 +66,4 @@ After installing the package and importing **Weapons Pull**, you should be able 
 
 ## Design
 
-Active ADR: [`0010`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md). OAuth: [`0007`](../../docs/adr/0007-dataconfigsheet-oauth-primary.md). Superseded Luban spike: [`0009`](../../docs/adr/0009-dataconfigsheet-luban-google-csv.md) (historical only).
+Active ADR: [`0010`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md). OAuth: [`0007`](../../docs/adr/0007-dataconfigsheet-oauth-primary.md). Historical (superseded) Luban spike: [`0009`](../../docs/adr/0009-dataconfigsheet-luban-google-csv.md).

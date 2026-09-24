@@ -23,7 +23,7 @@
   "samples": [
     {
       "displayName": "Weapons Pull",
-      "description": "Nested weapons Config Type + documented Pull Config happy path (Vertical Nest → Baked Asset). No Luban.",
+      "description": "Nested weapons Config Type + documented Pull Config happy path (Vertical Nest → Baked Asset).",
       "path": "Samples~/WeaponsPull"
     }
   ]

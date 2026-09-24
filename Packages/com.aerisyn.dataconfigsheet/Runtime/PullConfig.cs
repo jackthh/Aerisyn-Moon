@@ -82,7 +82,12 @@ namespace Aerisyn.DataConfigSheet
             "Explicit Config Types to Pull. Pull only processes this list (no auto-scan of work). " +
             "Google tab title matches the type name by default, or [SheetTab(\"...\")] when titles differ.")]
         [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
-        [TypeFilter(nameof(FilterConfigTypes))]
+        // TypeFilter instantiates the type (ScriptableObject → crash); ValueDropdown stores System.Type.
+        [ValueDropdown(
+            nameof(FilterConfigTypes),
+            IsUniqueList = true,
+            DrawDropdownForListElements = true,
+            DropdownTitle = "Config Types")]
         [SerializeField]
         Type[] _configTypes = Array.Empty<Type>();
 
@@ -124,7 +129,7 @@ namespace Aerisyn.DataConfigSheet
         #region Type filter
 
         /// <summary>
-        /// Odin picker candidates only (concrete ConfigTypeAsset subclasses).
+        /// ValueDropdown candidates only (concrete ConfigTypeAsset subclasses).
         /// Does not choose what Pull runs; that is the explicit serialized list above.
         /// </summary>
         static IEnumerable<Type> FilterConfigTypes()

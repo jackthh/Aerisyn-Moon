@@ -2,7 +2,7 @@
 
 Local exercise for `com.aerisyn.dataconfigsheet`: **Google Sheets → Pull → Baked Assets**.
 
-Product direction is ADR 0010. Luban / CSV bake is not part of this package.
+Product direction is ADR 0010 (`0.3.0`).
 
 For a copy-paste template (nested weapons Config Type + Pull Config steps), import package sample
 **Weapons Pull** (`Samples~/WeaponsPull`) and follow its README.
@@ -17,7 +17,7 @@ For a copy-paste template (nested weapons Config Type + Pull Config steps), impo
 1. **Create → Aerisyn → Data Config Sheet → Pull Config**.
 2. Spreadsheet id; Auth = OAuth User.
 3. Output Folder: `Assets/AerisynDataConfig/Baked` (shared for all types on this config).
-4. Add explicit Config Types (subclasses of `ConfigTypeAsset`). No assembly auto-scan.
+4. Add explicit Config Types from the dropdown (subclasses of `ConfigTypeAsset`). No assembly auto-scan.
 5. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
 6. **Pull From Google**. The Pull report summarizes created/updated assets, or lists failures with **A1** sheet coordinates (nothing is written on failure).
 
