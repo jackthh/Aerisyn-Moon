@@ -164,6 +164,11 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             if (config.AuthMode == GoogleAuthMode.OAuthUser)
             {
+                // Empty is the new-config default; fail here instead of ArgumentException in path resolve.
+                if (string.IsNullOrWhiteSpace(config.OAuthClientSecretsPath))
+                    throw new InvalidOperationException(
+                        $"PullConfig '{config.name}' has an empty OAuth client secrets path.");
+
                 if (string.IsNullOrWhiteSpace(config.OAuthUserTokenPath))
                     throw new InvalidOperationException(
                         $"PullConfig '{config.name}' has an empty OAuth user token path.");

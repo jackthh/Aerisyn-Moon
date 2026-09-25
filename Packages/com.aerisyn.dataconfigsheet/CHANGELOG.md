@@ -13,6 +13,7 @@ Repo-scale cadence with Quests and Tutorial. Pull UX and DevHost cleanup on top 
 
 - Pull Config Config Types are owned candidates with per-type **Include In Pull** (bare checkbox; new entries default included). Live and inject Pull only process included types; all-unticked fails clearly with no writes.
 - New Pull Config defaults: empty OAuth client secrets, service-account path, and output folder; OAuth user token path remains under `UserSettings`.
+- Live Pull and Sign In fail clearly when OAuth client secrets (or other required credential paths for the auth mode) are empty.
 - Inspector **Pull** button on Pull Config; menu Selected/All Pull share one workflow helper into the runner.
 - Docs and Weapons Pull sample use sample-local credential/output path examples (no `Assets/AerisynDataConfig` convention).
 - Clean break: no silent migrate from the old bare Config Types type array; re-add types on existing Pull Configs by hand.
@@ -20,6 +21,7 @@ Repo-scale cadence with Quests and Tutorial. Pull UX and DevHost cleanup on top 
 ### Removed
 
 - DevHost `Assets/AerisynDataConfig` scaffold (Credentials/Baked placeholders, unused Demo scene, local README).
+- DevHost Weapons Pull sample `PullConfig.asset` (create locally; credentials and spreadsheet ids stay out of git).
 
 ## [0.3.0] - 2026-09-24
 
