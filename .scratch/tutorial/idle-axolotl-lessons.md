@@ -55,11 +55,14 @@ Also cross-checked via [Map Idle-Axolotl Tutorial keep/avoid](bc-a362dde8-a070-5
 - **Deep game coupling** in SubSteps (Firebase, specific modals, NotificationCheckFactory, ResourceId): cannot ship as a game-agnostic UPM core.
 - **Singleton MonoBehaviour** as the product API: opposite of Quests-style pure C# Tracker.
 
-## Open questions for Aerisyn grill
+## Settled for Aerisyn (from grill)
 
-1. Do we want Idle-Axolotl’s **second Soft track** (reminders/offers) *in addition to* Soft Enforcement on Steps, or only Enforcement? (see Q2b)
-2. Keep catch-up / auto-complete as a first-class package concept?
-3. Button registry as a package seam (opaque string/int targets) vs game reports only?
-4. SubStep as a domain term, or flatten to Step only?
-5. Unit of persist: whole Tutorial, Step, or SubStep (mid-quit behavior)?
-6. Soft packs / marketing ids (`PACK_*`, rating): in-package “tutorials” or a separate feature-intro system outside this package?
+- **No second Soft-track.** Idle-Axolotl’s Soft ids are completion flags + hand widgets without a step machine. For Aerisyn, reminder flows are Tutorials of Soft Steps (Enforcement only). Marketing packs / rating prompts are out of this package unless they are real teaching Steps.
+
+## Still open for Aerisyn grill
+
+1. Keep catch-up / auto-complete as a first-class package concept?
+2. Button registry as a package seam (opaque string/int targets) vs game reports only?
+3. SubStep as a domain term, or flatten to Step only?
+4. Unit of persist: whole Tutorial, Step, or SubStep (mid-quit behavior)?
+5. Can more than one Soft Tutorial (or Soft Step) be “active” at once (ambient multi-reminder), or only one current Tutorial?

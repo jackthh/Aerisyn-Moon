@@ -13,16 +13,16 @@ One beat in a Tutorial. Each Step has an Enforcement of Soft or Hard.
 _Avoid_: Lesson, stage (unless a game renames it in UI)
 
 **Soft**:
-Enforcement on a Step: coaching that never blocks play. The player can keep doing other things while the Step is active.
-_Avoid_: Optional, skippable, weak (those are separate skip/completion policies, not Soft)
+Enforcement on a Step: coaching that never blocks play. The player can keep doing other things while the Step is active. A reminder-only flow is just a Tutorial whose Steps are Soft, not a second Soft catalog.
+_Avoid_: Optional, skippable, weak (those are separate skip/completion policies, not Soft); Soft-track / TutorialSoftId as a parallel id system (Idle-Axolotl pattern we are not copying)
 
 **Hard**:
 Enforcement on a Step: play is gated until the Step succeeds. The player cannot usefully continue past the gate until the success condition is met.
-_Avoid_: Mandatory, required, strong (use Hard); skip rules are separate from Enforcement
+_Avoid_: Mandatory, required, strong (use Hard); skip rules are separate from Enforcement; Hard-track as a separate catalog name (use Hard Enforcement on Steps inside a Tutorial)
 
 **Enforcement**:
 The Soft-or-Hard mode of a single Step. Soft and Hard can mix inside one Tutorial.
-_Avoid_: Soft Tutorial / Hard Tutorial as the everyday name for a whole Tutorial (Enforcement is per Step)
+_Avoid_: Soft Tutorial / Hard Tutorial as the everyday name for a whole Tutorial (Enforcement is per Step); a second Soft/Hard “track” alongside Enforcement
 
 **Hint**:
 Transient coaching content associated with an active Step. How it looks (UI, VFX, audio) stays in the game; this package does not own presentation.
