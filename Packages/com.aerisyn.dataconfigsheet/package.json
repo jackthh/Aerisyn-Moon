@@ -1,6 +1,6 @@
 {
   "name": "com.aerisyn.dataconfigsheet",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "displayName": "Aerisyn Data Config Sheet",
   "description": "Editor Pull: Google Sheet (OAuth) → Vertical Nest parse → ScriptableObject Baked Assets. One-way only. Schema lives in hand-written Config Types. Requires Odin Inspector and Google API Editor plugins (bundled).",
   "unity": "2022.3",

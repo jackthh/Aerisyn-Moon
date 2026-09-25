@@ -5,6 +5,22 @@ All notable changes to `com.aerisyn.dataconfigsheet` are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-25
+
+Repo-scale cadence with Quests and Tutorial. Pull UX and DevHost cleanup on top of the 0.3.0 Pull → ScriptableObject path (ADR 0010).
+
+### Changed
+
+- Pull Config Config Types are owned candidates with per-type **Include In Pull** (bare checkbox; new entries default included). Live and inject Pull only process included types; all-unticked fails clearly with no writes.
+- New Pull Config defaults: empty OAuth client secrets, service-account path, and output folder; OAuth user token path remains under `UserSettings`.
+- Inspector **Pull** button on Pull Config; menu Selected/All Pull share one workflow helper into the runner.
+- Docs and Weapons Pull sample use sample-local credential/output path examples (no `Assets/AerisynDataConfig` convention).
+- Clean break: no silent migrate from the old bare Config Types type array; re-add types on existing Pull Configs by hand.
+
+### Removed
+
+- DevHost `Assets/AerisynDataConfig` scaffold (Credentials/Baked placeholders, unused Demo scene, local README).
+
 ## [0.3.0] - 2026-09-24
 
 **Pull → ScriptableObject** product path (ADR 0010). Replaces the abandoned Luban/BakingSheet spike documented historically in ADR 0009.

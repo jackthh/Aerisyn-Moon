@@ -10,6 +10,6 @@ namespace Aerisyn.Quests
         public const string PackageId = "com.aerisyn.quests";
 
         /// <summary>SemVer string; keep in sync with package.json when releasing.</summary>
-        public const string Version = "0.1.3";
+        public const string Version = "0.4.0";
     }
 }

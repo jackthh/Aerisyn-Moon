@@ -12,7 +12,7 @@ namespace Aerisyn.Tutorial
         public const string PackageId = "com.aerisyn.tutorial";
 
         /// <summary>SemVer string; keep in sync with package.json when releasing.</summary>
-        public const string Version = "0.0.1";
+        public const string Version = "0.4.0";
 
         #endregion
     }

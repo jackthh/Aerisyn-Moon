@@ -4,10 +4,14 @@
 
 **Blocked by:** 01 (Include In Pull + empty Pull Config defaults), 02 (Shared pull helper + Inspector Pull button), 03 (Delete AerisynDataConfig scaffold + docs / gitignore).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] com.aerisyn.quests, com.aerisyn.dataconfigsheet, and com.aerisyn.tutorial package versions are 0.4.0
-- [ ] Each package CHANGELOG has a 0.4.0 section accurate to what that package changed
-- [ ] Packages remain separately installable (no merge / no shared forced dependency)
-- [ ] DevHost sample paths or docs that key off prior package versions are updated for 0.4.0 where required
-- [ ] Package ids and displayNames unchanged (renames deferred)
+- [x] com.aerisyn.quests, com.aerisyn.dataconfigsheet, and com.aerisyn.tutorial package versions are 0.4.0
+- [x] Each package CHANGELOG has a 0.4.0 section accurate to what that package changed
+- [x] Packages remain separately installable (no merge / no shared forced dependency)
+- [x] DevHost sample paths or docs that key off prior package versions are updated for 0.4.0 where required
+- [x] Package ids and displayNames unchanged (renames deferred)
+
+## Answer
+
+Bumped all three `package.json` versions to `0.4.0` (ids/displayNames unchanged; no cross-package deps). CHANGELOGs: Data Config Sheet documents Include In Pull, empty defaults, Inspector Pull, AerisynDataConfig removal; Quests/Tutorial are cadence-only. Renamed DevHost sample import folders to `…/0.4.0/…` and updated root + package README version pins and sample-local path examples.

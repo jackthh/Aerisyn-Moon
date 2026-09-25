@@ -16,9 +16,9 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 
 | Package | Description | Status |
 |---|---|---|
-| [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events. | `0.1.3` |
-| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor **Pull**: Google Sheet (OAuth) → Vertical Nest → ScriptableObject Baked Assets. One-way; schema in hand-written Config Types. | `0.3.0` |
-| [`com.aerisyn.tutorial`](Packages/com.aerisyn.tutorial) | Upcoming tutorial / onboarding gameplay package (scaffold only). | `0.0.1` |
+| [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events. | `0.4.0` |
+| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor **Pull**: Google Sheet (OAuth) → Vertical Nest → ScriptableObject Baked Assets. One-way; schema in hand-written Config Types. | `0.4.0` |
+| [`com.aerisyn.tutorial`](Packages/com.aerisyn.tutorial) | Upcoming tutorial / onboarding gameplay package (scaffold only). | `0.4.0` |
 
 ## Install a package
 
@@ -37,7 +37,7 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests
 Pin a git tag when you release:
 
 ```text
-https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests#v0.1.3
+https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests#v0.4.0
 ```
 
 Details: [`Packages/com.aerisyn.quests/README.md`](Packages/com.aerisyn.quests/README.md).
@@ -51,7 +51,7 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfi
 Pin a release tag when you cut one:
 
 ```text
-https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet#com.aerisyn.dataconfigsheet@0.3.0
+https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet#com.aerisyn.dataconfigsheet@0.4.0
 ```
 
 Details: [`Packages/com.aerisyn.dataconfigsheet/README.md`](Packages/com.aerisyn.dataconfigsheet/README.md).
@@ -62,7 +62,7 @@ Details: [`Packages/com.aerisyn.dataconfigsheet/README.md`](Packages/com.aerisyn
 https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.tutorial
 ```
 
-Details: [`Packages/com.aerisyn.tutorial/README.md`](Packages/com.aerisyn.tutorial/README.md). Scaffold only; pin a release tag when the first usable version ships.
+Details: [`Packages/com.aerisyn.tutorial/README.md`](Packages/com.aerisyn.tutorial/README.md). Scaffold only; pin `#v0.4.0` (or a later tag) when installing from a release.
 
 Private repo: configure Git credentials on the machine so Unity can clone.
 

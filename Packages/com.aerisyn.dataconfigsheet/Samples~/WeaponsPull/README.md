@@ -35,8 +35,8 @@ No sample `.asset` is shipped (keep credentials and spreadsheet ids out of the p
 
 1. **Create → Aerisyn → Data Config Sheet → Pull Config**.
 2. Spreadsheet id from the Google URL (`…/d/{id}/…`).
-3. Auth = **OAuth User**; client secrets JSON path, e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.3.0/Weapons Pull/oauth-client-secrets.json` (gitignored by filename).
-4. Output Folder: e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.3.0/Weapons Pull/Baked` (one shared folder next to the sample).
+3. Auth = **OAuth User**; client secrets JSON path, e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.4.0/Weapons Pull/oauth-client-secrets.json` (gitignored by filename).
+4. Output Folder: e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.4.0/Weapons Pull/Baked` (one shared folder next to the sample).
 5. Config Types list: add **`WeaponsConfig`** from the dropdown (explicit list; no auto-scan).
 6. Select `WeaponsConfig` script → **Aerisyn → Data Config Sheet → Copy Header Row** → paste into the sheet.
 7. Select PullConfig → **Sign In With Google**, then **Pull From Google**.
