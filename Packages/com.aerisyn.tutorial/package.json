@@ -1,6 +1,6 @@
 {
   "name": "com.aerisyn.tutorial",
-  "version": "0.0.1",
+  "version": "0.4.0",
   "displayName": "Aerisyn Tutorial",
   "description": "Upcoming tutorial / onboarding gameplay package (scaffold). Requires Odin Inspector (Sirenix) in the project.",
   "unity": "2022.3",

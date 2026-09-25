@@ -18,8 +18,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Downloads each Pull Config Type's tab (type name or <see cref="SheetTabAttribute"/>)
-        /// into a grid keyed by Config Type.
+        /// Downloads each included Pull Config Type's tab (type name or <see cref="SheetTabAttribute"/>)
+        /// into a grid keyed by Config Type. Unticked candidates are not fetched.
         /// </summary>
         public static async Task<Dictionary<Type, SheetGrid>> FetchGridsAsync(PullConfig config)
         {
@@ -30,9 +30,11 @@ namespace Aerisyn.DataConfigSheet.Editor
             string spreadsheetId = config.SpreadsheetId.Trim();
             Dictionary<Type, SheetGrid> grids = new Dictionary<Type, SheetGrid>();
 
-            for (int i = 0; i < config.ConfigTypes.Length; i++)
+            // Same inclusion resolution as inject Pull so live/fetch cannot disagree
+            Type[] includedTypes = PullTargetRules.ResolveIncluded(config.ToPullTypeCandidates());
+            for (int i = 0; i < includedTypes.Length; i++)
             {
-                Type configType = config.ConfigTypes[i];
+                Type configType = includedTypes[i];
                 string tabTitle = ConfigTypeTabName.Resolve(configType);
                 SheetGrid grid = await FetchTabAsync(sheets, spreadsheetId, tabTitle);
                 grids[configType] = grid;

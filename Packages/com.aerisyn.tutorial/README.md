@@ -4,7 +4,7 @@ Scaffold for an upcoming game-agnostic tutorial / onboarding package. Domain lan
 runtime API are not defined yet; see [`.scratch/tutorial/spec.md`](../../.scratch/tutorial/spec.md)
 and [`CONTEXT.md`](CONTEXT.md).
 
-**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Tutorial` · **Version:** `0.0.1` (unreleased scaffold)
+**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Tutorial` · **Version:** `0.4.0` (scaffold; cadence-aligned)
 
 ## Requirements
 

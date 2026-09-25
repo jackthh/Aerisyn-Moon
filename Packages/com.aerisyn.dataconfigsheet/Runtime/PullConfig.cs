@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+#if UNITY_EDITOR
+using System.Threading.Tasks;
+#endif
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -8,7 +10,7 @@ namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
     /// Editor settings for one Pull job: Google spreadsheet, OAuth/service-account auth,
-    /// one shared Baked Asset output folder, and an explicit Config Type list.
+    /// one shared Baked Asset output folder, and owned Config Type candidates with Include In Pull.
     /// One-way: Google → Vertical Nest parse → Baked Assets. Never push back to Google.
     /// </summary>
     [CreateAssetMenu(
@@ -26,6 +28,36 @@ namespace Aerisyn.DataConfigSheet
         InfoMessageType.Info)]
     public sealed class PullConfig : SerializedScriptableObject
     {
+
+
+        #region Inspector Pull (editor-wired)
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor module assigns the shared Pull-with-UI workflow here so the Inspector
+        /// button and menu items cannot diverge (Runtime cannot reference the Editor asm).
+        /// </summary>
+        public static Func<PullConfig, Task> RunEditorPullAsync;
+
+
+        // Same path as menu "Pull From Google (Selected Config)"; Sign In / Sign Out stay menu-only.
+        [Button("Pull", ButtonSizes.Large)]
+        [PropertyOrder(-100)]
+        void InspectorPull()
+        {
+            if (RunEditorPullAsync == null)
+            {
+                Debug.LogError(
+                    "[DataConfigSheet] Editor Pull workflow is not registered. " +
+                    "Is the Data Config Sheet Editor assembly loaded?");
+                return;
+            }
+
+            _ = RunEditorPullAsync(this);
+        }
+#endif
+
+        #endregion
 
 
         #region Google source
@@ -47,7 +79,7 @@ namespace Aerisyn.DataConfigSheet
         [Tooltip("Desktop OAuth client_secrets JSON from Google Cloud (gitignored).")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
         [SerializeField]
-        string _oauthClientSecretsPath = "Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json";
+        string _oauthClientSecretsPath = "";
 
 
         [FoldoutGroup("Google source")]
@@ -63,7 +95,7 @@ namespace Aerisyn.DataConfigSheet
         [Tooltip("Service-account JSON. Share the sheet with that robot email as Viewer.")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
         [SerializeField]
-        string _serviceAccountCredentialPath = "Assets/AerisynDataConfig/Credentials/service-account.json";
+        string _serviceAccountCredentialPath = "";
 
         #endregion
 
@@ -74,22 +106,17 @@ namespace Aerisyn.DataConfigSheet
         [Tooltip("Shared folder for all Baked Assets from this Pull Config (project-relative).")]
         [FolderPath(RequireExistingPath = false)]
         [SerializeField]
-        string _outputFolder = "Assets/AerisynDataConfig/Baked";
+        string _outputFolder = "";
 
 
         [FoldoutGroup("Pull targets")]
         [Tooltip(
-            "Explicit Config Types to Pull. Pull only processes this list (no auto-scan of work). " +
-            "Google tab title matches the type name by default, or [SheetTab(\"...\")] when titles differ.")]
+            "Owned Config Type candidates. Include In Pull (checkbox) gates fetch and bake; " +
+            "unticked types stay listed. Google tab title matches the type name by default, " +
+            "or [SheetTab(\"...\")] when titles differ.")]
         [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
-        // TypeFilter instantiates the type (ScriptableObject → crash); ValueDropdown stores System.Type.
-        [ValueDropdown(
-            nameof(FilterConfigTypes),
-            IsUniqueList = true,
-            DrawDropdownForListElements = true,
-            DropdownTitle = "Config Types")]
         [SerializeField]
-        Type[] _configTypes = Array.Empty<Type>();
+        List<PullConfigTypeEntry> _configTypeEntries = new List<PullConfigTypeEntry>();
 
         #endregion
 
@@ -120,46 +147,33 @@ namespace Aerisyn.DataConfigSheet
         public string OutputFolder => _outputFolder;
 
 
-        /// <summary>Explicit Config Types Pull will create or overwrite.</summary>
-        public Type[] ConfigTypes => _configTypes;
+        /// <summary>Owned Config Type candidates (included and unticked).</summary>
+        public IReadOnlyList<PullConfigTypeEntry> ConfigTypeEntries => _configTypeEntries;
 
-        #endregion
-
-
-        #region Type filter
 
         /// <summary>
-        /// ValueDropdown candidates only (concrete ConfigTypeAsset subclasses).
-        /// Does not choose what Pull runs; that is the explicit serialized list above.
+        /// Builds pure inclusion candidates for PullTargetRules (validation, fetch, inject).
         /// </summary>
-        static IEnumerable<Type> FilterConfigTypes()
+        public PullTypeCandidate[] ToPullTypeCandidates()
         {
-            Type baseType = typeof(ConfigTypeAsset);
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int a = 0; a < assemblies.Length; a++)
+            List<PullConfigTypeEntry> entries = _configTypeEntries;
+            if (entries == null || entries.Count == 0)
+                return Array.Empty<PullTypeCandidate>();
+
+            PullTypeCandidate[] candidates = new PullTypeCandidate[entries.Count];
+            for (int i = 0; i < entries.Count; i++)
             {
-                Type[] types;
-                try
+                PullConfigTypeEntry entry = entries[i];
+                if (entry == null)
                 {
-                    types = assemblies[a].GetTypes();
-                }
-                catch (ReflectionTypeLoadException loadException)
-                {
-                    types = loadException.Types;
-                }
-
-                if (types == null)
+                    candidates[i] = new PullTypeCandidate(null, includeInPull: false);
                     continue;
-
-                for (int t = 0; t < types.Length; t++)
-                {
-                    Type type = types[t];
-                    if (type == null || type.IsAbstract || !baseType.IsAssignableFrom(type))
-                        continue;
-
-                    yield return type;
                 }
+
+                candidates[i] = entry.ToCandidate();
             }
+
+            return candidates;
         }
 
         #endregion

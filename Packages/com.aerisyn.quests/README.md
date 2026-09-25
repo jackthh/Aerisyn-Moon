@@ -3,7 +3,7 @@
 A game-agnostic quest tracker. Gameplay reports facts; every open Quest that listens moves; the game
 grants rewards when a claim succeeds. The package never touches currency, UI, or disk.
 
-**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Quests` · **Version:** `0.1.3`
+**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Quests` · **Version:** `0.4.0`
 
 ## Requirements
 

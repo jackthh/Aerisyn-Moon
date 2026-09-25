@@ -4,7 +4,7 @@ Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven 
 
 That is the only supported product path for this package.
 
-**Unity:** 2022.3+ · **Version:** `0.3.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
+**Unity:** 2022.3+ · **Version:** `0.4.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
 See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md).
 
@@ -27,7 +27,7 @@ See [`CONTEXT.md`](./CONTEXT.md) and [`docs/adr/0010-…`](../../docs/adr/0010-d
 
 ## Auth (OAuth)
 
-1. Google Cloud **OAuth Desktop** client JSON → e.g. `Assets/AerisynDataConfig/Credentials/oauth-client-secrets.json` (gitignored).
+1. Google Cloud **OAuth Desktop** client JSON → e.g. next to the imported Weapons Pull sample: `Assets/Samples/Aerisyn Data Config Sheet/0.4.0/Weapons Pull/oauth-client-secrets.json` (gitignored by filename).
 2. Share the spreadsheet with your Google email as Viewer.
 3. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
 

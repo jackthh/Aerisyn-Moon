@@ -25,8 +25,12 @@ Sheet authoring where a parent identity is written once and child rows leave par
 _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the default; Luban ##var/##type as the schema
 
 **Pull Config**:
-Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and an explicit list of Config Types to pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
-_Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package; repeating asset folder per tab; assembly-wide auto-scan of every Config Type; suffix-guessing tab names
+Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and an explicit list of owned Config Types (candidates). Only candidates with Include In Pull run on a Pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
+_Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package; repeating asset folder per tab; assembly-wide auto-scan of every Config Type; suffix-guessing tab names; treating the full candidate list as always-pulled with no per-type gate
+
+**Include In Pull**:
+Per Config Type flag on a Pull Config. When true, that type is fetched and baked on the next Pull; when false, it stays listed but is skipped. New candidates default true. A Pull with none included is an error, not a no-op.
+_Avoid_: Enabled as a vague name; removing a type from the list just to skip one Pull; silent skip when every flag is off
 
 **Field Header**:
 A sheet column named for a C# field (e.g. `id`, `upgrade_level`, `bonus_stats`), not for a type or collection name. Canonical header contract. Vertical Nest uses blank parent cells.

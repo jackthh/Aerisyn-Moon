@@ -36,6 +36,11 @@ namespace Aerisyn.DataConfigSheet.Editor
                 throw new InvalidOperationException(
                     "PullConfig Auth Mode must be OAuth User to sign in. Switch Auth Mode, or use a service-account JSON instead.");
 
+            // Match Pull ValidateGoogle: empty default must not fall through to ResolveProjectPath.
+            if (string.IsNullOrWhiteSpace(config.OAuthClientSecretsPath))
+                throw new InvalidOperationException(
+                    $"PullConfig '{config.name}' has an empty OAuth client secrets path.");
+
             string clientSecretsFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthClientSecretsPath);
             if (!File.Exists(clientSecretsFullPath))
                 throw new FileNotFoundException(

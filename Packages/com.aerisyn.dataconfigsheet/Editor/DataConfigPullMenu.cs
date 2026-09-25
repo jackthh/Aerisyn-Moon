@@ -90,7 +90,8 @@ namespace Aerisyn.DataConfigSheet.Editor
                 return;
             }
 
-            await RunPullSafe(config);
+            // Same shared workflow as the Pull Config Inspector Pull button.
+            await DataConfigPullWorkflow.PullWithUiAsync(config);
         }
 
 
@@ -104,27 +105,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         [MenuItem(PullAllMenu, false, 101)]
         static async void PullAll()
         {
-            string[] guids = AssetDatabase.FindAssets("t:PullConfig");
-            if (guids == null || guids.Length == 0)
-            {
-                EditorUtility.DisplayDialog(
-                    "Data Config Sheet",
-                    "No PullConfig assets found. Create one via Assets → Create → Aerisyn → Data Config Sheet → Pull Config.",
-                    "OK");
-                return;
-            }
-
-            for (int i = 0; i < guids.Length; i++)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                PullConfig config = AssetDatabase.LoadAssetAtPath<PullConfig>(path);
-                if (config == null)
-                    continue;
-
-                bool ok = await RunPullSafe(config);
-                if (!ok)
-                    return;
-            }
+            // Each Pull Config's Include In Pull flags apply inside the runner.
+            await DataConfigPullWorkflow.PullAllWithUiAsync();
         }
 
         #endregion
@@ -210,43 +192,6 @@ namespace Aerisyn.DataConfigSheet.Editor
             }
 
             return null;
-        }
-
-
-        /// <summary>
-        /// Runs Pull and surfaces the PullReport in a dialog (success summary or A1 failures).
-        /// </summary>
-        static async System.Threading.Tasks.Task<bool> RunPullSafe(PullConfig config)
-        {
-            try
-            {
-                EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pulling '{config.name}'…", 0.2f);
-                PullReport report = await DataConfigPullRunner.PullAsync(config);
-                string body = report.Format();
-                Debug.Log("[DataConfigSheet]\n" + body);
-
-                if (!report.Success)
-                {
-                    EditorUtility.DisplayDialog("Data Config Sheet Pull failed", body, "OK");
-                    return false;
-                }
-
-                EditorUtility.DisplayDialog("Data Config Sheet", body, "OK");
-                return true;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                EditorUtility.DisplayDialog(
-                    "Data Config Sheet Pull failed",
-                    exception.Message,
-                    "OK");
-                return false;
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
         }
 
         #endregion

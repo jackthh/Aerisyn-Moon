@@ -1,0 +1,17 @@
+{
+  "name": "Aerisyn.DataConfigSheet.Samples.WeaponsPull",
+  "rootNamespace": "Aerisyn.DataConfigSheet.Samples.WeaponsPull",
+  "references": [
+    "Aerisyn.DataConfigSheet",
+    "Sirenix.OdinInspector.Attributes"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

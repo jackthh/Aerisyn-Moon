@@ -7,6 +7,6 @@ namespace Aerisyn.DataConfigSheet
     public static class DataConfigSheetPackage
     {
         public const string PackageId = "com.aerisyn.dataconfigsheet";
-        public const string Version = "0.3.0";
+        public const string Version = "0.4.0";
     }
 }
