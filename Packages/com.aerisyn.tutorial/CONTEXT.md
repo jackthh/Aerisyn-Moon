@@ -28,7 +28,16 @@ _Avoid_: Soft Tutorial / Hard Tutorial as the everyday name for a whole Tutorial
 Transient coaching content associated with an active Step. How it looks (UI, VFX, audio) stays in the game; this package does not own presentation.
 _Avoid_: Toast as the package contract name
 
+**Report**:
+Gameplay notifying the tutorial runtime that something happened (opaque kind plus optional param), so an active Step can succeed. Same idea as Quests Reports; this package does not own the verb catalog.
+_Avoid_: Unity scene watches or button RectTransform refs as the package’s success contract
+
+**Gate signal**:
+A runtime notice that a Hard Step started or ended so the game can lock or unlock input/UI. The package does not freeze input itself.
+_Avoid_: Package-owned InputManager / Canvas block as the core API
+
 ## Relationships
 
-- **Tutorial ↔ Quests**: none yet; a later design may share goal/progress ideas with Quests, but this package must not depend on Quests until that decision is ADR'd.
-- **Authors ↔ Players**: developers and designers author Tutorials; players experience them at runtime.
+- **Tutorial ↔ Quests**: none yet; Reports may look like Quests Objectives later, but this package must not depend on Quests until that is ADR'd.
+- **Authors ↔ Players**: developers are the primary authors of Tutorials; designers may get a lighter authoring path later. Players experience Tutorials at runtime.
+- **Tutorial ↔ Game presentation**: Hints and Hard Gate signals are consumed by the game; presentation and input lock stay in the game.
