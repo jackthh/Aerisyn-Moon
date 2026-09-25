@@ -1,20 +1,19 @@
-Status: needs-triage
+Status: ready-for-agent
 
 # 02: ScriptableObject authoring for Tutorial definitions
 
-**What to build:** Thin Authoring layer (`TutorialAsset` / step list SO + Odin drawers as needed) that projects into the same Core `TutorialDefinition` the code-first builders already produce. Round-trip or one-way SO → definition is fine; do not invent a second runtime model.
+**What to build:** Thin Authoring layer that projects ScriptableObject Tutorial/Step/Choreography data into the same Core Tutorial definition the code-first builders already produce. One-way SO → definition is enough. No second runtime model; no custom per-beat C# subclasses for list-shaped tutorials.
 
-**Why later:** Grill chose **2b**. Prove pure C# definition + runner + Reports + Gate signals first. SO is flexibility and Inspector iteration for the same data, not a second system.
+**Blocked by:** 01 Soft Runner vertical slice, 03 Hard Gate signals, 04 Sequential Cue Choreography, 05 Concurrent Cue Choreography
 
-**Blocked by:** Core Tutorial definition + runner tickets (numbers TBD after `/to-tickets`). Do not start until those are `resolved` and the definition shape has stopped thrashing.
+**Status:** ready-for-agent
 
-**Status:** needs-triage
-
-- [ ] Authoring asmdef (or package Authoring folder) without pulling presentation/UI into Core
-- [ ] SO fields map 1:1 to Core definition (Enforcement, Report match, Hint id, order)
-- [ ] Samples or DevHost show: build via code *and* load via SO into the same runner
-- [ ] No custom per-step C# subclasses required for list-shaped tutorials
+- [ ] Authoring stays out of Core presentation/UI; SO maps Enforcement, Report match, Cue Choreography, and order 1:1 into Core definitions
+- [ ] Same Runner accepts definitions from builders and from SO projection
+- [ ] Samples or DevHost show both code-built and SO-built Tutorials on one Runner
+- [ ] No Idle-Axolotl-style one-class-per-substep authoring requirement
 
 ## Comments
 
-- 2026-09-25: Parked during `/grill-with-docs`. User chose code-first v1, SO next once core works.
+- 2026-09-25: Parked during `/grill-with-docs` as Q6 = 2b (code-first first).
+- 2026-09-25: `/to-tickets` set concrete blockers 01, 03, 04, 05; Status ready-for-agent (grab only after those resolve).
