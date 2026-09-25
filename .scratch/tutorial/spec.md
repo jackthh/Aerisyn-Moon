@@ -35,3 +35,4 @@ Games need a game-agnostic way to run Soft/Hard per-Step tutorials: Steps succee
 - Workspace scaffold created earlier; domain grill in progress on `cursor/tutorial-domain-grill-1949`.
 - 2026-09-25: Q6 = 2b (code-first first, SO later). Q7 = separate from Quests in v1.
 - 2026-09-25: Q8 = Progress Snapshot, game owns save grain. Q9 = Cue + Choreography (await/Forget) under Step; success = Report. Q10 = game-owned catch-up and rewards on Completion signals.
+- 2026-09-25: Q11 = game Start/Stop only. Q12 = at most one active Tutorial. Q13 = Cue Done acks sequential Choreography.

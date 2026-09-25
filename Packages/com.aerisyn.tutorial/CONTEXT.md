@@ -5,11 +5,11 @@ Domain language for `com.aerisyn.tutorial`: tools for game developers and design
 ## Language
 
 **Tutorial**:
-An authored, ordered sequence of Steps that teaches a player a gameplay verb or system.
+An authored, ordered sequence of Steps that teaches a player a gameplay verb or system. At most one Tutorial is active at a time in v1.
 _Avoid_: Quest as a synonym (Quests is a separate package); Mission unless a game renames it in UI
 
 **Step**:
-One beat in a Tutorial. Each Step has an Enforcement of Soft or Hard.
+One beat in a Tutorial. Each Step has an Enforcement of Soft or Hard, optional Choreography of Cues, and a Report that marks success.
 _Avoid_: Lesson, stage (unless a game renames it in UI)
 
 **Soft**:
@@ -32,8 +32,12 @@ One opaque presentation intent while a Step is active (highlight a control, scal
 _Avoid_: SubStep as the name for presentation (that word implies nested progress); hard-coded UI ops inside the Core package
 
 **Choreography**:
-How Cues run for a Step: sequential (await each Cue’s done signal), concurrent (fire-and-forget), or a mix. Independent of Soft/Hard Enforcement and of Report success unless the author ties them.
+How Cues run for a Step: sequential (await each Cue Done), concurrent (fire-and-forget), or a mix. Independent of Soft/Hard Enforcement and of Report success unless the author ties them.
 _Avoid_: Treating Choreography completion as the only way a Step succeeds (success is still a Report unless you explicitly design otherwise)
+
+**Cue Done**:
+Game notice that a sequential Cue finished, so Choreography can advance. Concurrent Cues do not need this.
+_Avoid_: Frame timers inside Core as the only sequencing mechanism
 
 **Report**:
 Gameplay notifying the tutorial runtime that something happened (opaque kind plus optional param), so an active Step can succeed. Same idea as Quests Reports; this package does not own the verb catalog.
@@ -51,9 +55,14 @@ _Avoid_: Currency, items, or loot tables inside the Tutorial package; silent Cor
 The serializable shape of a player’s place in Tutorials (at least which Tutorial and which Step). The package does not own disk I/O; the game chooses whether to resume mid-Tutorial or only store whole-Tutorial completion.
 _Avoid_: Save file, PlayerPrefs as the official contract
 
+**Runner**:
+The in-memory engine that holds at most one active Tutorial, advances Steps on Reports, schedules Choreography (Cue / Cue Done), and emits Gate and Completion signals. Pure C# in v1; the game Starts and Stops Tutorials explicitly. Not a MonoBehaviour.
+_Avoid_: TutorialManager as the product name; package auto-start from world rules in v1
+
 ## Relationships
 
 - **Tutorial ↔ Quests**: separate for v1. No package dependency. Reports may look like Quests Objectives, but each context owns its own ids until a shared-bus ADR exists. Rewards follow the same idea as Quests: package signals completion; game grants.
-- **Authors ↔ Players**: developers are the usual authors. v1 authoring is **code-first builders** that produce a shared Tutorial definition for a pure C# runner. A thin ScriptableObject authoring layer is planned **after** the core runner is proven (see `.scratch/tutorial/issues/02-scriptableobject-authoring.md`). Players experience Tutorials at runtime.
+- **Authors ↔ Players**: developers are the usual authors. v1 authoring is **code-first builders** that produce a shared Tutorial definition for a pure C# Runner. A thin ScriptableObject authoring layer is planned **after** the core Runner is proven (see `.scratch/tutorial/issues/02-scriptableobject-authoring.md`). Players experience Tutorials at runtime.
 - **Tutorial ↔ Game presentation**: Cues / Choreography / Gate signals are consumed by the game; highlight/scale/hide implementations stay in the game.
 - **Catch-up ↔ Rewards**: game decides whether to Start a Tutorial when progress already matches the teaching goal, and whether Completion still pays a reward. Core does not auto-skip Steps in v1.
+- **Game ↔ Runner**: game Calls Start/Stop; feeds Report and Cue Done; listens for Gate, Cue, and Completion signals; owns save I/O via Progress Snapshot.
