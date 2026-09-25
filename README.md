@@ -68,7 +68,7 @@ Private repo: configure Git credentials on the machine so Unity can clone.
 
 ## DevHost
 
-`DevHost/` is the local Unity project used to exercise packages. **Do not commit Odin** (`Assets/Plugins/Sirenix`); install it on each machine from the Asset Store (or your Sirenix license workflow). **Do not commit Google service-account JSON** under `Assets/AerisynDataConfig/Credentials/`.
+`DevHost/` is the local Unity project used to exercise packages. **Do not commit Odin** (`Assets/Plugins/Sirenix`); install it on each machine from the Asset Store (or your Sirenix license workflow). **Do not commit Google credential JSON** (e.g. `oauth-client-secrets.json`, `service-account.json`); filename-based `.gitignore` rules cover those anywhere under the repo. Demos live under imported Samples (`Assets/Samples/…`).
 
 ## Repo layout
 

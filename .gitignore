@@ -46,10 +46,7 @@ DevHost/Assets/Plugins/Sirenix/
 DevHost/Assets/Plugins/Sirenix.meta
 DevHost/Assets/Plugins.meta
 
-# Google credentials for Data Config Sheet Pull (never commit)
-DevHost/Assets/AerisynDataConfig/Credentials/**
-!DevHost/Assets/AerisynDataConfig/Credentials/.gitkeep
-!DevHost/Assets/AerisynDataConfig/Credentials/.gitkeep.meta
+# Google credentials for Data Config Sheet Pull (never commit; filename-based)
 **/service-account.json
 **/oauth-client-secrets.json
 **/oauth-user-token.json
