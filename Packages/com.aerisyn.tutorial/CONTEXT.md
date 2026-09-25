@@ -44,8 +44,8 @@ A runtime notice that a Hard Step started or ended so the game can lock or unloc
 _Avoid_: Package-owned InputManager / Canvas block as the core API
 
 **Completion signal**:
-Notice that a Step or Tutorial finished (and why, if catch-up exists). The game grants rewards at the listen/claim site; reward contents stay outside this package.
-_Avoid_: Currency, items, or loot tables inside the Tutorial package
+Notice that a Step or Tutorial finished. The game grants rewards at the listen site; reward contents stay outside this package. Catch-up (“already did this”) and whether a reward still applies are game policy, not Core auto-skip.
+_Avoid_: Currency, items, or loot tables inside the Tutorial package; silent Core auto-complete that skips Completion signals
 
 **Progress Snapshot**:
 The serializable shape of a player’s place in Tutorials (at least which Tutorial and which Step). The package does not own disk I/O; the game chooses whether to resume mid-Tutorial or only store whole-Tutorial completion.
@@ -56,3 +56,4 @@ _Avoid_: Save file, PlayerPrefs as the official contract
 - **Tutorial ↔ Quests**: separate for v1. No package dependency. Reports may look like Quests Objectives, but each context owns its own ids until a shared-bus ADR exists. Rewards follow the same idea as Quests: package signals completion; game grants.
 - **Authors ↔ Players**: developers are the usual authors. v1 authoring is **code-first builders** that produce a shared Tutorial definition for a pure C# runner. A thin ScriptableObject authoring layer is planned **after** the core runner is proven (see `.scratch/tutorial/issues/02-scriptableobject-authoring.md`). Players experience Tutorials at runtime.
 - **Tutorial ↔ Game presentation**: Cues / Choreography / Gate signals are consumed by the game; highlight/scale/hide implementations stay in the game.
+- **Catch-up ↔ Rewards**: game decides whether to Start a Tutorial when progress already matches the teaching goal, and whether Completion still pays a reward. Core does not auto-skip Steps in v1.
