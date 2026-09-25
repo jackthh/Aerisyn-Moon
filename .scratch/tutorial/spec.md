@@ -117,8 +117,9 @@ Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutori
 - Authoring survey and Q6 decision (2b): `.scratch/tutorial/approaches-survey.md`, `.scratch/tutorial/q6-code-vs-so.md`
 - Soft-track reminders are not a second catalog; they are Soft Steps / Soft Tutorials under Enforcement.
 - Prefer one Runner seam across the codebase; do not add parallel “manager” APIs in Core.
-- Next process step after this spec: `/to-tickets` (Core Runner tickets first; issue 02 remains blocked until Core is resolved).
+- Tickets: `.scratch/tutorial/issues/` — frontier starts at **01**; **03**/**04** after 01; **05** after 04; **06** and **02** after 01+03+04+05.
 
 ## Comments
 
 - 2026-09-25: Domain grilled; seam confirmed as Runner public API; spec marked ready-for-agent.
+- 2026-09-25: `/to-tickets` published 01, 03–06; updated 02 blockers to 01/03/04/05.
