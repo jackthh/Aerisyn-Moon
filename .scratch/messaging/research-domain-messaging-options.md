@@ -1,6 +1,6 @@
 # Domain messaging / observer / pub-sub options (Aerisyn Moon)
 
-**Verdict (settled constraints):** For **code↔code domain signals** with **typed C# `Publish<T>` / `Subscribe<T>`**, **production wiring in code**, **Inspector debug/raise only**, and an **Odin-like third-party prerequisite** (not vendored), **Cysharp MessagePipe** is the strongest primary fit among investigated options: DI-managed typed brokers, filters, async, diagnostics, UPM/git install, MIT. **Thin C# events + facade** is the deliberate zero-dependency alternative. **SOAP / Hipple SO Raise** optimize for designer-wired SO channels (wrong primary job). **Feel / MMEventManager** is juice-adjacent tooling that happens to ship a typed struct bus — do not adopt Feel for domain messaging. **R3** is composition of streams, not a domain bus (complement, not substitute). **Idle Axolotl / IdleLotl MessagePipe usage was not publicly findable**; treat MessagePipe-in-Unity docs below as the comparison baseline when that repo is opened.
+**Verdict (settled constraints):** For **code↔code domain signals** with **typed C# `Publish<T>` / `Subscribe<T>`**, **production wiring in code**, **Inspector debug/raise only**, and an **Odin-like third-party prerequisite** (not vendored), **Cysharp MessagePipe** is the strongest primary fit among investigated options: DI-managed typed brokers, filters, async, diagnostics, UPM/git install, MIT. **Thin C# events + facade** is the deliberate zero-dependency alternative. **SOAP / Hipple SO Raise** optimize for designer-wired SO channels (wrong primary job). **Feel / MMEventManager** is juice-adjacent tooling that happens to ship a typed struct bus — do not adopt Feel for domain messaging. **R3** is composition of streams, not a domain bus (complement, not substitute). **Idle-Axolotl is not MessagePipe.** Private repo `jackthh/Idle-Axolotl` uses **ZBase.Foundation.PubSub** (`com.zbase.foundation.pubsub` via Chidt12 git UPM). Tap-Tap-Color / Pixel-Shooter / Dice-Puzzle use vendored **ScriptableObjectArchitecture** (“SO Architecture”) with Odin Raise, optionally bridging to Feel `MMEventManager`.
 
 Settled constraints (not reopened): domain signals primary (not Feel juice); packaging like Odin prerequisite; Editor = debug/raise only; channel identity = typed C# messages. Aerisyn already treats Odin this way ([ADR-0006](../../docs/adr/0006-odin-shared-prerequisite.md), [README](../../README.md)).
 
@@ -21,7 +21,8 @@ Settled constraints (not reopened): domain signals primary (not Feel juice); pac
 | **Messenger (Asset Store)** | Typed Send/Signal + optional SO Channels | Typed `Send(in T)` / `Signal<T>` | Optional SO Channels | Claims pure C# / DI | Paid Asset Store | Commercial; Unity 6–oriented listing | **poor–curious** — verify vs MessagePipe if shortlist expands |
 | **Global Message (Curvature / Asset Store “Event System”)** | Hybrid code + editor message flows | Type-safe messages; optional SO representation | Editor trigger/history tools | Claims editor + code | Paid Asset Store | Commercial; smaller ecosystem | **poor** — heavier editor-first than settled need |
 | **MediatR-style alone** | Request/response CQRS in .NET | `IRequest` / handlers | N/A | Yes on .NET | NuGet; Unity awkward | MediatR is separate; MessagePipe already embeds mediator | **poor** as Unity primary — use MessagePipe’s request APIs if needed |
-| **Idle Axolotl MessagePipe** | (unknown — private?) | (unknown) | (unknown) | (unknown) | (unknown) | **Not publicly findable** | **unknown** |
+| **ZBase.Foundation.PubSub** (Idle) | Typed in-process pub/sub + scopes + UniTask | Typed `IMessage` structs via `MessagePublisher` / `MessageSubscriber` | None first-class (code `WorldMessenger`) | Yes (plain `new Messenger()`) | Git UPM + UniTask + ZBase deps | MIT; smaller ecosystem than Cysharp | **good** — already ships in Idle; matches constraints without DI |
+| **SO Architecture** (Tap/Pixel/Dice) | Designer SO event channels + listeners | SO asset identity (+ typed payload events) | Raise button (Odin); listeners | Weak (SO assets) | Vendored under `Assets/SO Architecture` | Daniel Loeser pattern fork; + Feel bridge | **poor** as Aerisyn primary (SO-channel job) |
 
 ---
 
@@ -130,11 +131,30 @@ Requires **UniTask** (Unity replaces `ValueTask`). Unity lacks open-generics aut
 
 ---
 
-### 5. Idle-Axolotl / IdleLotl pub-sub
+### 5. Idle-Axolotl / IdleLotl pub-sub (private `jackthh/Idle-Axolotl`)
 
-**Public search result:** No findable public repo, docs, or blog describing **Idle Axolotl / IdleLotl** Unity architecture or MessagePipe usage. A commercial mobile title “Idle Axolotl: Magic Tycoon” / MagiLotl (package id `com.unimob.idle.axolotl`, publisher UbiMob) appears in APK mirrors; that is **not** evidence of MessagePipe or a public source tree.
+**Not MessagePipe.** `IdleLotl/Packages/manifest.json` depends on:
 
-**Do not invent Idle source.** When the Idle repo is available, compare against the MessagePipe-in-Unity shape above (LifetimeScope registration, typed brokers, disposable subscriptions, GlobalMessagePipe diagnostics).
+```text
+com.zbase.foundation.pubsub =
+  https://github.com/Chidt12/ZBase.Foundation.PubSub.git?path=Packages/ZBase.Foundation.PubSub#1.1.3
+```
+
+Upstream: [Zitga-Tech/ZBase.Foundation.PubSub](https://github.com/Zitga-Tech/ZBase.Foundation.PubSub) (MIT). Core type is `Messenger` constructing `MessagePublisher` / `MessageSubscriber` / anon variants over an internal `MessageBroker` singleton container; **no VContainer/Zenject required** ([Messenger.cs](https://github.com/Zitga-Tech/ZBase.Foundation.PubSub/blob/main/Packages/ZBase.Foundation.PubSub/ZBase.Foundation.PubSub/Messenger.cs)).
+
+Idle wraps it in `Runtime.PubSub.WorldMessenger` (`IdleLotl/Assets/_Game/Scripts/Runtime/_PubSub/WorldMessenger.cs`): static `Publisher` / `Subscriber` / `Anon*` plus scoped subscribers (e.g. `EquipmentScope`). Messages are `readonly struct … : IMessage` under `_PubSub/Messages/` (Data, Event, Gameplay, Looting, PVPArena, Quests, UI), e.g. `UpdateQuestProgressMessage`.
+
+**Contrast vs MessagePipe:** same *job* (typed code pub/sub + UniTask), different API (`Messenger` instance / static facade vs DI `IPublisher<T>`), smaller community, already proven in Idle.
+
+**Sibling games (SO Raise):**
+
+| Repo | Bus |
+| --- | --- |
+| `jackthh/Tap-Tap-Color` | `Assets/SO Architecture` (`ScriptableObjectArchitecture.GameEvent*`) + Feel; `GameEventBase<T>.Raise` can call `MMEventManager.TriggerEvent` when `RaiseGlobalEvent` |
+| `jackthh/Pixel-Shooter` | Same SO Architecture + Feel |
+| `jackthh/Dice-Puzzle` | Same SO Architecture + `MMFeedbacks` |
+
+That is the Hipple-style SO channel system (Daniel Loeser package), not Obvious Game SOAP, and not a typed C# domain bus.
 
 ---
 
@@ -173,22 +193,19 @@ Within Cysharp, **MessagePipe** is the messaging product; **R3** is Rx; **UniTas
 
 ---
 
-## Unknowns / need Idle repo
+## Remaining unknowns
 
-1. Whether Idle uses **MessagePipe + VContainer**, BuiltinContainerBuilder, or another bus.
-2. Whether Idle registers brokers per message type or relies on VContainer 1.14+ open-generic resolve.
-3. Whether Idle uses **GlobalMessagePipe** + Diagnostics, keyed brokers, async publishers, or request handlers.
-4. How Idle handles subscription lifetime (scope dispose vs MonoBehaviour Destroy vs DisposableBag).
-5. Whether Idle mixes SO event channels or Feel MMEventManager alongside MessagePipe (and for which concerns).
-6. SOAP: public source availability / exact license terms beyond Asset Store EULA (not fetched from store TOS text).
-7. Messenger Asset Store: independent verification of EditMode test story and Unity 2022.3 LTS support (listing emphasizes Unity 6).
+1. How widely Idle disposes subscriptions (per handler `IDisposable` vs scope teardown) in call sites beyond `WorldMessenger.Initialize`.
+2. Whether Aerisyn packages should take a **direct** ZBase/MessagePipe dependency, or only games (packages keep C# events).
+3. SOAP: public source availability / exact license terms beyond Asset Store EULA.
+4. Messenger Asset Store: EditMode test story vs MessagePipe / ZBase bake-off (only if shortlist expands).
 
 ---
 
 ## Recommended shortlist for grilling (not a final pick)
 
-1. **MessagePipe (Cysharp)** — typed `Publish<T>`/`Subscribe<T>`, DI lifetimes, filters/async/mediator, Unity UPM, Diagnostics, MIT; closest to settled constraints.
-2. **Thin C# events + Aerisyn facade** — same API shape, zero messaging vendor; grill on whether filters/diagnostics/async are worth a library.
-3. **MessagePipe + optional R3 at edges** — only if grilling reveals heavy stream composition needs; keep R3 off the domain bus itself.
+1. **ZBase.Foundation.PubSub** — what Idle already ships; typed `IMessage`, no DI required, UniTask-native; strongest “reuse our games” option.
+2. **MessagePipe (Cysharp)** — richer DI/filters/diagnostics/mediator ecosystem; needs container story (VContainer/Zenject/Builtin).
+3. **Thin C# events + Aerisyn facade** — zero messaging vendor; grill on whether Idle-class features are worth a library.
 
-Explicitly **not** for grilling as primary: SOAP, Hipple SO Raise-as-architecture, Feel/MMEventManager, ExtEvents, UniRx.
+Explicitly **not** for grilling as primary: SOAP, SO Architecture / Hipple Raise-as-architecture (Tap/Pixel/Dice), Feel/MMEventManager, ExtEvents, UniRx.
