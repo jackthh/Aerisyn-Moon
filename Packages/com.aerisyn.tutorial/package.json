@@ -2,7 +2,7 @@
   "name": "com.aerisyn.tutorial",
   "version": "0.4.0",
   "displayName": "Aerisyn Tutorial",
-  "description": "Upcoming tutorial / onboarding gameplay package (scaffold). Requires Odin Inspector (Sirenix) in the project.",
+  "description": "Pure C# Tutorial Runner for Soft/Hard player tutorials (Soft vertical slice). Requires Odin Inspector (Sirenix) in the project.",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.tutorial",
   "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.tutorial/CHANGELOG.md",
