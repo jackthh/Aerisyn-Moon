@@ -36,8 +36,12 @@ _Avoid_: Unity scene watches or button RectTransform refs as the package’s suc
 A runtime notice that a Hard Step started or ended so the game can lock or unlock input/UI. The package does not freeze input itself.
 _Avoid_: Package-owned InputManager / Canvas block as the core API
 
+**Progress Snapshot**:
+The serializable shape of a player’s place in Tutorials (at least which Tutorial and which Step). The package does not own disk I/O; the game chooses whether to resume mid-Tutorial or only store whole-Tutorial completion.
+_Avoid_: Save file, PlayerPrefs as the official contract
+
 ## Relationships
 
 - **Tutorial ↔ Quests**: separate for v1. No package dependency. Reports may look like Quests Objectives, but each context owns its own ids until a shared-bus ADR exists.
 - **Authors ↔ Players**: developers are the usual authors. v1 authoring is **code-first builders** that produce a shared Tutorial definition for a pure C# runner. A thin ScriptableObject authoring layer is planned **after** the core runner is proven (see `.scratch/tutorial/issues/02-scriptableobject-authoring.md`). Players experience Tutorials at runtime.
-- **Tutorial ↔ Game presentation**: Hints and Hard Gate signals are consumed by the game; presentation and input lock stay in the game.
+- **Tutorial ↔ Game presentation**: Hints and Hard Gate signals are consumed by the game; presentation and input lock stay in the game. Whether concurrent presentation cues are a Core term (vs game-only) is still open.
