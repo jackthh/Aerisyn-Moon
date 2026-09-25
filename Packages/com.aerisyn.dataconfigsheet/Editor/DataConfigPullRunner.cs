@@ -37,6 +37,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// under the Pull Config's shared output folder (GUID stable on re-Pull).
         /// Does not require Google spreadsheet id or credentials.
         /// Failed Pulls write nothing and return a report with sheet coordinates when available.
+        /// Only Config Types with Include In Pull are processed.
         /// </summary>
         public static PullReport PullFromGrids(
             PullConfig config,
@@ -49,13 +50,16 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             ValidateTargets(config);
 
+            PullTypeCandidate[] candidates = config.ToPullTypeCandidates();
+            Type[] includedTypes = PullTargetRules.ResolveIncluded(candidates);
+
             List<PendingWrite> pending = new List<PendingWrite>();
             List<VerticalNestParseError> errors = new List<VerticalNestParseError>();
 
-            // Parse every tab into scratch instances first so a failure does not partially write
-            for (int i = 0; i < config.ConfigTypes.Length; i++)
+            // Parse every included tab into scratch instances first so a failure does not partially write
+            for (int i = 0; i < includedTypes.Length; i++)
             {
-                Type configType = config.ConfigTypes[i];
+                Type configType = includedTypes[i];
                 SheetGrid grid;
                 string tabTitle = ConfigTypeTabName.Resolve(configType);
                 if (!gridsByConfigType.TryGetValue(configType, out grid) || grid == null)
@@ -130,25 +134,24 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Validation
 
-        /// <summary>Shared output folder and explicit Config Type list (inject + live Google).</summary>
+        /// <summary>
+        /// Shared output folder, candidates, Include In Pull, and ConfigTypeAsset checks
+        /// (inject + live Google).
+        /// </summary>
         internal static void ValidateTargets(PullConfig config)
         {
-            if (string.IsNullOrWhiteSpace(config.OutputFolder))
-                throw new InvalidOperationException($"PullConfig '{config.name}' has an empty Output Folder.");
+            PullTypeCandidate[] candidates = config.ToPullTypeCandidates();
+            PullTargetRules.Validate(config.name, config.OutputFolder, candidates);
 
-            if (config.ConfigTypes == null || config.ConfigTypes.Length == 0)
-                throw new InvalidOperationException(
-                    $"PullConfig '{config.name}' has no Config Types. Add explicit types to Pull (no assembly auto-scan).");
-
-            for (int i = 0; i < config.ConfigTypes.Length; i++)
+            // Concrete ConfigTypeAsset check stays here (Unity runtime types).
+            for (int i = 0; i < candidates.Length; i++)
             {
-                Type type = config.ConfigTypes[i];
-                if (type == null)
-                    throw new InvalidOperationException($"PullConfig '{config.name}' Config Types[{i}] is null.");
-
+                Type type = candidates[i].ConfigType;
                 if (type.IsAbstract || !typeof(ConfigTypeAsset).IsAssignableFrom(type))
+                {
                     throw new InvalidOperationException(
                         $"PullConfig '{config.name}' Config Types[{i}] '{type.FullName}' must be a concrete ConfigTypeAsset subclass.");
+                }
             }
         }
 
