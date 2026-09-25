@@ -8,24 +8,29 @@ Package: [`Packages/com.aerisyn.tutorial`](../../Packages/com.aerisyn.tutorial)
 
 ## Problem Statement
 
-The monorepo needs a home for an upcoming tutorial / onboarding gameplay package. Before domain grilling and implementation, the UPM package folder, DevHost wiring, context map entry, and local issue-tracker directory must exist so design and tickets have a stable place to land.
+Games need a game-agnostic way to run Soft/Hard per-Step tutorials: Steps succeed on Reports, Hard Steps emit Gate signals for the game to lock input/UI, Hints stay presentational in the game. Authors are usually developers; Inspector SO authoring should follow once the core runner is solid.
 
-## Solution
+## Solution (direction from grill; not implementation yet)
 
-Scaffold `com.aerisyn.tutorial` at version `0.0.1` with Runtime asmdef + package marker only. Wire DevHost and root docs. Keep glossary terms as explicit placeholders until `/grill-with-docs` / `/domain-modeling` resolve them. Implementation issues land under `.scratch/tutorial/issues/`.
+- Pure C# Core: Tutorial definition (ordered Steps with Enforcement) + runner
+- Code-first builders for v1
+- Game owns presentation and Hard locking (Hint + Gate signals)
+- No Quests package dependency in v1
+- SO authoring parked: [issues/02-scriptableobject-authoring.md](./issues/02-scriptableobject-authoring.md)
 
-## Out of scope (this scaffold)
+## Out of scope (v1 core)
 
-- Runtime tutorial API, authoring assets, samples, Editor tools
+- ScriptableObject authoring (explicit follow-up ticket 02)
 - Dependency on Quests or Data Config
-- Release tags / public API promises
+- Package-owned input freeze / mask UI
 
 ## Next steps
 
-1. Grill domain language and replace stub terms in `Packages/com.aerisyn.tutorial/CONTEXT.md`
+1. Finish grill frontier (persist, start/stop, SubStep, catch-up, concurrency)
 2. Capture ADRs under `docs/adr/` when decisions land
-3. Split implementation into `.scratch/tutorial/issues/NN-*.md` once the spec is ready-for-agent
+3. `/to-spec` + `/to-tickets` for Core runner; keep 02 blocked until Core resolves
 
 ## Comments
 
-- Workspace scaffold created so the upcoming package has a package id, DevHost entry, and scratch folder.
+- Workspace scaffold created earlier; domain grill in progress on `cursor/tutorial-domain-grill-1949`.
+- 2026-09-25: Q6 = 2b (code-first first, SO later). Q7 = separate from Quests in v1.

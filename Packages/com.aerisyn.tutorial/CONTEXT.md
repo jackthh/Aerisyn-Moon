@@ -39,5 +39,5 @@ _Avoid_: Package-owned InputManager / Canvas block as the core API
 ## Relationships
 
 - **Tutorial ↔ Quests**: separate for v1. No package dependency. Reports may look like Quests Objectives, but each context owns its own ids until a shared-bus ADR exists.
-- **Authors ↔ Players**: developers are the usual authors; the package should still be easy to install and author. ScriptableObject vs code-first authoring is an open trade-off (same underlying Tutorial definition either way). Players experience Tutorials at runtime.
+- **Authors ↔ Players**: developers are the usual authors. v1 authoring is **code-first builders** that produce a shared Tutorial definition for a pure C# runner. A thin ScriptableObject authoring layer is planned **after** the core runner is proven (see `.scratch/tutorial/issues/02-scriptableobject-authoring.md`). Players experience Tutorials at runtime.
 - **Tutorial ↔ Game presentation**: Hints and Hard Gate signals are consumed by the game; presentation and input lock stay in the game.

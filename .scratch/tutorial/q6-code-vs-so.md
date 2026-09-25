@@ -55,6 +55,6 @@ Pick **1** only if you want the absolute smallest v1 and accept recompile for co
 
 ## Decide
 
-- **2a**: SO in v1 (Authoring asmdef from the start), builders + SO both ship  
-- **2b**: Definition + builders in v1; SO in the next ticket once the definition shape stabilizes  
-- **1**: builders only until a real pain appears  
+**Settled: 2b.** Definition + code-first builders in v1; SO authoring after core is proven.
+
+Tracked: `.scratch/tutorial/issues/02-scriptableobject-authoring.md`
