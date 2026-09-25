@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using System.Threading.Tasks;
+#endif
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -25,6 +28,36 @@ namespace Aerisyn.DataConfigSheet
         InfoMessageType.Info)]
     public sealed class PullConfig : SerializedScriptableObject
     {
+
+
+        #region Inspector Pull (editor-wired)
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor module assigns the shared Pull-with-UI workflow here so the Inspector
+        /// button and menu items cannot diverge (Runtime cannot reference the Editor asm).
+        /// </summary>
+        public static Func<PullConfig, Task> RunEditorPullAsync;
+
+
+        // Same path as menu "Pull From Google (Selected Config)"; Sign In / Sign Out stay menu-only.
+        [Button("Pull", ButtonSizes.Large)]
+        [PropertyOrder(-100)]
+        void InspectorPull()
+        {
+            if (RunEditorPullAsync == null)
+            {
+                Debug.LogError(
+                    "[DataConfigSheet] Editor Pull workflow is not registered. " +
+                    "Is the Data Config Sheet Editor assembly loaded?");
+                return;
+            }
+
+            _ = RunEditorPullAsync(this);
+        }
+#endif
+
+        #endregion
 
 
         #region Google source

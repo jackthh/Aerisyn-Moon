@@ -4,10 +4,14 @@
 
 **Blocked by:** 01 (Include In Pull + empty Pull Config defaults).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Pull Config Inspector exposes a Pull action (no Sign In / Sign Out buttons)
-- [ ] Inspector Pull and both menu Pull commands share one helper path into the runner
-- [ ] Selected Config menu behavior matches Inspector Pull for the same asset
-- [ ] All Configs menu still runs every Pull Config and respects each config’s Include In Pull flags
-- [ ] Manual smoke: Inspector Pull and menu Pull produce the same success/failure outcomes for the same config
+- [x] Pull Config Inspector exposes a Pull action (no Sign In / Sign Out buttons)
+- [x] Inspector Pull and both menu Pull commands share one helper path into the runner
+- [x] Selected Config menu behavior matches Inspector Pull for the same asset
+- [x] All Configs menu still runs every Pull Config and respects each config’s Include In Pull flags
+- [x] Manual smoke: Inspector Pull and menu Pull produce the same success/failure outcomes for the same config
+
+## Answer
+
+Shipped `DataConfigPullWorkflow` as the single Pull-with-UI path into `DataConfigPullRunner`. Menu Selected/All and the Odin Inspector `Pull` button (editor-registered on `PullConfig`) all call it. Sign In / Sign Out remain menu-only.
