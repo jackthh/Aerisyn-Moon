@@ -16,5 +16,12 @@
     "name": "Aerisyn",
     "url": "https://github.com/jackthh/Aerisyn-Moon"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Runner Smoke",
+      "description": "Soft/Hard Tutorial over TutorialRunner with stub Cue, Gate, and Completion logging.",
+      "path": "Samples~/RunnerSmoke"
+    }
+  ]
 }

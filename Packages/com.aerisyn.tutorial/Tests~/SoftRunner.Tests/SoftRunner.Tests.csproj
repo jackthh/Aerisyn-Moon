@@ -17,9 +17,10 @@
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
   </ItemGroup>
 
-  <!-- Link pure C# Runner seam sources so Soft fixtures run without the Editor. -->
+  <!-- Link pure C# Runner seam + Samples~ driver so fixtures run without the Editor. -->
   <ItemGroup>
     <Compile Include="..\..\Runtime\Core\*.cs" Link="Core\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Samples~\RunnerSmoke\RunnerSmokeDriver.cs" Link="Samples\RunnerSmokeDriver.cs" />
   </ItemGroup>
 
 </Project>
