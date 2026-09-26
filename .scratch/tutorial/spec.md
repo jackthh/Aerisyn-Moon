@@ -84,7 +84,7 @@ Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutori
 - **Progress Snapshot:** Includes at least Tutorial identity and Step index (and whatever else is required to restore “active or last position” for the game’s policy). No disk I/O in package.
 - **Rewards / catch-up:** Out of Core. Game decides Start eligibility and grants on Completion.
 - **Dependencies:** No Quests package reference. No Data Config reference. Align with shared Odin prerequisite for Aerisyn packages if the asmdef already expects it; Runner logic must not require Odin at runtime.
-- **Authoring v1:** Code-first only. ScriptableObject authoring explicitly out of this spec; tracked by `.scratch/tutorial/issues/02-scriptableobject-authoring.md` after Core is proven.
+- **Authoring v1:** Code-first builders and thin ScriptableObject authoring (`TutorialAsset`) both project into the same Tutorial definition. No second runtime model; no Idle-Axolotl one-class-per-substep pattern.
 - **Samples:** Thin sample showing Start → signals → Report → Completion; presentation can be stubs/logs. No port of Idle-Axolotl managers.
 - **Versioning:** Advance package past scaffold `0.0.1` when the Runner API is first usable; keep CHANGELOG/README aligned with CONTEXT vocabulary.
 - **ADRs (recommended companions, not blockers for coding):** Soft/Hard means Enforcement not dual tracks; completion/rewards/presentation/save stay outside Core; single active Tutorial + game Start/Stop.
@@ -99,7 +99,7 @@ Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutori
 
 ## Out of Scope
 
-- ScriptableObject / Inspector authoring (issue 02)
+- ScriptableObject / Inspector authoring beyond the thin `TutorialAsset` projection (custom editors, Addressables catalogs, etc.)
 - Quests integration or shared report bus
 - Data Config / spreadsheet-authored tutorials
 - Package-owned input freeze, mask UI, hand prefabs, talk UI

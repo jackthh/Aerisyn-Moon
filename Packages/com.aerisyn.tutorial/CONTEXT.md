@@ -62,7 +62,7 @@ _Avoid_: TutorialManager as the product name; package auto-start from world rule
 ## Relationships
 
 - **Tutorial ↔ Quests**: separate for v1. No package dependency. Reports may look like Quests Objectives, but each context owns its own ids until a shared-bus ADR exists. Rewards follow the same idea as Quests: package signals completion; game grants.
-- **Authors ↔ Players**: developers are the usual authors. v1 authoring is **code-first builders** that produce a shared Tutorial definition for a pure C# Runner. A thin ScriptableObject authoring layer is planned **after** the core Runner is proven (see `.scratch/tutorial/issues/02-scriptableobject-authoring.md`). Players experience Tutorials at runtime.
+- **Authors ↔ Players**: developers are the usual authors. Authoring is **code-first builders** or a thin **ScriptableObject** (`TutorialAsset`) that projects into the same Tutorial definition for a pure C# Runner. Players experience Tutorials at runtime.
 - **Tutorial ↔ Game presentation**: Cues / Choreography / Gate signals are consumed by the game; highlight/scale/hide implementations stay in the game.
 - **Catch-up ↔ Rewards**: game decides whether to Start a Tutorial when progress already matches the teaching goal, and whether Completion still pays a reward. Core does not auto-skip Steps in v1.
 - **Game ↔ Runner**: game Calls Start/Stop; feeds Report and Cue Done; listens for Gate, Cue, and Completion signals; owns save I/O via Progress Snapshot.

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Aerisyn.Tutorial.Authoring;
 
 namespace Aerisyn.Tutorial.Samples.RunnerSmoke
 {
@@ -8,9 +9,11 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
     /// Samples~ MonoBehaviour facades and EditMode fixtures both call this; Core stays free of Unity types.
     ///
     /// Outline:
-    ///   BuildDemoTutorial   -> Soft Sequential Cue, then Hard Mix (Concurrent + Sequential)
-    ///   AttachLogging       -> Cue / Gate / Completion lines into a sink
-    ///   RunScripted         -> Start → CueDone → Reports → Tutorial Completion
+    ///   BuildDemoTutorial              -> Soft Sequential Cue, then Hard Mix (Concurrent + Sequential)
+    ///   BuildDemoAuthoredSteps / FromAuthoring -> same shape via SO projection seam
+    ///   AttachLogging                  -> Cue / Gate / Completion lines into a sink
+    ///   RunScripted                    -> Start → CueDone → Reports → Tutorial Completion
+    ///   RunScriptedCodeThenAuthoring   -> same Runner: code-built then SO-projected
     /// </summary>
     public static class RunnerSmokeDriver
     {
@@ -50,7 +53,7 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
 
         #region Public API
 
-        /// <summary>Builds the Soft/Hard + Cue demo Tutorial used by the sample.</summary>
+        /// <summary>Builds the Soft/Hard + Cue demo Tutorial used by the sample (code-first builder).</summary>
         public static TutorialDefinition BuildDemoTutorial()
         {
             return new TutorialBuilder("sample.sword")
@@ -66,6 +69,57 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
                         ChoreographyDefinition.Sequential(CueHighlightButton)))
                 .Build();
         }
+
+
+        /// <summary>
+        /// Same demo as <see cref="BuildDemoTutorial"/> expressed as list-shaped Authoring data
+        /// (what a <see cref="TutorialAsset"/> serializes). No per-beat subclass.
+        /// </summary>
+        public static AuthoredStep[] BuildDemoAuthoredSteps() =>
+            new[]
+            {
+                new AuthoredStep
+                {
+                    Id = "coach",
+                    Enforcement = Enforcement.Soft,
+                    ReportKind = ReportOpenMenu,
+                    MatchAnyParam = true,
+                    CueGroups = new[]
+                    {
+                        new AuthoredCueGroup
+                        {
+                            Kind = CueGroupKind.Sequential,
+                            CueIds = new[] { CueHighlightMenu, CueTextCoach },
+                        },
+                    },
+                },
+                new AuthoredStep
+                {
+                    Id = "upgrade",
+                    Enforcement = Enforcement.Hard,
+                    ReportKind = ReportUpgradeSword,
+                    ReportParam = UpgradeSwordParam,
+                    MatchAnyParam = false,
+                    CueGroups = new[]
+                    {
+                        new AuthoredCueGroup
+                        {
+                            Kind = CueGroupKind.Concurrent,
+                            CueIds = new[] { CueGlowSlot, CueSfxChime },
+                        },
+                        new AuthoredCueGroup
+                        {
+                            Kind = CueGroupKind.Sequential,
+                            CueIds = new[] { CueHighlightButton },
+                        },
+                    },
+                },
+            };
+
+
+        /// <summary>Projects the authored demo Steps into the same Core definition the builder produces.</summary>
+        public static TutorialDefinition BuildDemoTutorialFromAuthoring() =>
+            TutorialAuthoringProjection.Project("sample.sword", BuildDemoAuthoredSteps());
 
 
         /// <summary>
@@ -96,22 +150,59 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
         /// Drives Start → Cue Done (first Soft Cue) → Soft Report → Hard Report to Tutorial Completion.
         /// Returns the stub presentation log. Does not require finishing every Sequential Cue (Report-driven).
         /// </summary>
-        public static IReadOnlyList<string> RunScripted()
+        public static IReadOnlyList<string> RunScripted() =>
+            RunScripted(BuildDemoTutorial());
+
+
+        /// <summary>
+        /// Same scripted path as <see cref="RunScripted()"/> but for an arbitrary definition
+        /// (builder or Authoring projection).
+        /// </summary>
+        public static IReadOnlyList<string> RunScripted(TutorialDefinition tutorial)
+        {
+            var log = new List<string>();
+            var runner = new TutorialRunner();
+            AttachLogging(runner, line => log.Add(line));
+            DriveToCompletion(runner, tutorial, line => log.Add(line));
+            return log;
+        }
+
+
+        /// <summary>
+        /// One Runner: complete the code-built demo, then the Authoring-projected demo.
+        /// Proves SO projection feeds the same seam without a second runtime model.
+        /// </summary>
+        public static IReadOnlyList<string> RunScriptedCodeThenAuthoring()
         {
             var log = new List<string>();
             var runner = new TutorialRunner();
             AttachLogging(runner, line => log.Add(line));
 
-            runner.Start(BuildDemoTutorial());
+            log.Add("source:builder");
+            DriveToCompletion(runner, BuildDemoTutorial(), line => log.Add(line));
 
-            // Runner has no outbound CueDone signal; record the inbound call for readable smoke logs.
-            log.Add("CueDone coach:" + CueHighlightMenu);
-            runner.CueDone(CueHighlightMenu);
-
-            runner.Report(ReportOpenMenu, 0);
-            runner.Report(ReportUpgradeSword, UpgradeSwordParam);
+            log.Add("source:authoring");
+            DriveToCompletion(runner, BuildDemoTutorialFromAuthoring(), line => log.Add(line));
 
             return log;
+        }
+
+        #endregion
+
+
+        #region Private helpers
+
+        /// <summary>
+        /// Start → Cue Done (first Soft Cue) → Soft Report → Hard Report on <paramref name="runner"/>.
+        /// Prefixed CueDone lines are for readable smoke logs (Runner has no outbound CueDone signal).
+        /// </summary>
+        static void DriveToCompletion(TutorialRunner runner, TutorialDefinition tutorial, Action<string> write)
+        {
+            runner.Start(tutorial);
+            write("CueDone coach:" + CueHighlightMenu);
+            runner.CueDone(CueHighlightMenu);
+            runner.Report(ReportOpenMenu, 0);
+            runner.Report(ReportUpgradeSword, UpgradeSwordParam);
         }
 
         #endregion
