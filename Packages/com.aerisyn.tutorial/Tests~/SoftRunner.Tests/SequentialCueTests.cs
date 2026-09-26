@@ -22,6 +22,7 @@ namespace Aerisyn.Tutorial.Tests
                     ChoreographyDefinition.Sequential("highlight.sword", "text.upgrade"))
                 .Build();
 
+
         static TutorialDefinition TwoStepsWithCues() =>
             new TutorialBuilder("onboarding.multi-cue")
                 .SoftStep(

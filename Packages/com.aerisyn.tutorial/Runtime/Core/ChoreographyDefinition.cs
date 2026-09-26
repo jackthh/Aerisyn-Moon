@@ -5,7 +5,6 @@ namespace Aerisyn.Tutorial
 {
     /// <summary>
     /// Opaque Cue ids for a Step, scheduled sequentially (await Cue Done between each).
-    /// Concurrent / mixed groups arrive in a later ticket without changing this public shape.
     /// </summary>
     public sealed class ChoreographyDefinition
     {
