@@ -5,12 +5,12 @@ namespace Aerisyn.Tutorial
     /// <summary>
     /// Pure C# engine that runs at most one Tutorial at a time.
     /// Soft/Hard Steps advance on matching Reports; emits Cue, Gate, and Completion signals.
-    /// Sequential Choreography awaits Cue Done between Cue emissions.
+    /// Choreography schedules Sequential (await Cue Done) and Concurrent (fire-and-forget) Cue groups.
     ///
     /// Outline:
-    ///   Start / Stop           -> begin or abandon; Gate + first Cue on enter
+    ///   Start / Stop           -> begin or abandon; Gate + Cue groups on enter
     ///   Report                 -> match against the active Step (independent of unfinished Cues)
-    ///   CueDone                -> advance sequential Choreography when the awaited Cue finishes
+    ///   CueDone                -> advance Sequential groups when the awaited Cue finishes
     ///   ExportSnapshot         -> Tutorial id + Step index for the game's save pipeline
     /// </summary>
     public sealed class TutorialRunner
@@ -20,7 +20,10 @@ namespace Aerisyn.Tutorial
         private TutorialDefinition _activeDefinition;
         private int _activeStepIndex = -1;
 
-        // Index into the active Step's SequentialCueIds while awaiting Cue Done; -1 = idle.
+        // Index of the Cue group currently being scheduled; -1 when idle / Choreography finished.
+        private int _activeGroupIndex = -1;
+
+        // Index into a Sequential group's CueIds while awaiting Cue Done; -1 when not awaiting.
         private int _awaitingCueIndex = -1;
 
         #endregion
@@ -77,7 +80,7 @@ namespace Aerisyn.Tutorial
         /// <summary>
         /// Starts a Tutorial at Step 0, or at <paramref name="snapshot"/> StepIndex when provided.
         /// Throws if a Tutorial is already active, the definition is null, or the snapshot is out of range.
-        /// Emits Gate Started when the entered Step is Hard, then the first sequential Cue if any.
+        /// Emits Gate Started when the entered Step is Hard, then schedules that Step's Choreography.
         /// </summary>
         public void Start(TutorialDefinition definition, ProgressSnapshot? snapshot = null)
         {
@@ -136,7 +139,7 @@ namespace Aerisyn.Tutorial
 
         /// <summary>
         /// Gameplay fact. Matches only the active Step; unmatched Reports are ignored.
-        /// On match: emits Step Completion even if sequential Choreography is unfinished,
+        /// On match: emits Step Completion even if Choreography is unfinished,
         /// ends Hard Gate if any, then advances or Tutorial Completion.
         /// </summary>
         public void Report(int kind, int param = 0)
@@ -153,7 +156,7 @@ namespace Aerisyn.Tutorial
             string completedStepId = activeStep.Id;
 
             // Report success abandons unfinished Choreography for this Step.
-            _awaitingCueIndex = -1;
+            ClearChoreographyState();
 
             // Emit Step Completion before advancing so listeners see the finished beat.
             StepCompleted?.Invoke(tutorialId, completedIndex, completedStepId);
@@ -181,15 +184,24 @@ namespace Aerisyn.Tutorial
         /// <summary>
         /// Presentation finished the awaited sequential Cue.
         /// Ignores when inactive, when no Cue is awaited, or when <paramref name="cueId"/> does not match.
-        /// On match: emits the next sequential Cue, or clears await when Choreography finishes.
+        /// On match: emits the next sequential Cue, finishes the Sequential group and continues
+        /// into following Concurrent / Sequential groups, or clears await when Choreography ends.
         /// </summary>
         public void CueDone(string cueId)
         {
-            if (!IsActive || _awaitingCueIndex < 0)
+            if (!IsActive || _awaitingCueIndex < 0 || _activeGroupIndex < 0)
                 return;
 
             StepDefinition step = _activeDefinition.Steps[_activeStepIndex];
-            var cueIds = step.Choreography.SequentialCueIds;
+            var groups = step.Choreography.Groups;
+            if (_activeGroupIndex >= groups.Count)
+                return;
+
+            CueGroup group = groups[_activeGroupIndex];
+            if (group.Kind != CueGroupKind.Sequential)
+                return;
+
+            var cueIds = group.CueIds;
             if (_awaitingCueIndex >= cueIds.Count)
                 return;
 
@@ -198,15 +210,17 @@ namespace Aerisyn.Tutorial
                 return;
 
             int nextCueIndex = _awaitingCueIndex + 1;
-            if (nextCueIndex >= cueIds.Count)
+            if (nextCueIndex < cueIds.Count)
             {
-                // Sequential Choreography finished; Step still waits for Report.
-                _awaitingCueIndex = -1;
+                _awaitingCueIndex = nextCueIndex;
+                EmitCue(step, cueIds[_awaitingCueIndex]);
                 return;
             }
 
-            _awaitingCueIndex = nextCueIndex;
-            EmitCue(step, cueIds[_awaitingCueIndex]);
+            // Sequential group finished; continue into later groups (or idle).
+            _awaitingCueIndex = -1;
+            _activeGroupIndex++;
+            ScheduleFromActiveGroup(step);
         }
 
         #endregion
@@ -231,28 +245,61 @@ namespace Aerisyn.Tutorial
 
         #region Private helpers
 
-        /// <summary>Gate Started (Hard) then first sequential Cue for the Step now at <see cref="_activeStepIndex"/>.</summary>
+        /// <summary>Gate Started (Hard) then Cue groups for the Step now at <see cref="_activeStepIndex"/>.</summary>
         private void EnterActiveStep()
         {
             EmitGateIfHard(GatePhase.Started);
-            BeginSequentialChoreography();
+            BeginChoreography();
         }
 
 
-        /// <summary>Emits the first sequential Cue and awaits Cue Done, or no-ops when Choreography is empty.</summary>
-        private void BeginSequentialChoreography()
+        /// <summary>
+        /// Starts Choreography for the active Step: Concurrent groups emit all Cues immediately;
+        /// Sequential groups emit the first Cue and await Cue Done.
+        /// </summary>
+        private void BeginChoreography()
         {
-            _awaitingCueIndex = -1;
+            ClearChoreographyState();
             if (!IsActive)
                 return;
 
             StepDefinition step = _activeDefinition.Steps[_activeStepIndex];
-            var cueIds = step.Choreography.SequentialCueIds;
-            if (cueIds.Count == 0)
+            if (step.Choreography.IsEmpty)
                 return;
 
-            _awaitingCueIndex = 0;
-            EmitCue(step, cueIds[0]);
+            _activeGroupIndex = 0;
+            ScheduleFromActiveGroup(step);
+        }
+
+
+        /// <summary>
+        /// Walks Cue groups from <see cref="_activeGroupIndex"/>: Concurrent fire-and-forget advances
+        /// immediately; Sequential emits the first Cue and returns until Cue Done.
+        /// </summary>
+        private void ScheduleFromActiveGroup(StepDefinition step)
+        {
+            var groups = step.Choreography.Groups;
+            while (_activeGroupIndex >= 0 && _activeGroupIndex < groups.Count)
+            {
+                CueGroup group = groups[_activeGroupIndex];
+                if (group.Kind == CueGroupKind.Concurrent)
+                {
+                    // Concurrent: emit every Cue, then continue to the next group without awaiting.
+                    for (var i = 0; i < group.CueIds.Count; i++)
+                        EmitCue(step, group.CueIds[i]);
+
+                    _activeGroupIndex++;
+                    continue;
+                }
+
+                // Sequential: emit first Cue and wait for Cue Done.
+                _awaitingCueIndex = 0;
+                EmitCue(step, group.CueIds[0]);
+                return;
+            }
+
+            // No more groups (or empty Choreography finished).
+            ClearChoreographyState();
         }
 
 
@@ -276,11 +323,18 @@ namespace Aerisyn.Tutorial
         }
 
 
+        private void ClearChoreographyState()
+        {
+            _activeGroupIndex = -1;
+            _awaitingCueIndex = -1;
+        }
+
+
         private void ClearActive()
         {
             _activeDefinition = null;
             _activeStepIndex = -1;
-            _awaitingCueIndex = -1;
+            ClearChoreographyState();
         }
 
         #endregion

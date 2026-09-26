@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 
 # 05: Concurrent Cue Choreography
 
@@ -6,13 +6,28 @@ Status: ready-for-agent
 
 **Blocked by:** 04 Sequential Cue Choreography
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Concurrent Cues on Step enter are all emitted without waiting for Cue Done
-- [ ] A Step can mix sequential and concurrent Cue groups in one Choreography
-- [ ] Report success remains independent of unfinished concurrent Cues
-- [ ] Tests cover concurrent and mixed Choreography at the Runner seam
+- [x] Concurrent Cues on Step enter are all emitted without waiting for Cue Done
+- [x] A Step can mix sequential and concurrent Cue groups in one Choreography
+- [x] Report success remains independent of unfinished concurrent Cues
+- [x] Tests cover concurrent and mixed Choreography at the Runner seam
 
 ## Comments
 
 - Blocked by sequential Cue plumbing in 04.
+
+## Seams (TDD)
+
+- **Runner public seam only:** Start / Report / CueDone + Cue / StepCompleted / TutorialCompleted events.
+- Definitions via `TutorialBuilder` + `ChoreographyDefinition` factories (Concurrent, Sequential, Mix).
+
+## Answer
+
+Concurrent / mixed Cue Choreography on the Runner seam under `Packages/com.aerisyn.tutorial/Runtime/Core/`:
+
+- `CueGroupKind` + `CueGroup` → Sequential or Concurrent scheduling units
+- `ChoreographyDefinition.Concurrent` / `Mix` (alongside existing `Sequential`)
+- Runner walks groups in order: Concurrent emits all immediately (no Cue Done); Sequential awaits Cue Done before the next group
+- Matching Report still abandons unfinished Choreography and completes the Step
+- Fixtures: `Tests~/SoftRunner.Tests/ConcurrentCueTests.cs` (7 Cue tests; full suite via `dotnet test`)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Aerisyn.Tutorial
 {
     /// <summary>
-    /// Code-first builder for Soft and Hard Tutorial definitions with optional sequential Choreography.
+    /// Code-first builder for Soft and Hard Tutorial definitions with optional Cue Choreography.
     /// </summary>
     public sealed class TutorialBuilder
     {

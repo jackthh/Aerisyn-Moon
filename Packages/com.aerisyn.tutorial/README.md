@@ -29,17 +29,19 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.tutorial
 
 ## Status (0.4.0)
 
-Soft Runner + Hard Gate + sequential Cue Choreography (tickets 01, 03, 04):
+Soft Runner + Hard Gate + Sequential / Concurrent Cue Choreography (tickets 01, 03, 04, 05):
 
 - Code-first `TutorialBuilder` → Soft / Hard Steps with `ReportMatch` and optional Choreography
 - `TutorialRunner`: Start / Stop / Report / CueDone, single-active enforcement
 - Gate Started / Ended events for Hard Steps (Soft emits none)
-- Sequential Cues: emit one at a time, await Cue Done; Report still completes unfinished Choreography
+- Sequential Cues: emit one at a time, await Cue Done
+- Concurrent Cues: emit all at once (no Cue Done); Mix Sequential + Concurrent groups on one Step
+- Report still completes unfinished Choreography
 - Step and Tutorial Completion events
 - Progress Snapshot export / apply on Start for mid-Tutorial resume
 - Fixture tests: `Tests~/SoftRunner.Tests` (`dotnet test`)
 
-Still out of this cut: concurrent Cue Choreography, SO authoring, Samples~.
+Still out of this cut: SO authoring, Samples~.
 
 ## Quick start
 
@@ -47,7 +49,7 @@ Still out of this cut: concurrent Cue Choreography, SO authoring, Samples~.
 var runner = new TutorialRunner();
 runner.Cue += (tutorialId, stepIndex, stepId, cueId) =>
 {
-    // Present, then: runner.CueDone(cueId);
+    // Present, then: runner.CueDone(cueId);  // Sequential only
 };
 runner.Gate += (tutorialId, stepIndex, stepId, phase) =>
 {
@@ -61,12 +63,18 @@ var tutorial = new TutorialBuilder("onboarding.sword")
         "coach",
         ReportMatch.AnyParam(kind: 11),
         ChoreographyDefinition.Sequential("highlight.menu", "text.coach"))
-    .HardStep("upgrade", new ReportMatch(kind: 10, param: 1))
+    .HardStep(
+        "upgrade",
+        new ReportMatch(kind: 10, param: 1),
+        ChoreographyDefinition.Mix(
+            ChoreographyDefinition.Concurrent("glow.slot", "sfx.chime"),
+            ChoreographyDefinition.Sequential("highlight.button")))
     .Build();
 
-runner.Start(tutorial);       // emits first Cue
+runner.Start(tutorial);       // emits first Sequential Cue
 runner.CueDone("highlight.menu");
 runner.Report(11, 0);         // Soft Step completes even if later Cues unfinished
+// Hard Step: Concurrent glow+sfx then Sequential highlight (Cue Done optional for Concurrent)
 runner.Report(10, 1);         // Hard Step → Gate Ended + TutorialCompleted
 ```
 

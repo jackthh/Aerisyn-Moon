@@ -19,7 +19,7 @@ namespace Aerisyn.Tutorial
         /// <summary>Which Report completes this Step.</summary>
         public ReportMatch ReportMatch { get; }
 
-        /// <summary>Optional sequential Cue Choreography. Never null (use <see cref="ChoreographyDefinition.Empty"/>).</summary>
+        /// <summary>Optional Cue Choreography (Sequential / Concurrent / Mix). Never null (use <see cref="ChoreographyDefinition.Empty"/>).</summary>
         public ChoreographyDefinition Choreography { get; }
 
         #endregion
