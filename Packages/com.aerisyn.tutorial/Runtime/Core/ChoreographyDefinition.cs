@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace Aerisyn.Tutorial
 {
     /// <summary>
-    /// Opaque Cue ids for a Step, scheduled as Sequential (await Cue Done), Concurrent (Forget),
-    /// or a Mix of groups in authoring order.
+    /// Opaque Cue ids for a Step, scheduled as Sequential (await Cue Done), Concurrent
+    /// (fire-and-forget, no Cue Done), or a Mix of groups in authoring order.
     /// </summary>
     public sealed class ChoreographyDefinition
     {
@@ -23,20 +23,6 @@ namespace Aerisyn.Tutorial
 
         /// <summary>Ordered Cue groups. Empty when the Step has no presentation Choreography.</summary>
         public IReadOnlyList<CueGroup> Groups => _groups;
-
-        /// <summary>
-        /// Cue ids of the sole Sequential group when this Choreography is Sequential-only.
-        /// Empty for Empty / Concurrent / Mix shapes.
-        /// </summary>
-        public IReadOnlyList<string> SequentialCueIds
-        {
-            get
-            {
-                if (_groups.Length == 1 && _groups[0].Kind == CueGroupKind.Sequential)
-                    return _groups[0].CueIds;
-                return Array.Empty<string>();
-            }
-        }
 
         /// <summary>True when no Cue groups are scheduled.</summary>
         public bool IsEmpty => _groups.Length == 0;
@@ -59,30 +45,20 @@ namespace Aerisyn.Tutorial
         /// Builds sequential Choreography: emit each Cue id, wait for Cue Done, then the next.
         /// Throws when any id is null or empty.
         /// </summary>
-        public static ChoreographyDefinition Sequential(params string[] cueIds)
-        {
-            if (cueIds == null || cueIds.Length == 0)
-                return EmptyInstance;
-
-            return new ChoreographyDefinition(new[] { new CueGroup(CueGroupKind.Sequential, cueIds) });
-        }
+        public static ChoreographyDefinition Sequential(params string[] cueIds) =>
+            SingleGroup(CueGroupKind.Sequential, cueIds);
 
 
         /// <summary>
         /// Builds concurrent Choreography: emit every Cue id immediately (no Cue Done required).
         /// Throws when any id is null or empty.
         /// </summary>
-        public static ChoreographyDefinition Concurrent(params string[] cueIds)
-        {
-            if (cueIds == null || cueIds.Length == 0)
-                return EmptyInstance;
-
-            return new ChoreographyDefinition(new[] { new CueGroup(CueGroupKind.Concurrent, cueIds) });
-        }
+        public static ChoreographyDefinition Concurrent(params string[] cueIds) =>
+            SingleGroup(CueGroupKind.Concurrent, cueIds);
 
 
         /// <summary>
-        /// Concatenates Cue groups from each part in order (UniTask await / Forget mix).
+        /// Concatenates Cue groups from each part in order (Sequential await + Concurrent fire-and-forget).
         /// Null or Empty parts are skipped.
         /// </summary>
         public static ChoreographyDefinition Mix(params ChoreographyDefinition[] parts)
@@ -118,6 +94,16 @@ namespace Aerisyn.Tutorial
             }
 
             return new ChoreographyDefinition(merged);
+        }
+
+
+        /// <summary>One Cue group of <paramref name="kind"/>, or Empty when <paramref name="cueIds"/> is null/empty.</summary>
+        private static ChoreographyDefinition SingleGroup(CueGroupKind kind, string[] cueIds)
+        {
+            if (cueIds == null || cueIds.Length == 0)
+                return EmptyInstance;
+
+            return new ChoreographyDefinition(new[] { new CueGroup(kind, cueIds) });
         }
 
         #endregion

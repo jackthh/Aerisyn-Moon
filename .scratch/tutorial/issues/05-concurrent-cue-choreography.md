@@ -28,6 +28,6 @@ Concurrent / mixed Cue Choreography on the Runner seam under `Packages/com.aeris
 
 - `CueGroupKind` + `CueGroup` → Sequential or Concurrent scheduling units
 - `ChoreographyDefinition.Concurrent` / `Mix` (alongside existing `Sequential`)
-- Runner walks groups in order: Concurrent Forget emits all immediately; Sequential awaits Cue Done before the next group
+- Runner walks groups in order: Concurrent emits all immediately (no Cue Done); Sequential awaits Cue Done before the next group
 - Matching Report still abandons unfinished Choreography and completes the Step
 - Fixtures: `Tests~/SoftRunner.Tests/ConcurrentCueTests.cs` (7 Cue tests; full suite via `dotnet test`)

@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace Aerisyn.Tutorial.Tests
 {
     /// <summary>
-    /// Concurrent and mixed Cue Choreography at the Runner seam (Forget + await mix).
+    /// Concurrent and mixed Cue Choreography at the Runner seam.
     /// </summary>
     public sealed class ConcurrentCueTests
     {
@@ -47,7 +47,7 @@ namespace Aerisyn.Tutorial.Tests
         #endregion
 
 
-        #region Concurrent Forget
+        #region Concurrent fire-and-forget
 
         [Test]
         public void EnteringStep_EmitsAllConcurrentCues_WithoutCueDone()
@@ -90,7 +90,7 @@ namespace Aerisyn.Tutorial.Tests
 
             runner.Start(OneStepMixedChoreography());
 
-            // Forget glow+sfx, then await first Sequential Cue; confetti waits for Sequential Done.
+            // Concurrent glow+sfx, then first Sequential Cue; confetti waits for Sequential Cue Done.
             Assert.That(cues, Is.EqualTo(new[] { "glow", "sfx", "highlight" }));
         }
 

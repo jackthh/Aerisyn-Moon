@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Aerisyn.Tutorial
 {
     /// <summary>
-    /// One scheduling unit inside Choreography: Sequential (await) or Concurrent (Forget) Cue ids.
+    /// One scheduling unit inside Choreography: Sequential (await Cue Done) or Concurrent (fire-and-forget) Cue ids.
     /// </summary>
     public sealed class CueGroup
     {

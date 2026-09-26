@@ -62,15 +62,19 @@ var tutorial = new TutorialBuilder("onboarding.sword")
     .SoftStep(
         "coach",
         ReportMatch.AnyParam(kind: 11),
+        ChoreographyDefinition.Sequential("highlight.menu", "text.coach"))
+    .HardStep(
+        "upgrade",
+        new ReportMatch(kind: 10, param: 1),
         ChoreographyDefinition.Mix(
-            ChoreographyDefinition.Concurrent("glow.menu", "sfx.chime"),
-            ChoreographyDefinition.Sequential("highlight.menu", "text.coach")))
-    .HardStep("upgrade", new ReportMatch(kind: 10, param: 1))
+            ChoreographyDefinition.Concurrent("glow.slot", "sfx.chime"),
+            ChoreographyDefinition.Sequential("highlight.button")))
     .Build();
 
-runner.Start(tutorial);       // emits glow + sfx + first Sequential Cue
+runner.Start(tutorial);       // emits first Sequential Cue
 runner.CueDone("highlight.menu");
 runner.Report(11, 0);         // Soft Step completes even if later Cues unfinished
+// Hard Step: Concurrent glow+sfx then Sequential highlight (Cue Done optional for Concurrent)
 runner.Report(10, 1);         // Hard Step → Gate Ended + TutorialCompleted
 ```
 

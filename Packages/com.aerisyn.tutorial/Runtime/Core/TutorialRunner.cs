@@ -5,7 +5,7 @@ namespace Aerisyn.Tutorial
     /// <summary>
     /// Pure C# engine that runs at most one Tutorial at a time.
     /// Soft/Hard Steps advance on matching Reports; emits Cue, Gate, and Completion signals.
-    /// Choreography schedules Sequential (await Cue Done) and Concurrent (Forget) Cue groups.
+    /// Choreography schedules Sequential (await Cue Done) and Concurrent (fire-and-forget) Cue groups.
     ///
     /// Outline:
     ///   Start / Stop           -> begin or abandon; Gate + Cue groups on enter
@@ -284,7 +284,7 @@ namespace Aerisyn.Tutorial
                 CueGroup group = groups[_activeGroupIndex];
                 if (group.Kind == CueGroupKind.Concurrent)
                 {
-                    // Forget: emit every Cue, then continue to the next group without awaiting.
+                    // Concurrent: emit every Cue, then continue to the next group without awaiting.
                     for (var i = 0; i < group.CueIds.Count; i++)
                         EmitCue(step, group.CueIds[i]);
 
