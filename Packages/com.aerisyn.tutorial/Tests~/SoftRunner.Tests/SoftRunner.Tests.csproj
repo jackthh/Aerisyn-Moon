@@ -17,9 +17,12 @@
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
   </ItemGroup>
 
-  <!-- Link pure C# Runner seam + Samples~ driver so fixtures run without the Editor. -->
+  <!-- Link pure C# Runner + Authoring projection (not TutorialAsset SO) + Samples~ driver. -->
   <ItemGroup>
     <Compile Include="..\..\Runtime\Core\*.cs" Link="Core\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Runtime\Authoring\AuthoredCueGroup.cs" Link="Authoring\AuthoredCueGroup.cs" />
+    <Compile Include="..\..\Runtime\Authoring\AuthoredStep.cs" Link="Authoring\AuthoredStep.cs" />
+    <Compile Include="..\..\Runtime\Authoring\TutorialAuthoringProjection.cs" Link="Authoring\TutorialAuthoringProjection.cs" />
     <Compile Include="..\..\Samples~\RunnerSmoke\RunnerSmokeDriver.cs" Link="Samples\RunnerSmokeDriver.cs" />
   </ItemGroup>
 

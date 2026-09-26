@@ -17,12 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `CueDone` (await between Cues). Matching Report completes the Step if Cues are unfinished.
 - Concurrent / mixed Cue Choreography: `ChoreographyDefinition.Concurrent` (fire-and-forget, no Cue Done)
   and `Mix` of Sequential + Concurrent groups on one Step.
+- ScriptableObject authoring: `TutorialAsset`, `AuthoredStep` / `AuthoredCueGroup`, and
+  `TutorialAuthoringProjection` (one-way SO → same `TutorialDefinition` as builders; no second runtime model).
 - Sample **Runner Smoke** (`Samples~/RunnerSmoke`): Soft/Hard + Cue demo with Console stubs;
-  pure `RunnerSmokeDriver` + Samples~ MonoBehaviour facade (no Core MonoBehaviour API).
+  pure `RunnerSmokeDriver` + Samples~ MonoBehaviour facade (code-built and SO-projected on one Runner).
 - Fixture suite `Tests~/SoftRunner.Tests` (Start/Stop, Report advance, unmatched ignore,
   single-active rejection, snapshot resume, Hard Gate enter/leave, Soft/Hard mix,
   sequential Cue await, concurrent fire-and-forget, mixed groups, Report-vs-Choreography independence,
-  Runner Smoke scripted path).
+  Authoring projection 1:1 with builders, Runner Smoke scripted + code-then-SO path).
 
 ### Changed
 

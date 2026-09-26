@@ -36,9 +36,45 @@ namespace Aerisyn.Tutorial.Tests
         }
 
 
-        static int IndexOf(IReadOnlyList<string> log, string line)
+        [Test]
+        public void RunScriptedFromAuthoring_MatchesBuilderSmokeLog()
         {
+            IReadOnlyList<string> fromBuilder = RunnerSmokeDriver.RunScripted();
+            IReadOnlyList<string> fromAuthoring =
+                RunnerSmokeDriver.RunScripted(RunnerSmokeDriver.BuildDemoTutorialFromAuthoring());
+
+            Assert.That(fromAuthoring, Is.EqualTo(fromBuilder));
+        }
+
+
+        [Test]
+        public void RunScriptedCodeThenAuthoring_CompletesBothOnOneRunner()
+        {
+            IReadOnlyList<string> log = RunnerSmokeDriver.RunScriptedCodeThenAuthoring();
+
+            Assert.That(log, Does.Contain("source:builder"));
+            Assert.That(log, Does.Contain("source:authoring"));
+
+            int builderMarker = IndexOf(log, "source:builder");
+            int authoringMarker = IndexOf(log, "source:authoring");
+            Assert.That(builderMarker, Is.LessThan(authoringMarker));
+
+            // Two Tutorial Completions: one per source on the same Runner.
+            var completions = 0;
             for (var i = 0; i < log.Count; i++)
+            {
+                if (log[i] == "TutorialCompleted sample.sword")
+                    completions++;
+            }
+
+            Assert.That(completions, Is.EqualTo(2));
+            Assert.That(authoringMarker, Is.LessThan(IndexOf(log, "TutorialCompleted sample.sword", authoringMarker)));
+        }
+
+
+        static int IndexOf(IReadOnlyList<string> log, string line, int startIndex = 0)
+        {
+            for (var i = startIndex; i < log.Count; i++)
             {
                 if (log[i] == line)
                     return i;
