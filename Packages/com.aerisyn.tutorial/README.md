@@ -29,7 +29,8 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.tutorial
 
 ## Status (0.4.0)
 
-Soft Runner + Hard Gate + Sequential / Concurrent Cue Choreography (tickets 01, 03, 04, 05):
+Soft Runner + Hard Gate + Sequential / Concurrent Cue Choreography + Runner Smoke sample
+(tickets 01, 03, 04, 05, 06):
 
 - Code-first `TutorialBuilder` → Soft / Hard Steps with `ReportMatch` and optional Choreography
 - `TutorialRunner`: Start / Stop / Report / CueDone, single-active enforcement
@@ -39,9 +40,10 @@ Soft Runner + Hard Gate + Sequential / Concurrent Cue Choreography (tickets 01, 
 - Report still completes unfinished Choreography
 - Step and Tutorial Completion events
 - Progress Snapshot export / apply on Start for mid-Tutorial resume
+- Sample **Runner Smoke** (`Samples~/RunnerSmoke`): Soft/Hard + Cue stubs, Console logging
 - Fixture tests: `Tests~/SoftRunner.Tests` (`dotnet test`)
 
-Still out of this cut: SO authoring, Samples~.
+Still out of this cut: ScriptableObject authoring (ticket 02). No Quests package dependency.
 
 ## Quick start
 
@@ -78,6 +80,18 @@ runner.Report(11, 0);         // Soft Step completes even if later Cues unfinish
 runner.Report(10, 1);         // Hard Step → Gate Ended + TutorialCompleted
 ```
 
+## Vocabulary
+
+Shared terms live in [`CONTEXT.md`](CONTEXT.md): Tutorial, Step, Soft, Hard, Cue, Choreography,
+Report, Cue Done, Gate, Completion, Runner, Progress Snapshot. Presentation, rewards, catch-up,
+and disk save stay in the game.
+
+## Sample
+
+Package Manager → **Aerisyn Tutorial → Samples → Runner Smoke**, then follow
+[`Samples~/RunnerSmoke/README.md`](Samples~/RunnerSmoke/README.md). The facade MonoBehaviour
+stays in Samples~; Core remains pure C#.
+
 ## Layout
 
 ```text
@@ -90,5 +104,6 @@ Packages/com.aerisyn.tutorial/
     Aerisyn.Tutorial.asmdef
     TutorialPackage.cs
     Core/                 # Runner + definitions (pure C#)
+  Samples~/RunnerSmoke/   # Soft/Hard + Cue Console smoke
   Tests~/SoftRunner.Tests/
 ```
