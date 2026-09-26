@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 
 namespace Aerisyn.Tutorial
 {
     /// <summary>
-    /// Code-first builder for Soft and Hard Tutorial definitions.
-    /// Cue Choreography authoring arrives in later tickets without changing the definition shape.
+    /// Code-first builder for Soft and Hard Tutorial definitions with optional sequential Choreography.
     /// </summary>
     public sealed class TutorialBuilder
     {
@@ -31,9 +29,12 @@ namespace Aerisyn.Tutorial
         #region Soft Steps
 
         /// <summary>Appends a Soft Step that succeeds when <paramref name="reportMatch"/> is Reported.</summary>
-        public TutorialBuilder SoftStep(string stepId, ReportMatch reportMatch)
+        public TutorialBuilder SoftStep(
+            string stepId,
+            ReportMatch reportMatch,
+            ChoreographyDefinition choreography = null)
         {
-            _steps.Add(new StepDefinition(stepId, Enforcement.Soft, reportMatch));
+            _steps.Add(new StepDefinition(stepId, Enforcement.Soft, reportMatch, choreography));
             return this;
         }
 
@@ -46,9 +47,12 @@ namespace Aerisyn.Tutorial
         /// Appends a Hard Step that succeeds when <paramref name="reportMatch"/> is Reported.
         /// The Runner emits Gate Started/Ended while this Step is active.
         /// </summary>
-        public TutorialBuilder HardStep(string stepId, ReportMatch reportMatch)
+        public TutorialBuilder HardStep(
+            string stepId,
+            ReportMatch reportMatch,
+            ChoreographyDefinition choreography = null)
         {
-            _steps.Add(new StepDefinition(stepId, Enforcement.Hard, reportMatch));
+            _steps.Add(new StepDefinition(stepId, Enforcement.Hard, reportMatch, choreography));
             return this;
         }
 
