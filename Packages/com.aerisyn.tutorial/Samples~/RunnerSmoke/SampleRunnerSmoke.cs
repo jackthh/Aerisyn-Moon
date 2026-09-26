@@ -20,9 +20,6 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
         private readonly TutorialRunner _runner = new TutorialRunner();
         private bool _loggingAttached;
 
-        /// <summary>Exposes the Runner for Inspector tooling that already holds this component.</summary>
-        public TutorialRunner Runner => _runner;
-
         #endregion
 
 
@@ -51,21 +48,13 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
         #region Context menus (Play Mode smoke)
 
         [ContextMenu("Cue Done / highlight.menu")]
-        private void ContextCueDoneHighlightMenu()
-        {
-            EnsureLogging();
-            _runner.CueDone(RunnerSmokeDriver.CueHighlightMenu);
-            Debug.Log("[Tutorial sample] CueDone " + RunnerSmokeDriver.CueHighlightMenu);
-        }
+        private void ContextCueDoneHighlightMenu() =>
+            ApplyCueDone(RunnerSmokeDriver.CueHighlightMenu);
 
 
         [ContextMenu("Cue Done / highlight.button")]
-        private void ContextCueDoneHighlightButton()
-        {
-            EnsureLogging();
-            _runner.CueDone(RunnerSmokeDriver.CueHighlightButton);
-            Debug.Log("[Tutorial sample] CueDone " + RunnerSmokeDriver.CueHighlightButton);
-        }
+        private void ContextCueDoneHighlightButton() =>
+            ApplyCueDone(RunnerSmokeDriver.CueHighlightButton);
 
 
         [ContextMenu("Report / Soft open menu")]
@@ -109,21 +98,23 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
 
         #region Private helpers
 
+        private void ApplyCueDone(string cueId)
+        {
+            EnsureLogging();
+            _runner.CueDone(cueId);
+            Debug.Log("[Tutorial sample] CueDone " + cueId);
+        }
+
+
         /// <summary>Stub presentation: print Runner signals to the Console once per component lifetime.</summary>
         private void EnsureLogging()
         {
             if (_loggingAttached)
                 return;
 
-            _runner.Cue += (tutorialId, stepIndex, stepId, cueId) =>
-                Debug.Log("[Tutorial sample] Cue " + stepId + ":" + cueId);
-            _runner.Gate += (tutorialId, stepIndex, stepId, phase) =>
-                Debug.Log("[Tutorial sample] Gate " + phase + " " + stepId);
-            _runner.StepCompleted += (tutorialId, stepIndex, stepId) =>
-                Debug.Log("[Tutorial sample] StepCompleted " + stepId);
-            _runner.TutorialCompleted += tutorialId =>
-                Debug.Log("[Tutorial sample] TutorialCompleted " + tutorialId.Value);
-
+            RunnerSmokeDriver.AttachLogging(
+                _runner,
+                line => Debug.Log("[Tutorial sample] " + line));
             _loggingAttached = true;
         }
 

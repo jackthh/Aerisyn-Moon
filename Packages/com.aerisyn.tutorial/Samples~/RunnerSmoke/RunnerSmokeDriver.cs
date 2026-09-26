@@ -9,7 +9,7 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
     ///
     /// Outline:
     ///   BuildDemoTutorial   -> Soft Sequential Cue, then Hard Mix (Concurrent + Sequential)
-    ///   AttachLogging       -> Cue / Gate / Completion lines into a list
+    ///   AttachLogging       -> Cue / Gate / Completion lines into a sink
     ///   RunScripted         -> Start → CueDone → Reports → Tutorial Completion
     /// </summary>
     public static class RunnerSmokeDriver
@@ -22,6 +22,7 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
         /// <summary>Hard Step succeeds when the player upgrades the sword (param 1).</summary>
         public const int ReportUpgradeSword = 10;
 
+        /// <summary>Param paired with <see cref="ReportUpgradeSword"/> for the Hard Report match.</summary>
         public const int UpgradeSwordParam = 1;
 
         #endregion
@@ -29,10 +30,19 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
 
         #region Cue ids (sample-owned opaque strings)
 
+        /// <summary>Soft Sequential Cue: highlight the coach menu control.</summary>
         public const string CueHighlightMenu = "highlight.menu";
+
+        /// <summary>Soft Sequential Cue: coach copy (after menu highlight).</summary>
         public const string CueTextCoach = "text.coach";
+
+        /// <summary>Hard Concurrent Cue: glow the upgrade slot.</summary>
         public const string CueGlowSlot = "glow.slot";
+
+        /// <summary>Hard Concurrent Cue: chime SFX with the glow.</summary>
         public const string CueSfxChime = "sfx.chime";
+
+        /// <summary>Hard Sequential Cue: highlight the upgrade button.</summary>
         public const string CueHighlightButton = "highlight.button";
 
         #endregion
@@ -59,26 +69,26 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
 
 
         /// <summary>
-        /// Wires Cue / Gate / Completion handlers that append stub presentation lines to <paramref name="log"/>.
+        /// Wires Cue / Gate / Completion handlers that write stub presentation lines via <paramref name="write"/>.
         /// </summary>
-        public static void AttachLogging(TutorialRunner runner, IList<string> log)
+        public static void AttachLogging(TutorialRunner runner, Action<string> write)
         {
             if (runner == null)
                 throw new ArgumentNullException(nameof(runner));
-            if (log == null)
-                throw new ArgumentNullException(nameof(log));
+            if (write == null)
+                throw new ArgumentNullException(nameof(write));
 
             runner.Cue += (tutorialId, stepIndex, stepId, cueId) =>
-                log.Add("Cue " + stepId + ":" + cueId);
+                write("Cue " + stepId + ":" + cueId);
 
             runner.Gate += (tutorialId, stepIndex, stepId, phase) =>
-                log.Add("Gate " + phase + " " + stepId);
+                write("Gate " + phase + " " + stepId);
 
             runner.StepCompleted += (tutorialId, stepIndex, stepId) =>
-                log.Add("StepCompleted " + stepId);
+                write("StepCompleted " + stepId);
 
             runner.TutorialCompleted += tutorialId =>
-                log.Add("TutorialCompleted " + tutorialId.Value);
+                write("TutorialCompleted " + tutorialId.Value);
         }
 
 
@@ -90,9 +100,11 @@ namespace Aerisyn.Tutorial.Samples.RunnerSmoke
         {
             var log = new List<string>();
             var runner = new TutorialRunner();
-            AttachLogging(runner, log);
+            AttachLogging(runner, line => log.Add(line));
 
             runner.Start(BuildDemoTutorial());
+
+            // Runner has no outbound CueDone signal; record the inbound call for readable smoke logs.
             log.Add("CueDone coach:" + CueHighlightMenu);
             runner.CueDone(CueHighlightMenu);
 
