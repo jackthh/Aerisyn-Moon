@@ -13,8 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Step + Tutorial Completion events, Progress Snapshot export/apply.
 - Hard Gate signals: `TutorialBuilder.HardStep`, `GatePhase`, Runner `Gate` event
   (Started on Hard enter, Ended on Completion or Stop). Soft Steps emit no Gate.
+- Sequential Cue Choreography: `ChoreographyDefinition.Sequential`, Runner `Cue` /
+  `CueDone` (await between Cues). Matching Report completes the Step if Cues are unfinished.
 - Fixture suite `Tests~/SoftRunner.Tests` (Start/Stop, Report advance, unmatched ignore,
-  single-active rejection, snapshot resume, Hard Gate enter/leave, Soft/Hard mix).
+  single-active rejection, snapshot resume, Hard Gate enter/leave, Soft/Hard mix,
+  sequential Cue await, Report-vs-Choreography independence).
 
 ### Changed
 
