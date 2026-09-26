@@ -29,7 +29,8 @@ namespace Aerisyn.Tutorial.Authoring
 
         /// <summary>
         /// Ordered Cue groups (Sequential / Concurrent) for this Step's Choreography.
-        /// Null or empty → <see cref="ChoreographyDefinition.Empty"/>.
+        /// Null or empty array → <see cref="ChoreographyDefinition.Empty"/>.
+        /// Non-empty slots must be valid (blank Cue ids throw like Core).
         /// </summary>
         public AuthoredCueGroup[] CueGroups = Array.Empty<AuthoredCueGroup>();
 
@@ -45,63 +46,29 @@ namespace Aerisyn.Tutorial.Authoring
 
         /// <summary>
         /// Builds Core Choreography from authored Cue groups via public Sequential / Concurrent / Mix factories.
-        /// Null / empty / blank groups are skipped (Empty when none remain).
+        /// Null array or zero-length → Empty. Null slots or blank Cue ids throw (1:1 with Core validation).
         /// </summary>
         public ChoreographyDefinition ToChoreography()
         {
             if (CueGroups == null || CueGroups.Length == 0)
                 return ChoreographyDefinition.Empty;
 
-            // Count groups that have Cue ids so Mix gets a tight array.
-            var count = 0;
+            var parts = new ChoreographyDefinition[CueGroups.Length];
             for (var i = 0; i < CueGroups.Length; i++)
             {
-                if (CueGroups[i] != null && CueGroups[i].HasCueIds)
-                    count++;
+                if (CueGroups[i] == null)
+                    throw new ArgumentException("Authored Cue group at index " + i + " is null.");
+
+                parts[i] = CueGroups[i].ToChoreography();
             }
 
-            if (count == 0)
-                return ChoreographyDefinition.Empty;
-
-            var parts = new ChoreographyDefinition[count];
-            var write = 0;
-            for (var i = 0; i < CueGroups.Length; i++)
-            {
-                if (CueGroups[i] == null || !CueGroups[i].HasCueIds)
-                    continue;
-
-                parts[write] = ToSingleGroupChoreography(CueGroups[i]);
-                write++;
-            }
-
-            return count == 1 ? parts[0] : ChoreographyDefinition.Mix(parts);
+            return CueGroups.Length == 1 ? parts[0] : ChoreographyDefinition.Mix(parts);
         }
 
 
         /// <summary>Projects this authored Step into an immutable Core <see cref="StepDefinition"/>.</summary>
         public StepDefinition ToStepDefinition() =>
             new StepDefinition(Id, Enforcement, ToReportMatch(), ToChoreography());
-
-        #endregion
-
-
-        #region Private helpers
-
-        /// <summary>
-        /// One authored Cue group → Sequential or Concurrent Choreography via Core public factories
-        /// (Authoring never depends on Core private constructors).
-        /// </summary>
-        static ChoreographyDefinition ToSingleGroupChoreography(AuthoredCueGroup authored)
-        {
-            CueGroup group = authored.ToCueGroup();
-            var ids = new string[group.CueIds.Count];
-            for (var i = 0; i < group.CueIds.Count; i++)
-                ids[i] = group.CueIds[i];
-
-            return group.Kind == CueGroupKind.Sequential
-                ? ChoreographyDefinition.Sequential(ids)
-                : ChoreographyDefinition.Concurrent(ids);
-        }
 
         #endregion
     }

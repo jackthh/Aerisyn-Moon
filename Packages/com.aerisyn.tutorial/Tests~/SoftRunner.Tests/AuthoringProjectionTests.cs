@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Aerisyn.Tutorial;
 using Aerisyn.Tutorial.Authoring;
+using Aerisyn.Tutorial.Samples.RunnerSmoke;
 using NUnit.Framework;
 
 namespace Aerisyn.Tutorial.Tests
@@ -11,80 +12,13 @@ namespace Aerisyn.Tutorial.Tests
     /// </summary>
     public sealed class AuthoringProjectionTests
     {
-        #region Fixtures
-
-        const int SoftReportKind = 11;
-        const int HardReportKind = 10;
-        const int HardReportParam = 1;
-
-        /// <summary>Authored Soft + Hard mix matching the code-first demo shape.</summary>
-        static AuthoredStep[] DemoAuthoredSteps() =>
-            new[]
-            {
-                new AuthoredStep
-                {
-                    Id = "coach",
-                    Enforcement = Enforcement.Soft,
-                    ReportKind = SoftReportKind,
-                    MatchAnyParam = true,
-                    CueGroups = new[]
-                    {
-                        new AuthoredCueGroup
-                        {
-                            Kind = CueGroupKind.Sequential,
-                            CueIds = new[] { "highlight.menu", "text.coach" },
-                        },
-                    },
-                },
-                new AuthoredStep
-                {
-                    Id = "upgrade",
-                    Enforcement = Enforcement.Hard,
-                    ReportKind = HardReportKind,
-                    ReportParam = HardReportParam,
-                    MatchAnyParam = false,
-                    CueGroups = new[]
-                    {
-                        new AuthoredCueGroup
-                        {
-                            Kind = CueGroupKind.Concurrent,
-                            CueIds = new[] { "glow.slot", "sfx.chime" },
-                        },
-                        new AuthoredCueGroup
-                        {
-                            Kind = CueGroupKind.Sequential,
-                            CueIds = new[] { "highlight.button" },
-                        },
-                    },
-                },
-            };
-
-
-        static TutorialDefinition BuilderDemo() =>
-            new TutorialBuilder("sample.sword")
-                .SoftStep(
-                    "coach",
-                    ReportMatch.AnyParam(SoftReportKind),
-                    ChoreographyDefinition.Sequential("highlight.menu", "text.coach"))
-                .HardStep(
-                    "upgrade",
-                    new ReportMatch(HardReportKind, HardReportParam),
-                    ChoreographyDefinition.Mix(
-                        ChoreographyDefinition.Concurrent("glow.slot", "sfx.chime"),
-                        ChoreographyDefinition.Sequential("highlight.button")))
-                .Build();
-
-        #endregion
-
-
         #region Projection shape
 
         [Test]
         public void Project_MapsEnforcementReportAndChoreography_1to1WithBuilder()
         {
-            TutorialDefinition fromAuthoring =
-                TutorialAuthoringProjection.Project("sample.sword", DemoAuthoredSteps());
-            TutorialDefinition fromBuilder = BuilderDemo();
+            TutorialDefinition fromAuthoring = RunnerSmokeDriver.BuildDemoTutorialFromAuthoring();
+            TutorialDefinition fromBuilder = RunnerSmokeDriver.BuildDemoTutorial();
 
             Assert.That(fromAuthoring.Id.Value, Is.EqualTo(fromBuilder.Id.Value));
             Assert.That(fromAuthoring.StepCount, Is.EqualTo(fromBuilder.StepCount));
@@ -119,7 +53,7 @@ namespace Aerisyn.Tutorial.Tests
                 {
                     Id = "solo",
                     Enforcement = Enforcement.Soft,
-                    ReportKind = SoftReportKind,
+                    ReportKind = RunnerSmokeDriver.ReportOpenMenu,
                     MatchAnyParam = true,
                     CueGroups = null,
                 },
@@ -138,38 +72,11 @@ namespace Aerisyn.Tutorial.Tests
         [Test]
         public void Runner_AcceptsProjectedDefinition_SameSignalsAsBuilder()
         {
-            var fromAuthoring = TutorialAuthoringProjection.Project("sample.sword", DemoAuthoredSteps());
-            var fromBuilder = BuilderDemo();
-
-            IReadOnlyList<string> authoredLog = DriveDemo(fromAuthoring);
-            IReadOnlyList<string> builderLog = DriveDemo(fromBuilder);
+            IReadOnlyList<string> authoredLog =
+                RunnerSmokeDriver.RunScripted(RunnerSmokeDriver.BuildDemoTutorialFromAuthoring());
+            IReadOnlyList<string> builderLog = RunnerSmokeDriver.RunScripted();
 
             Assert.That(authoredLog, Is.EqualTo(builderLog));
-        }
-
-
-        /// <summary>
-        /// Soft Cue Done → Soft Report → Hard Report; returns Cue / Gate / Completion lines.
-        /// </summary>
-        static IReadOnlyList<string> DriveDemo(TutorialDefinition tutorial)
-        {
-            var log = new List<string>();
-            var runner = new TutorialRunner();
-            runner.Cue += (tutorialId, stepIndex, stepId, cueId) =>
-                log.Add("Cue " + stepId + ":" + cueId);
-            runner.Gate += (tutorialId, stepIndex, stepId, phase) =>
-                log.Add("Gate " + phase + " " + stepId);
-            runner.StepCompleted += (tutorialId, stepIndex, stepId) =>
-                log.Add("StepCompleted " + stepId);
-            runner.TutorialCompleted += tutorialId =>
-                log.Add("TutorialCompleted " + tutorialId.Value);
-
-            runner.Start(tutorial);
-            runner.CueDone("highlight.menu");
-            runner.Report(SoftReportKind, 0);
-            runner.Report(HardReportKind, HardReportParam);
-
-            return log;
         }
 
         #endregion
@@ -181,7 +88,7 @@ namespace Aerisyn.Tutorial.Tests
         public void Project_NullOrEmptyTutorialId_Throws()
         {
             Assert.Throws<System.ArgumentException>(() =>
-                TutorialAuthoringProjection.Project("", DemoAuthoredSteps()));
+                TutorialAuthoringProjection.Project("", RunnerSmokeDriver.BuildDemoAuthoredSteps()));
         }
 
 
@@ -191,6 +98,33 @@ namespace Aerisyn.Tutorial.Tests
             var steps = new AuthoredStep[] { null };
             Assert.Throws<System.ArgumentException>(() =>
                 TutorialAuthoringProjection.Project("bad", steps));
+        }
+
+
+        [Test]
+        public void Project_BlankCueId_ThrowsLikeCore()
+        {
+            var steps = new[]
+            {
+                new AuthoredStep
+                {
+                    Id = "broken",
+                    Enforcement = Enforcement.Soft,
+                    ReportKind = 1,
+                    MatchAnyParam = true,
+                    CueGroups = new[]
+                    {
+                        new AuthoredCueGroup
+                        {
+                            Kind = CueGroupKind.Sequential,
+                            CueIds = new[] { "ok", "" },
+                        },
+                    },
+                },
+            };
+
+            Assert.Throws<System.ArgumentException>(() =>
+                TutorialAuthoringProjection.Project("bad.cues", steps));
         }
 
         #endregion

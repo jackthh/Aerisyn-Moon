@@ -13,7 +13,7 @@ Game teams need a reusable, easy-to-install way to run Soft and Hard player tuto
 
 ## Solution
 
-Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutorial is an ordered list of **Steps**. Each Step has **Enforcement** (Soft or Hard), a **Report** match for success, and optional **Choreography** of opaque **Cues** (sequential await via **Cue Done**, concurrent fire-and-forget, or a mix). The game **Start**s / **Stop**s Tutorials, feeds **Report** and **Cue Done**, and listens for **Cue**, **Gate**, and **Completion** signals. Presentation, input lock, rewards, catch-up, and disk save stay in the game (**Progress Snapshot** is the only save-shaped export). v1 authoring is code-first builders into a Tutorial definition; SO authoring is a follow-up after Core works (issue 02). No Quests package dependency.
+Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutorial is an ordered list of **Steps**. Each Step has **Enforcement** (Soft or Hard), a **Report** match for success, and optional **Choreography** of opaque **Cues** (sequential await via **Cue Done**, concurrent fire-and-forget, or a mix). The game **Start**s / **Stop**s Tutorials, feeds **Report** and **Cue Done**, and listens for **Cue**, **Gate**, and **Completion** signals. Presentation, input lock, rewards, catch-up, and disk save stay in the game (**Progress Snapshot** is the only save-shaped export). Authoring is code-first builders and/or a thin ScriptableObject (`TutorialAsset`) that projects into the same Tutorial definition. No Quests package dependency.
 
 ## User Stories
 
@@ -47,8 +47,8 @@ Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutori
 28. As a save programmer, I want to apply a Progress Snapshot when Starting (or restoring), so that my game can resume mid-Tutorial if I choose that policy.
 29. As a save programmer, I want the package not to touch disk or PlayerPrefs, so that official save ownership stays in the game.
 30. As a content author, I want code-first builders (or equivalent definition construction) in v1, so that I can author Tutorials in C# without waiting for SO tools.
-31. As a package consumer, I want definitions to be plain data consumed by the Runner, so that later SO authoring can project into the same shape.
-32. As a package maintainer, I want SO authoring deferred to issue 02 after Core is proven, so that the definition shape can stabilize first.
+31. As a package consumer, I want definitions to be plain data consumed by the Runner, so that SO authoring and builders project into the same shape.
+32. As a package maintainer, I want thin SO authoring (`TutorialAsset`) after Core is proven, so that the definition shape stays stable and there is no second runtime model.
 33. As a package consumer, I want no dependency on com.aerisyn.quests in v1, so that I can install Tutorial alone.
 34. As a package consumer, I want install via git URL like other Aerisyn packages, so that onboarding matches Quests/Data Config.
 35. As a package consumer, I want Odin as the shared DevHost/consumer prerequisite only as needed for assembly consistency, so that Core runtime logic does not call Odin.
@@ -62,7 +62,7 @@ Ship a pure C# **Runner** that runs at most one **Tutorial** at a time. A Tutori
 43. As a QA engineer, I want a test that Stop clears active state and ends Gates/Cues cleanly enough for the game to unlock, so that abandon is safe.
 44. As a sample author, I want a minimal Samples~ or DevHost demo that Starts a Tutorial, Reports, and logs signals, so that consumers see the seam without copying Idle-Axolotl.
 45. As a documentation reader, I want README + CONTEXT vocabulary (Tutorial, Step, Soft, Hard, Cue, Choreography, Report, Gate, Completion, Runner, Progress Snapshot), so that agents and humans share language.
-46. As a designer (later), I want a future SO authoring path that does not invent a second runtime model, so that Inspector edits feed the same Runner.
+46. As a designer, I want SO authoring that does not invent a second runtime model, so that Inspector edits feed the same Runner.
 47. As a studio lead, I want the package to avoid Idle-Axolotl’s one-class-per-substep pattern, so that content stays data + generic Runner.
 48. As an analytics programmer, I want stable Tutorial and Step identities on Completion, so that I can log funnels without parsing presentation.
 49. As a gameplay programmer, I want opaque Report kinds owned by the game (enum cast to int or similar), so that the package does not ship a verb catalog.

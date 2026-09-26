@@ -65,8 +65,11 @@ namespace Aerisyn.Tutorial.Authoring
 
         #region Public API
 
-        /// <summary>Authored Tutorial id string (empty when misconfigured).</summary>
-        public string TutorialIdValue => _tutorialId;
+        /// <summary>
+        /// The Tutorial identity from the authored name. Throws when empty,
+        /// so call <see cref="Validate"/> first on assets that may be misconfigured.
+        /// </summary>
+        public TutorialId TutorialId => new TutorialId(_tutorialId);
 
 
         /// <summary>Authored Steps in Inspector order.</summary>
@@ -91,12 +94,6 @@ namespace Aerisyn.Tutorial.Authoring
                 return true;
             }
             catch (ArgumentException exception)
-            {
-                definition = null;
-                error = exception.Message;
-                return false;
-            }
-            catch (InvalidOperationException exception)
             {
                 definition = null;
                 error = exception.Message;

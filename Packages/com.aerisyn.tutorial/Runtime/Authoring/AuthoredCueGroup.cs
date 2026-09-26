@@ -14,7 +14,7 @@ namespace Aerisyn.Tutorial.Authoring
         /// <summary>Sequential (await Cue Done) or Concurrent (fire-and-forget).</summary>
         public CueGroupKind Kind = CueGroupKind.Sequential;
 
-        /// <summary>Opaque Cue ids in authoring order. Empty / null means skip this group.</summary>
+        /// <summary>Opaque Cue ids in authoring order. Null/empty or blank ids fail Core validation on project.</summary>
         public string[] CueIds = Array.Empty<string>();
 
         #endregion
@@ -23,55 +23,30 @@ namespace Aerisyn.Tutorial.Authoring
         #region Projection
 
         /// <summary>
-        /// True when there is at least one non-empty Cue id to schedule.
-        /// Blank ids are ignored so a half-filled Inspector row does not throw mid-list.
+        /// Builds a Core Cue group from Cue ids in order.
+        /// Throws when ids are null/empty or any id is blank (same rules as Core <see cref="CueGroup"/>).
         /// </summary>
-        public bool HasCueIds
+        public CueGroup ToCueGroup()
         {
-            get
-            {
-                if (CueIds == null || CueIds.Length == 0)
-                    return false;
-
-                for (var i = 0; i < CueIds.Length; i++)
-                {
-                    if (!string.IsNullOrEmpty(CueIds[i]))
-                        return true;
-                }
-
-                return false;
-            }
+            // Delegate validation to Core so Authoring never softens blank ids into a different Choreography.
+            return new CueGroup(Kind, CueIds);
         }
 
 
         /// <summary>
-        /// Builds a Core Cue group from non-empty Cue ids.
-        /// Throws when <see cref="HasCueIds"/> is false (caller should skip empty groups).
+        /// One authored Cue group → Sequential or Concurrent Choreography via Core public factories
+        /// (Authoring never depends on Core private constructors).
         /// </summary>
-        public CueGroup ToCueGroup()
+        public ChoreographyDefinition ToChoreography()
         {
-            if (!HasCueIds)
-                throw new ArgumentException("Authored Cue group has no Cue ids.");
+            CueGroup group = ToCueGroup();
+            var ids = new string[group.CueIds.Count];
+            for (var i = 0; i < group.CueIds.Count; i++)
+                ids[i] = group.CueIds[i];
 
-            // Count first so we allocate once (no LINQ).
-            var count = 0;
-            for (var i = 0; i < CueIds.Length; i++)
-            {
-                if (!string.IsNullOrEmpty(CueIds[i]))
-                    count++;
-            }
-
-            var copy = new string[count];
-            var write = 0;
-            for (var i = 0; i < CueIds.Length; i++)
-            {
-                if (string.IsNullOrEmpty(CueIds[i]))
-                    continue;
-                copy[write] = CueIds[i];
-                write++;
-            }
-
-            return new CueGroup(Kind, copy);
+            return group.Kind == CueGroupKind.Sequential
+                ? ChoreographyDefinition.Sequential(ids)
+                : ChoreographyDefinition.Concurrent(ids);
         }
 
         #endregion
