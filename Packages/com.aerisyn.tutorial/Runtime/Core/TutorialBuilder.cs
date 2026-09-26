@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace Aerisyn.Tutorial
 {
     /// <summary>
-    /// Code-first builder for Soft-only Tutorial definitions (ticket 01).
-    /// Later tickets can extend Hard / Cue authoring without changing the definition shape.
+    /// Code-first builder for Soft and Hard Tutorial definitions.
+    /// Cue Choreography authoring arrives in later tickets without changing the definition shape.
     /// </summary>
     public sealed class TutorialBuilder
     {
@@ -34,6 +34,21 @@ namespace Aerisyn.Tutorial
         public TutorialBuilder SoftStep(string stepId, ReportMatch reportMatch)
         {
             _steps.Add(new StepDefinition(stepId, Enforcement.Soft, reportMatch));
+            return this;
+        }
+
+        #endregion
+
+
+        #region Hard Steps
+
+        /// <summary>
+        /// Appends a Hard Step that succeeds when <paramref name="reportMatch"/> is Reported.
+        /// The Runner emits Gate Started/Ended while this Step is active.
+        /// </summary>
+        public TutorialBuilder HardStep(string stepId, ReportMatch reportMatch)
+        {
+            _steps.Add(new StepDefinition(stepId, Enforcement.Hard, reportMatch));
             return this;
         }
 

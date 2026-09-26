@@ -13,7 +13,7 @@ namespace Aerisyn.Tutorial
         /// <summary>Stable Step identity for analytics / UI. Unique within its Tutorial is recommended.</summary>
         public string Id { get; }
 
-        /// <summary>Soft (coach) or Hard (gate). Ticket 01 builders only produce Soft.</summary>
+        /// <summary>Soft (coach) or Hard (gate).</summary>
         public Enforcement Enforcement { get; }
 
         /// <summary>Which Report completes this Step.</summary>

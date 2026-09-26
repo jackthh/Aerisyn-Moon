@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Soft Runner vertical slice: `TutorialRunner`, `TutorialBuilder` / Soft Steps, `ReportMatch`,
   Step + Tutorial Completion events, Progress Snapshot export/apply.
+- Hard Gate signals: `TutorialBuilder.HardStep`, `GatePhase`, Runner `Gate` event
+  (Started on Hard enter, Ended on Completion or Stop). Soft Steps emit no Gate.
 - Fixture suite `Tests~/SoftRunner.Tests` (Start/Stop, Report advance, unmatched ignore,
-  single-active rejection, snapshot resume).
+  single-active rejection, snapshot resume, Hard Gate enter/leave, Soft/Hard mix).
 
 ### Changed
 
