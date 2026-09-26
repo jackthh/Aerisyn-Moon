@@ -145,8 +145,7 @@ namespace Aerisyn.Tutorial
             StepCompleted?.Invoke(tutorialId, completedIndex, completedStepId);
 
             // Leaving a Hard Step ends its Gate before the next Step (or Tutorial Completion).
-            if (activeStep.Enforcement == Enforcement.Hard)
-                EmitGate(tutorialId, completedIndex, completedStepId, GatePhase.Ended);
+            EmitGateIfHard(GatePhase.Ended);
 
             int nextIndex = completedIndex + 1;
             if (nextIndex >= _activeDefinition.StepCount)
