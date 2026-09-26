@@ -1,9 +1,9 @@
 # Aerisyn Tutorial (`com.aerisyn.tutorial`)
 
-Pure C# **Tutorial Runner** for Soft (and later Hard) player tutorials. Authors build
-Tutorial definitions in code; the game Starts / Stops, feeds Reports, and listens for
-Completion signals. Presentation, rewards, and disk save stay in the game
-(**Progress Snapshot** is the only save-shaped export).
+Pure C# **Tutorial Runner** for Soft and Hard player tutorials. Authors build
+Tutorial definitions in code; the game Starts / Stops, feeds Report and Cue Done, and
+listens for Cue, Gate, and Completion signals. Presentation, rewards, and disk save
+stay in the game (**Progress Snapshot** is the only save-shaped export).
 
 Domain language: [`CONTEXT.md`](CONTEXT.md). Design notes: [`.scratch/tutorial/spec.md`](../../.scratch/tutorial/spec.md).
 
@@ -29,31 +29,45 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.tutorial
 
 ## Status (0.4.0)
 
-Soft Runner vertical slice (ticket 01):
+Soft Runner + Hard Gate + sequential Cue Choreography (tickets 01, 03, 04):
 
-- Code-first `TutorialBuilder` → Soft Steps with `ReportMatch`
-- `TutorialRunner`: Start / Stop / Report, single-active enforcement
+- Code-first `TutorialBuilder` → Soft / Hard Steps with `ReportMatch` and optional Choreography
+- `TutorialRunner`: Start / Stop / Report / CueDone, single-active enforcement
+- Gate Started / Ended events for Hard Steps (Soft emits none)
+- Sequential Cues: emit one at a time, await Cue Done; Report still completes unfinished Choreography
 - Step and Tutorial Completion events
 - Progress Snapshot export / apply on Start for mid-Tutorial resume
 - Fixture tests: `Tests~/SoftRunner.Tests` (`dotnet test`)
 
-Still out of this cut: Hard Gate signals, Cue Choreography, SO authoring, Samples~.
+Still out of this cut: concurrent Cue Choreography, SO authoring, Samples~.
 
 ## Quick start
 
 ```csharp
 var runner = new TutorialRunner();
+runner.Cue += (tutorialId, stepIndex, stepId, cueId) =>
+{
+    // Present, then: runner.CueDone(cueId);
+};
+runner.Gate += (tutorialId, stepIndex, stepId, phase) =>
+{
+    // Hard only: lock input on Started, unlock on Ended
+};
 runner.StepCompleted += (tutorialId, stepIndex, stepId) => { /* UI / analytics */ };
 runner.TutorialCompleted += tutorialId => { /* grant rewards */ };
 
 var tutorial = new TutorialBuilder("onboarding.sword")
-    .SoftStep("upgrade", new ReportMatch(kind: 10, param: 1))
-    .SoftStep("equip", ReportMatch.AnyParam(kind: 11))
+    .SoftStep(
+        "coach",
+        ReportMatch.AnyParam(kind: 11),
+        ChoreographyDefinition.Sequential("highlight.menu", "text.coach"))
+    .HardStep("upgrade", new ReportMatch(kind: 10, param: 1))
     .Build();
 
-runner.Start(tutorial);
-runner.Report(10, 1); // completes Soft Step 0, advances
-runner.Report(11, 0); // completes last Soft Step → TutorialCompleted
+runner.Start(tutorial);       // emits first Cue
+runner.CueDone("highlight.menu");
+runner.Report(11, 0);         // Soft Step completes even if later Cues unfinished
+runner.Report(10, 1);         // Hard Step → Gate Ended + TutorialCompleted
 ```
 
 ## Layout

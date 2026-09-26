@@ -4,12 +4,13 @@ namespace Aerisyn.Tutorial
 {
     /// <summary>
     /// Pure C# engine that runs at most one Tutorial at a time.
-    /// Soft Steps advance on matching Reports; emits Step / Tutorial Completion signals.
-    /// Hard Gates and Cue Choreography are out of ticket 01.
+    /// Soft/Hard Steps advance on matching Reports; emits Cue, Gate, and Completion signals.
+    /// Sequential Choreography awaits Cue Done between Cue emissions.
     ///
     /// Outline:
-    ///   Start / Stop           -> begin or abandon the active Tutorial
-    ///   Report                 -> match against the active Soft Step only
+    ///   Start / Stop           -> begin or abandon; Gate + first Cue on enter
+    ///   Report                 -> match against the active Step (independent of unfinished Cues)
+    ///   CueDone                -> advance sequential Choreography when the awaited Cue finishes
     ///   ExportSnapshot         -> Tutorial id + Step index for the game's save pipeline
     /// </summary>
     public sealed class TutorialRunner
@@ -18,6 +19,9 @@ namespace Aerisyn.Tutorial
 
         private TutorialDefinition _activeDefinition;
         private int _activeStepIndex = -1;
+
+        // Index into the active Step's SequentialCueIds while awaiting Cue Done; -1 = idle.
+        private int _awaitingCueIndex = -1;
 
         #endregion
 
@@ -40,17 +44,30 @@ namespace Aerisyn.Tutorial
         #region Events
 
         /// <summary>
-        /// A Soft Step succeeded via Report.
+        /// A Step succeeded via Report.
         /// Arguments: Tutorial id, completed Step index, Step id (stable authoring identity).
-        /// Fires before the Runner advances to the next Step (or Tutorial Completion).
+        /// Fires before Gate Ended (for Hard) and before the Runner advances.
         /// </summary>
         public event Action<TutorialId, int, string> StepCompleted;
 
         /// <summary>
-        /// The last Soft Step succeeded. Arguments: Tutorial id.
+        /// The last Step succeeded. Arguments: Tutorial id.
         /// Rewards stay outside this package; the game grants at the listen site.
         /// </summary>
         public event Action<TutorialId> TutorialCompleted;
+
+        /// <summary>
+        /// Hard Step Gate for the game to lock/unlock input/UI.
+        /// Arguments: Tutorial id, Step index, Step id, GatePhase (Started or Ended).
+        /// Soft Steps never raise this.
+        /// </summary>
+        public event Action<TutorialId, int, string, GatePhase> Gate;
+
+        /// <summary>
+        /// Presentation Cue for the game to bind (highlight / text / etc.).
+        /// Arguments: Tutorial id, Step index, Step id, opaque Cue id.
+        /// </summary>
+        public event Action<TutorialId, int, string, string> Cue;
 
         #endregion
 
@@ -60,6 +77,7 @@ namespace Aerisyn.Tutorial
         /// <summary>
         /// Starts a Tutorial at Step 0, or at <paramref name="snapshot"/> StepIndex when provided.
         /// Throws if a Tutorial is already active, the definition is null, or the snapshot is out of range.
+        /// Emits Gate Started when the entered Step is Hard, then the first sequential Cue if any.
         /// </summary>
         public void Start(TutorialDefinition definition, ProgressSnapshot? snapshot = null)
         {
@@ -94,15 +112,20 @@ namespace Aerisyn.Tutorial
 
             _activeDefinition = definition;
             _activeStepIndex = resumeIndex;
+            EnterActiveStep();
         }
 
 
         /// <summary>
         /// Abandons the active Tutorial without emitting Tutorial Completion.
-        /// No-op when inactive.
+        /// Emits Gate Ended when the active Step is Hard. Clears awaiting Cue state. No-op when inactive.
         /// </summary>
         public void Stop()
         {
+            if (!IsActive)
+                return;
+
+            EmitGateIfHard(GatePhase.Ended);
             ClearActive();
         }
 
@@ -112,8 +135,9 @@ namespace Aerisyn.Tutorial
         #region Report
 
         /// <summary>
-        /// Gameplay fact. Matches only the active Soft Step; unmatched Reports are ignored.
-        /// On match: emits Step Completion, then advances or emits Tutorial Completion.
+        /// Gameplay fact. Matches only the active Step; unmatched Reports are ignored.
+        /// On match: emits Step Completion even if sequential Choreography is unfinished,
+        /// ends Hard Gate if any, then advances or Tutorial Completion.
         /// </summary>
         public void Report(int kind, int param = 0)
         {
@@ -128,8 +152,14 @@ namespace Aerisyn.Tutorial
             int completedIndex = _activeStepIndex;
             string completedStepId = activeStep.Id;
 
+            // Report success abandons unfinished Choreography for this Step.
+            _awaitingCueIndex = -1;
+
             // Emit Step Completion before advancing so listeners see the finished beat.
             StepCompleted?.Invoke(tutorialId, completedIndex, completedStepId);
+
+            // Leaving a Hard Step ends its Gate before the next Step (or Tutorial Completion).
+            EmitGateIfHard(GatePhase.Ended);
 
             int nextIndex = completedIndex + 1;
             if (nextIndex >= _activeDefinition.StepCount)
@@ -140,6 +170,43 @@ namespace Aerisyn.Tutorial
             }
 
             _activeStepIndex = nextIndex;
+            EnterActiveStep();
+        }
+
+        #endregion
+
+
+        #region Cue Done
+
+        /// <summary>
+        /// Presentation finished the awaited sequential Cue.
+        /// Ignores when inactive, when no Cue is awaited, or when <paramref name="cueId"/> does not match.
+        /// On match: emits the next sequential Cue, or clears await when Choreography finishes.
+        /// </summary>
+        public void CueDone(string cueId)
+        {
+            if (!IsActive || _awaitingCueIndex < 0)
+                return;
+
+            StepDefinition step = _activeDefinition.Steps[_activeStepIndex];
+            var cueIds = step.Choreography.SequentialCueIds;
+            if (_awaitingCueIndex >= cueIds.Count)
+                return;
+
+            string expected = cueIds[_awaitingCueIndex];
+            if (!string.Equals(expected, cueId, StringComparison.Ordinal))
+                return;
+
+            int nextCueIndex = _awaitingCueIndex + 1;
+            if (nextCueIndex >= cueIds.Count)
+            {
+                // Sequential Choreography finished; Step still waits for Report.
+                _awaitingCueIndex = -1;
+                return;
+            }
+
+            _awaitingCueIndex = nextCueIndex;
+            EmitCue(step, cueIds[_awaitingCueIndex]);
         }
 
         #endregion
@@ -164,10 +231,56 @@ namespace Aerisyn.Tutorial
 
         #region Private helpers
 
+        /// <summary>Gate Started (Hard) then first sequential Cue for the Step now at <see cref="_activeStepIndex"/>.</summary>
+        private void EnterActiveStep()
+        {
+            EmitGateIfHard(GatePhase.Started);
+            BeginSequentialChoreography();
+        }
+
+
+        /// <summary>Emits the first sequential Cue and awaits Cue Done, or no-ops when Choreography is empty.</summary>
+        private void BeginSequentialChoreography()
+        {
+            _awaitingCueIndex = -1;
+            if (!IsActive)
+                return;
+
+            StepDefinition step = _activeDefinition.Steps[_activeStepIndex];
+            var cueIds = step.Choreography.SequentialCueIds;
+            if (cueIds.Count == 0)
+                return;
+
+            _awaitingCueIndex = 0;
+            EmitCue(step, cueIds[0]);
+        }
+
+
+        private void EmitCue(StepDefinition step, string cueId)
+        {
+            Cue?.Invoke(_activeDefinition.Id, _activeStepIndex, step.Id, cueId);
+        }
+
+
+        /// <summary>Raises Gate for the active Step when it is Hard; Soft is a no-op.</summary>
+        private void EmitGateIfHard(GatePhase phase)
+        {
+            if (!IsActive)
+                return;
+
+            StepDefinition step = _activeDefinition.Steps[_activeStepIndex];
+            if (step.Enforcement != Enforcement.Hard)
+                return;
+
+            Gate?.Invoke(_activeDefinition.Id, _activeStepIndex, step.Id, phase);
+        }
+
+
         private void ClearActive()
         {
             _activeDefinition = null;
             _activeStepIndex = -1;
+            _awaitingCueIndex = -1;
         }
 
         #endregion
