@@ -1,19 +1,46 @@
 # Aerisyn Tutorial (`com.aerisyn.tutorial`)
 
-Scaffold for an upcoming game-agnostic tutorial / onboarding package. Domain language and
-runtime API are not defined yet; see [`.scratch/tutorial/spec.md`](../../.scratch/tutorial/spec.md)
-and [`CONTEXT.md`](CONTEXT.md).
+Pure C# **Tutorial Runner** for Soft and Hard player tutorials. Authors build
+Tutorial definitions in code or via a thin **ScriptableObject** (`TutorialAsset`); the game
+Starts / Stops, feeds Report and Cue Done, and listens for Cue, Gate, and Completion signals.
+Presentation, rewards, and disk save stay in the game (**Progress Snapshot** is the only
+save-shaped export).
 
-**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Tutorial` · **Version:** `0.4.0` (scaffold; cadence-aligned)
+Domain language and skeleton: [`CONTEXT.md`](CONTEXT.md) (start with **Shared understanding (v1)**).
+Design notes: [`.scratch/tutorial/spec.md`](../../.scratch/tutorial/spec.md).
+
+**Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Tutorial` · **Version:** `0.4.0`
+
+## Skeleton (v1)
+
+How the pieces fit before you open the API:
+
+```text
+Game ──Start / Stop──► Runner (pure C#, ≤1 Tutorial)
+                         │
+         Report ─────────┼── advances Step (Soft | Hard)
+         Cue Done ───────┼── advances sequential Choreography
+                         │
+                         └── Cue / Gate / Completion ──► Game
+
+Game owns: presentation · input lock · rewards · catch-up · disk save
+```
+
+- **Runner** — pure C# engine; at most one Tutorial active; Start / Stop / Report / CueDone in, Cue / Gate / Completion out.
+- **Step** — Soft or Hard beat; success is a matching **Report**, not finishing presentation.
+- **Choreography** — schedules **Cues** (Sequential await via Cue Done, Concurrent forget, or Mix).
+- **Cue** — opaque presentation intent the game binds (highlight / text / …).
+
+Full table + diagram: [`CONTEXT.md` → Shared understanding (v1)](CONTEXT.md#shared-understanding-v1).
 
 ## Requirements
 
 | Dependency | Why |
 |---|---|
 | **Unity 2022.3+** | Minimum editor / player target |
-| **Odin Inspector (Sirenix)** | Shared Aerisyn prerequisite so packages compile against `Sirenix.OdinInspector.Attributes`. |
+| **Odin Inspector (Sirenix)** | Shared Aerisyn prerequisite so packages compile against `Sirenix.OdinInspector.Attributes`. Authoring ScriptableObjects use Odin drawers. |
 
-Install Odin from the Unity Asset Store (or your usual Sirenix workflow) into the **consuming project**. Odin is not on UPM and is **not** shipped in this repository.
+Install Odin from the Unity Asset Store (or your usual Sirenix workflow) into the **consuming project**. Odin is not on UPM and is **not** shipped in this repository. Runner logic does not call Odin at runtime.
 
 ## Install
 
@@ -24,10 +51,78 @@ Install Odin from the Unity Asset Store (or your usual Sirenix workflow) into th
 https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.tutorial
 ```
 
-## Status
+## Status (0.4.0)
 
-This package is a **workspace scaffold** only: `package.json`, runtime asmdef, and a package marker type.
-No gameplay API yet. Design work lives under `.scratch/tutorial/`.
+Soft Runner + Hard Gate + Cue Choreography + ScriptableObject authoring + Runner Smoke sample
+(tickets 01–06):
+
+- Code-first `TutorialBuilder` → Soft / Hard Steps with `ReportMatch` and optional Choreography
+- Thin Authoring: `TutorialAsset` / `AuthoredStep` project 1:1 into the same `TutorialDefinition`
+- `TutorialRunner`: Start / Stop / Report / CueDone, single-active enforcement
+- Gate Started / Ended events for Hard Steps (Soft emits none)
+- Sequential Cues: emit one at a time, await Cue Done
+- Concurrent Cues: emit all at once (no Cue Done); Mix Sequential + Concurrent groups on one Step
+- Report still completes unfinished Choreography
+- Step and Tutorial Completion events
+- Progress Snapshot export / apply on Start for mid-Tutorial resume
+- Sample **Runner Smoke** (`Samples~/RunnerSmoke`): Soft/Hard + Cue stubs; code-built and SO-projected on one Runner
+- Fixture tests: `Tests~/SoftRunner.Tests` (`dotnet test`)
+
+No Quests package dependency.
+
+## Quick start
+
+```csharp
+var runner = new TutorialRunner();
+runner.Cue += (tutorialId, stepIndex, stepId, cueId) =>
+{
+    // Present, then: runner.CueDone(cueId);  // Sequential only
+};
+runner.Gate += (tutorialId, stepIndex, stepId, phase) =>
+{
+    // Hard only: lock input on Started, unlock on Ended
+};
+runner.StepCompleted += (tutorialId, stepIndex, stepId) => { /* UI / analytics */ };
+runner.TutorialCompleted += tutorialId => { /* grant rewards */ };
+
+var tutorial = new TutorialBuilder("onboarding.sword")
+    .SoftStep(
+        "coach",
+        ReportMatch.AnyParam(kind: 11),
+        ChoreographyDefinition.Sequential("highlight.menu", "text.coach"))
+    .HardStep(
+        "upgrade",
+        new ReportMatch(kind: 10, param: 1),
+        ChoreographyDefinition.Mix(
+            ChoreographyDefinition.Concurrent("glow.slot", "sfx.chime"),
+            ChoreographyDefinition.Sequential("highlight.button")))
+    .Build();
+
+runner.Start(tutorial);       // emits first Sequential Cue
+runner.CueDone("highlight.menu");
+runner.Report(11, 0);         // Soft Step completes even if later Cues unfinished
+// Hard Step: Concurrent glow+sfx then Sequential highlight (Cue Done optional for Concurrent)
+runner.Report(10, 1);         // Hard Step → Gate Ended + TutorialCompleted
+```
+
+## Authoring ScriptableObjects
+
+**Assets → Create → Aerisyn → Tutorial → Tutorial**. Edit ordered Steps (Enforcement, Report
+kind/param, Cue groups) in the Inspector (Odin). Call `asset.Build()` and hand the result to
+`TutorialRunner.Start` — same definition shape as `TutorialBuilder`. Prefer code-first? Build
+`TutorialDefinition` directly and skip the asset.
+
+## Vocabulary
+
+Shared terms live in [`CONTEXT.md`](CONTEXT.md) (skeleton first, then glossary): Tutorial, Step,
+Soft, Hard, Cue, Choreography, Report, Cue Done, Gate, Completion, Runner, Progress Snapshot.
+Presentation, rewards, catch-up, and disk save stay in the game.
+
+## Sample
+
+Package Manager → **Aerisyn Tutorial → Samples → Runner Smoke**, then follow
+[`Samples~/RunnerSmoke/README.md`](Samples~/RunnerSmoke/README.md). The facade MonoBehaviour
+stays in Samples~; Core remains pure C#.
 
 ## Layout
 
@@ -36,8 +131,13 @@ Packages/com.aerisyn.tutorial/
   package.json
   README.md
   CHANGELOG.md
-  CONTEXT.md          # glossary stub (filled when domain is grilled)
+  CONTEXT.md              # Shared understanding + glossary
+  Documentation~/         # Diagrams (not imported as assets)
   Runtime/
     Aerisyn.Tutorial.asmdef
     TutorialPackage.cs
+    Core/                 # Runner + definitions (pure C#)
+    Authoring/            # TutorialAsset + projection (Odin SO)
+  Samples~/RunnerSmoke/   # Soft/Hard + Cue Console smoke (code + SO)
+  Tests~/SoftRunner.Tests/
 ```

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 
 # 01: Soft Runner vertical slice
 
@@ -6,16 +6,26 @@ Status: ready-for-agent
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Code-first builders (or equivalent) produce a Tutorial definition of ordered Soft Steps with Report match data
-- [ ] Runner Start/Stop works; a second Start while active is rejected clearly
-- [ ] Matching Report completes the active Soft Step, emits Step Completion, and advances; last Step emits Tutorial Completion
-- [ ] Unmatched Reports do not advance or corrupt the active Step
-- [ ] Progress Snapshot export/apply restores enough state to resume at a Step index under game save policy
-- [ ] Automated tests cover the above only through the Runner public seam (no UI / Play Mode required)
-- [ ] CONTEXT vocabulary used in public names (Tutorial, Step, Soft, Report, Runner, Completion, Progress Snapshot)
+- [x] Code-first builders (or equivalent) produce a Tutorial definition of ordered Soft Steps with Report match data
+- [x] Runner Start/Stop works; a second Start while active is rejected clearly
+- [x] Matching Report completes the active Soft Step, emits Step Completion, and advances; last Step emits Tutorial Completion
+- [x] Unmatched Reports do not advance or corrupt the active Step
+- [x] Progress Snapshot export/apply restores enough state to resume at a Step index under game save policy
+- [x] Automated tests cover the above only through the Runner public seam (no UI / Play Mode required)
+- [x] CONTEXT vocabulary used in public names (Tutorial, Step, Soft, Report, Runner, Completion, Progress Snapshot)
 
 ## Comments
 
 - First Core tracer bullet from `/to-tickets` on the ready-for-agent Tutorial spec.
+
+## Answer
+
+Soft Runner seam shipped under `Packages/com.aerisyn.tutorial/Runtime/Core/`:
+
+- `TutorialBuilder.SoftStep` → `TutorialDefinition` of Soft Steps with `ReportMatch`
+- `TutorialRunner`: Start (optional Progress Snapshot resume), Stop, Report; throws on second Start while active
+- Events: `StepCompleted`, `TutorialCompleted`
+- `ExportSnapshot` / Start-with-snapshot for Tutorial id + Step index
+- Fixtures: `Tests~/SoftRunner.Tests` (6 tests, `dotnet test`)

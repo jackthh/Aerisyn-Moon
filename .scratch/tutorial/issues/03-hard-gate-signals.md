@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 
 # 03: Hard Gate signals
 
@@ -6,13 +6,23 @@ Status: ready-for-agent
 
 **Blocked by:** 01 Soft Runner vertical slice
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Entering a Hard Step emits Gate started; leaving it (Step Completion or Stop) emits Gate ended
-- [ ] Soft Steps do not emit Gate lock semantics
-- [ ] A Tutorial can mix Soft and Hard Steps; Gates only track the active Hard Step
-- [ ] Tests assert Gate behavior only through the Runner seam
+- [x] Entering a Hard Step emits Gate started; leaving it (Step Completion or Stop) emits Gate ended
+- [x] Soft Steps do not emit Gate lock semantics
+- [x] A Tutorial can mix Soft and Hard Steps; Gates only track the active Hard Step
+- [x] Tests assert Gate behavior only through the Runner seam
 
 ## Comments
 
 - Parallelizable with 04 after 01.
+
+## Answer
+
+Hard Gate signals on the Soft Runner seam under `Packages/com.aerisyn.tutorial/Runtime/Core/`:
+
+- `TutorialBuilder.HardStep` → Hard Enforcement Steps with the same `ReportMatch` shape
+- `GatePhase` (`Started` / `Ended`) + `TutorialRunner.Gate` event
+- Enter Hard (Start or advance) → Gate Started; leave (Report Completion or Stop) → Gate Ended
+- Soft Steps emit no Gate; Soft/Hard mix only tracks the active Hard Step
+- Fixtures: `Tests~/SoftRunner.Tests/HardGateTests.cs` (6 Gate tests; full suite 12 via `dotnet test`)

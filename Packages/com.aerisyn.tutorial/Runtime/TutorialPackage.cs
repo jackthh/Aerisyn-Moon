@@ -2,7 +2,7 @@ namespace Aerisyn.Tutorial
 {
     /// <summary>
     /// Package constants for <c>com.aerisyn.tutorial</c>.
-    /// Runtime API is not defined yet; this type is the scaffold marker only.
+    /// Core runtime: <see cref="TutorialRunner"/>, <see cref="TutorialDefinition"/>, and <see cref="ProgressSnapshot"/>.
     /// </summary>
     public static class TutorialPackage
     {
