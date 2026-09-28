@@ -1,0 +1,16 @@
+{
+  "name": "Aerisyn.Tutorial.Samples.RunnerSmoke",
+  "rootNamespace": "Aerisyn.Tutorial.Samples.RunnerSmoke",
+  "references": [
+    "Aerisyn.Tutorial"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
