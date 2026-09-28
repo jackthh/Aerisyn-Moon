@@ -5,6 +5,13 @@ All notable changes to `com.aerisyn.tutorial` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Docs: **Shared understanding (v1)** skeleton in `CONTEXT.md` / README (Runner, Step, Choreography,
+  Cue, Report / Cue Done advance paths, game ownership boundary) plus diagram under `Documentation~/`.
+
 ## [0.4.0] - 2026-09-25
 
 ### Added
