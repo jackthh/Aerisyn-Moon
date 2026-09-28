@@ -2,6 +2,42 @@
 
 Domain language for `com.aerisyn.tutorial`: tools for game developers and designers to author in-game tutorials that players run through.
 
+## Shared understanding (v1)
+
+Skeleton of how the package is organized. Read this first; the glossary below names each piece.
+
+![Shared understanding (v1): Game Starts/Stops a pure C# Runner (at most one Tutorial); Report advances Soft/Hard Steps; Cue Done advances sequential Choreography; Runner emits Cue, Gate, and Completion signals; Game owns presentation, input lock, rewards, catch-up, and disk save.](Documentation~/shared-understanding-v1.png)
+
+```text
+Game ──Start / Stop──► Runner (pure C#, ≤1 Tutorial)
+                         │
+         Report ─────────┼── advances Step (Soft | Hard)
+         Cue Done ───────┼── advances sequential Choreography
+                         │
+                         └── Cue / Gate / Completion signals ──► Game
+
+Game owns: presentation · input lock · rewards · catch-up · disk save
+```
+
+| Piece | Job | Code seam |
+|---|---|---|
+| **Runner** | In-memory engine. Holds at most one active Tutorial. Game Starts and Stops it. Emits outbound signals; never owns UI or disk. | `TutorialRunner` |
+| **Tutorial** | Ordered list of Steps the Runner runs. | `TutorialDefinition` (from `TutorialBuilder` or `TutorialAsset`) |
+| **Step** | One teaching beat. Soft or Hard Enforcement, a Report match for success, optional Choreography. | `StepDefinition` |
+| **Report** | Gameplay fact (opaque kind + optional param). Matching Report advances the active Step. Unmatched Reports are ignored. | `TutorialRunner.Report` |
+| **Choreography** | How that Step’s Cues are scheduled: Sequential (await), Concurrent (fire-and-forget), or Mix. Independent of Report success. | `ChoreographyDefinition` |
+| **Cue** | Opaque presentation intent the Runner asks the game to show (highlight, text, …). | `TutorialRunner.Cue` event |
+| **Cue Done** | Game notice that a Sequential Cue finished so Choreography can emit the next. Concurrent Cues do not need it. | `TutorialRunner.CueDone` |
+| **Gate** | Hard Step only: lock/unlock signal for the game’s input/UI. Soft Steps emit none. Package never freezes input itself. | `TutorialRunner.Gate` |
+| **Completion** | Step or whole-Tutorial finished. Game grants rewards at the listen site. | `StepCompleted` / `TutorialCompleted` |
+
+**Two advance paths (do not conflate them):**
+
+1. **Report → Step** — progress and Completion. Choreography does not block this.
+2. **Cue Done → sequential Choreography** — presentation timing only.
+
+**Ownership boundary:** the Runner schedules and signals; the game owns presentation, input lock, rewards, catch-up, and disk save (Progress Snapshot is the only save-shaped export).
+
 ## Language
 
 **Tutorial**:

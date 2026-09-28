@@ -6,9 +6,32 @@ Starts / Stops, feeds Report and Cue Done, and listens for Cue, Gate, and Comple
 Presentation, rewards, and disk save stay in the game (**Progress Snapshot** is the only
 save-shaped export).
 
-Domain language: [`CONTEXT.md`](CONTEXT.md). Design notes: [`.scratch/tutorial/spec.md`](../../.scratch/tutorial/spec.md).
+Domain language and skeleton: [`CONTEXT.md`](CONTEXT.md) (start with **Shared understanding (v1)**).
+Design notes: [`.scratch/tutorial/spec.md`](../../.scratch/tutorial/spec.md).
 
 **Unity:** 2022.3+ · **Requires:** [Odin Inspector](https://odininspector.com/) (Sirenix) · **Runtime assembly:** `Aerisyn.Tutorial` · **Version:** `0.4.0`
+
+## Skeleton (v1)
+
+How the pieces fit before you open the API:
+
+```text
+Game ──Start / Stop──► Runner (pure C#, ≤1 Tutorial)
+                         │
+         Report ─────────┼── advances Step (Soft | Hard)
+         Cue Done ───────┼── advances sequential Choreography
+                         │
+                         └── Cue / Gate / Completion ──► Game
+
+Game owns: presentation · input lock · rewards · catch-up · disk save
+```
+
+- **Runner** — pure C# engine; at most one Tutorial active; Start / Stop / Report / CueDone in, Cue / Gate / Completion out.
+- **Step** — Soft or Hard beat; success is a matching **Report**, not finishing presentation.
+- **Choreography** — schedules **Cues** (Sequential await via Cue Done, Concurrent forget, or Mix).
+- **Cue** — opaque presentation intent the game binds (highlight / text / …).
+
+Full table + diagram: [`CONTEXT.md` → Shared understanding (v1)](CONTEXT.md#shared-understanding-v1).
 
 ## Requirements
 
@@ -91,9 +114,9 @@ kind/param, Cue groups) in the Inspector (Odin). Call `asset.Build()` and hand t
 
 ## Vocabulary
 
-Shared terms live in [`CONTEXT.md`](CONTEXT.md): Tutorial, Step, Soft, Hard, Cue, Choreography,
-Report, Cue Done, Gate, Completion, Runner, Progress Snapshot. Presentation, rewards, catch-up,
-and disk save stay in the game.
+Shared terms live in [`CONTEXT.md`](CONTEXT.md) (skeleton first, then glossary): Tutorial, Step,
+Soft, Hard, Cue, Choreography, Report, Cue Done, Gate, Completion, Runner, Progress Snapshot.
+Presentation, rewards, catch-up, and disk save stay in the game.
 
 ## Sample
 
@@ -108,7 +131,8 @@ Packages/com.aerisyn.tutorial/
   package.json
   README.md
   CHANGELOG.md
-  CONTEXT.md
+  CONTEXT.md              # Shared understanding + glossary
+  Documentation~/         # Diagrams (not imported as assets)
   Runtime/
     Aerisyn.Tutorial.asmdef
     TutorialPackage.cs
