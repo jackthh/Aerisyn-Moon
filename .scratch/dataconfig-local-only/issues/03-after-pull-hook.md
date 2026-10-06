@@ -15,4 +15,4 @@
 
 ## Comments
 
-- Thin `AfterPull.TryInvokeAll` pre-write helper (AssetDatabase blocks EditMode `PullFromGrids` in net9 suite). Runner calls it after all parses, before create/save; throw → `PullReport.Failed`, no writes. Fixture: `AfterPullTests` (3). Full `VerticalNest.Tests` green (35).
+- Thin `AfterPull.TryInvokeAll` pre-write helper (AssetDatabase blocks EditMode `PullFromGrids` in net9 suite). Runner calls `scratch.OnAfterPull` via that helper after all parses, before create/save; throw → `PullReport.Failed`, destroy scratches, no writes. Fixture: `AfterPullTests` (2: derivative→CopyRootItems; throw→Failed/empty writes). Full `VerticalNest.Tests` green (34). Virtual override itself needs Unity EditMode smoke (ConfigTypeAsset / Odin not in net9 suite).
