@@ -114,7 +114,7 @@ After installing the package and importing **Weapons Pull**, you should be able 
 | `Runtime/Parsing/` | `SheetGrid`, `VerticalNestParser`, `PullReport`, Header Emitter, After Pull helper, tab resolver |
 | `Editor/` | OAuth, Sheets fetch, Pull menus/runner, `BakedAssetWriter` |
 | `Editor/Plugins/Google/` | Google.Apis* for Sheets/Drive |
-| `Samples~/WeaponsPull/` | Nested Config Type template + documented Pull Config happy path |
+| `Samples~/WeaponsPull/` | Nested Config Type template + Pull Config happy path; `MovementConfig` Local Only + After Pull |
 | `Tests~/VerticalNest.Tests/` | Pure fixture tests for the parse + report seams (`dotnet test`) |
 | `CONTEXT.md` | Domain glossary |
 

@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `[LocalOnly]` on Config Type Field Headers (scalars and primitive arrays/lists, any nest level): not required for Header Row match; never bound from cells.
-- Warn-and-ignore when the sheet still has a Local Only Field Header or Column Alias (warning text can include the alias); Pull continues and does not hard-fail for that alone.
+- `[LocalOnly]` on Config Type fields (scalars and primitive arrays/lists, any nest level): not part of the Source Sheet contract; not required for Header Row match; never bound from cells.
+- Warn-and-ignore when the sheet still has a column matching a Local Only field name or Column Alias (warning text can include the alias); Pull continues and does not hard-fail for that alone.
 - Header Emitter / Copy Header Row omit Local Only names and aliases; guidance states how many Local Only fields were omitted.
 - Virtual `ConfigTypeAsset.OnAfterPull()` (default no-op): after every included tab parses successfully and before any Baked Asset create/save. Override to fill Local Only derivatives. A throw fails the whole Pull with no writes.
 - README example: sheet-owned `turnSpeed` plus Local Only accel/decel filled in After Pull.

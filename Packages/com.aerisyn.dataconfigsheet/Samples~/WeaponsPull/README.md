@@ -49,16 +49,28 @@ coordinates (e.g. `B5`) so you can fix the sheet; nothing is written until every
 
 ## Local Only + After Pull (`MovementConfig`)
 
-`MovementConfig` shows the 0.5.0 pattern:
+`MovementConfig` shows the 0.5.0 pattern. Optional second table on the same Pull Config (Include In Pull).
 
-- Sheet Header Row: `id`, `turnSpeed` only.
+Tab title: **`MovementConfig`**.
+
+| (preamble) | |
+|---|---|
+| Movement demo | Local Only fields stay off this sheet |
+| `id` | `turnSpeed` |
+| bike | 10 |
+| cart | 4 |
+
+Notes:
+
+- Sheet Header Row: `id`, `turnSpeed` only (paste via Copy Header Row on `MovementConfig`).
 - `[LocalOnly]` on `accelerateTurnSpeed` / `decelerateTurnSpeed` (not required online; never bound from cells).
-- `OnAfterPull` fills those Local Only fields from `turnSpeed` before the Baked Asset is written.
+- `OnAfterPull` fills those Local Only fields from `turnSpeed` before the Baked Asset is written (`bike` → accel 20, decel 10).
 - Re-Pull is **clean**: Local Only values are not merged from the prior Inspector state; After Pull refills them.
 - If an old full Header Row still pastes a Local Only column, Pull warns (and can mention a Column Alias) and ignores that column.
 - Copy Header Row omits Local Only fields and notes how many were left out.
+- **Ignore Marker** (`!!!`) is for extra sheet note columns; Local Only is for extra Config Type / Baked Asset fields.
 
-Add a Google tab titled **`MovementConfig`**, paste headers from Copy Header Row on that type, add the type to Pull Config (Include In Pull), then Pull. See the package README for the same pattern in prose.
+Add `MovementConfig` to the Pull Config list (or use a second Pull Config), then Pull. Package README has the same pattern in prose.
 
 ## Acceptance check (spec template bar)
 
