@@ -36,10 +36,14 @@ namespace Aerisyn.DataConfigSheet
     {
 
 
-        VerticalNestParseResult(bool success, IReadOnlyList<VerticalNestParseError> errors)
+        VerticalNestParseResult(
+            bool success,
+            IReadOnlyList<VerticalNestParseError> errors,
+            IReadOnlyList<string> warnings)
         {
             Success = success;
             Errors = errors;
+            Warnings = warnings;
         }
 
 
@@ -49,9 +53,24 @@ namespace Aerisyn.DataConfigSheet
         public IReadOnlyList<VerticalNestParseError> Errors { get; }
 
 
+        /// <summary>
+        /// Non-fatal notices (e.g. Local Only column present on the sheet). Empty when none.
+        /// </summary>
+        public IReadOnlyList<string> Warnings { get; }
+
+
         public static VerticalNestParseResult Ok()
         {
-            return new VerticalNestParseResult(true, Array.Empty<VerticalNestParseError>());
+            return Ok(Array.Empty<string>());
+        }
+
+
+        public static VerticalNestParseResult Ok(IReadOnlyList<string> warnings)
+        {
+            return new VerticalNestParseResult(
+                true,
+                Array.Empty<VerticalNestParseError>(),
+                warnings ?? Array.Empty<string>());
         }
 
 
@@ -61,10 +80,11 @@ namespace Aerisyn.DataConfigSheet
             {
                 return new VerticalNestParseResult(
                     false,
-                    new[] { new VerticalNestParseError(-1, -1, "Parse failed with no details.") });
+                    new[] { new VerticalNestParseError(-1, -1, "Parse failed with no details.") },
+                    Array.Empty<string>());
             }
 
-            return new VerticalNestParseResult(false, errors);
+            return new VerticalNestParseResult(false, errors, Array.Empty<string>());
         }
 
 
