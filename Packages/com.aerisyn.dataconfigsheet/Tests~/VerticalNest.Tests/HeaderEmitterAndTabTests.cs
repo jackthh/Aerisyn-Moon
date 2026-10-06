@@ -95,6 +95,23 @@ namespace Aerisyn.DataConfigSheet.Tests
             public List<int> bonus_stats = new List<int>();
         }
 
+
+        public sealed class LocalOnlyArrayEmitConfig
+        {
+            public List<LocalOnlyArrayEmitRow> items = new List<LocalOnlyArrayEmitRow>();
+        }
+
+
+        public sealed class LocalOnlyArrayEmitRow
+        {
+            public string id = "";
+
+            [LocalOnly]
+            public List<int> localBonuses = new List<int>();
+
+            public int power;
+        }
+
         #endregion
 
 
@@ -183,6 +200,19 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.That(result.LocalOnlyOmittedCount, Is.EqualTo(0));
             Assert.That(result.IgnoreMarkerGuidance, Does.Contain("!!!"));
             Assert.That(result.IgnoreMarkerGuidance, Does.Not.Contain("Local Only").IgnoreCase);
+        }
+
+
+        [Test]
+        public void Emit_OmitsLocalOnlyPrimitiveArray()
+        {
+            HeaderEmitResult result = HeaderEmitter.Emit(typeof(LocalOnlyArrayEmitConfig));
+
+            Assert.That(result.HeaderRow, Is.EqualTo(new[] { "id", "power" }));
+            Assert.That(result.HeaderRow, Does.Not.Contain("localBonuses"));
+            Assert.That(result.LocalOnlyOmittedCount, Is.EqualTo(1));
+            Assert.That(result.IgnoreMarkerGuidance, Does.Contain("1"));
+            Assert.That(result.IgnoreMarkerGuidance, Does.Contain("Local Only").IgnoreCase);
         }
 
         #endregion

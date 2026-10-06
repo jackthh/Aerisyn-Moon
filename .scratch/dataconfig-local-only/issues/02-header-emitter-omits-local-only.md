@@ -13,4 +13,4 @@
 
 ## Comments
 
-- Implemented at Header Emitter seam: `CollectEmitHeaders` skips Local Only (scalars + primitive arrays, nest levels); `HeaderEmitResult.LocalOnlyOmittedCount` + guidance append. Fixture: `HeaderEmitterAndTabTests` (+4 cases). Full `VerticalNest.Tests` green.
+- Implemented at Header Emitter seam: `CollectEmitHeaders` skips Local Only (scalars + primitive arrays, nest levels); `HeaderEmitResult.LocalOnlyOmittedCount` + guidance append. Fixture: `HeaderEmitterAndTabTests` (+5 cases). Full `VerticalNest.Tests` green (37).

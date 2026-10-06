@@ -69,14 +69,8 @@ namespace Aerisyn.DataConfigSheet
                 {
                     if (ConfigTypeItemsField.IsPrimitiveOrString(collectionElement))
                     {
-                        // Local Only primitive arrays are not part of the Header Row paste
-                        if (FieldHeaderNames.IsLocalOnly(field))
-                        {
-                            localOnlyOmitted++;
-                            continue;
-                        }
-
-                        headers.Add(FieldHeaderNames.GetEmitName(field));
+                        // Local Only primitive arrays omit name and alias from the paste
+                        TryEmitFieldHeader(field, headers, ref localOnlyOmitted);
                         continue;
                     }
 
@@ -91,17 +85,28 @@ namespace Aerisyn.DataConfigSheet
                 }
 
                 // Local Only scalars omit both Field Header names and Column Aliases
-                if (FieldHeaderNames.IsLocalOnly(field))
-                {
-                    localOnlyOmitted++;
-                    continue;
-                }
-
-                headers.Add(FieldHeaderNames.GetEmitName(field));
+                TryEmitFieldHeader(field, headers, ref localOnlyOmitted);
             }
 
             if (structListField != null)
                 CollectEmitHeaders(structListElementType, headers, ref localOnlyOmitted);
+        }
+
+
+        /// <summary>
+        /// Adds a Field Header / Column Alias unless the field is Local Only (then increments omit count).
+        /// </summary>
+        /// <returns>False when the field was Local Only and skipped.</returns>
+        static bool TryEmitFieldHeader(FieldInfo field, List<string> headers, ref int localOnlyOmitted)
+        {
+            if (FieldHeaderNames.IsLocalOnly(field))
+            {
+                localOnlyOmitted++;
+                return false;
+            }
+
+            headers.Add(FieldHeaderNames.GetEmitName(field));
+            return true;
         }
 
         #endregion
@@ -117,11 +122,12 @@ namespace Aerisyn.DataConfigSheet
             if (localOnlyOmitted <= 0)
                 return IgnoreMarkerGuidance;
 
+            // Count only: clipboard is intentionally incomplete vs the full C# shape
             return IgnoreMarkerGuidance +
                    "\n\n" +
                    localOnlyOmitted +
                    " Local Only field(s) omitted from this Header Row " +
-                   "(not part of the sheet contract; filled by the game after Pull).";
+                   "(not part of the sheet contract).";
         }
 
         #endregion
