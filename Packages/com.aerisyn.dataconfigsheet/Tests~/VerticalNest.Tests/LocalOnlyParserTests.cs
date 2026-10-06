@@ -155,6 +155,24 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.That(result.Warnings[0], Does.Contain("accelerateTurnSpeed"));
         }
 
+        [Test]
+        public void ParseInto_LocalOnlyPresentAndBadCell_FailsButKeepsWarning()
+        {
+            // Local Only warn should survive an unrelated cell conversion failure
+            SheetGrid grid = SheetGrid.FromRows(new[]
+            {
+                new[] { "id", "turnSpeed", "accelerateTurnSpeed" },
+                new[] { "dash", "not-a-number", "99" },
+            });
+
+            LocalOnlyConfig target = new LocalOnlyConfig();
+            VerticalNestParseResult result = VerticalNestParser.ParseInto(target, grid);
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Warnings, Has.Count.EqualTo(1));
+            Assert.That(result.Warnings[0], Does.Contain("accelerateTurnSpeed"));
+        }
+
         #endregion
 
 

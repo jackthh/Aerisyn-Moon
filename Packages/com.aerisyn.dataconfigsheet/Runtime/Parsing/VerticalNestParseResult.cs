@@ -76,15 +76,25 @@ namespace Aerisyn.DataConfigSheet
 
         public static VerticalNestParseResult Fail(IReadOnlyList<VerticalNestParseError> errors)
         {
+            return Fail(errors, Array.Empty<string>());
+        }
+
+
+        public static VerticalNestParseResult Fail(
+            IReadOnlyList<VerticalNestParseError> errors,
+            IReadOnlyList<string> warnings)
+        {
+            IReadOnlyList<string> warningList = warnings ?? Array.Empty<string>();
+
             if (errors == null || errors.Count == 0)
             {
                 return new VerticalNestParseResult(
                     false,
                     new[] { new VerticalNestParseError(-1, -1, "Parse failed with no details.") },
-                    Array.Empty<string>());
+                    warningList);
             }
 
-            return new VerticalNestParseResult(false, errors, Array.Empty<string>());
+            return new VerticalNestParseResult(false, errors, warningList);
         }
 
 

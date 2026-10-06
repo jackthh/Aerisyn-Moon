@@ -64,11 +64,11 @@ namespace Aerisyn.DataConfigSheet
                     continue;
 
                 if (!TryParseDataRow(grid, row, columns, rootSchema, itemsList, currentByLevel, errors))
-                    return VerticalNestParseResult.Fail(errors);
+                    return VerticalNestParseResult.Fail(errors, warnings);
             }
 
             return errors.Count > 0
-                ? VerticalNestParseResult.Fail(errors)
+                ? VerticalNestParseResult.Fail(errors, warnings)
                 : VerticalNestParseResult.Ok(warnings);
         }
 
@@ -352,17 +352,17 @@ namespace Aerisyn.DataConfigSheet
             List<string> warnings)
         {
             for (int i = 0; i < level.ScalarFields.Count; i++)
-                TryWarnLocalOnlyPresent(level.ScalarFields[i], allHeaders, warnings);
+                WarnIfLocalOnlyPresent(level.ScalarFields[i], allHeaders, warnings);
 
             for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
-                TryWarnLocalOnlyPresent(level.PrimitiveArrayFields[i], allHeaders, warnings);
+                WarnIfLocalOnlyPresent(level.PrimitiveArrayFields[i], allHeaders, warnings);
 
             if (level.Child != null)
                 CollectLocalOnlyWarnings(level.Child, allHeaders, warnings);
         }
 
 
-        static void TryWarnLocalOnlyPresent(
+        static void WarnIfLocalOnlyPresent(
             FieldInfo field,
             Dictionary<string, int> allHeaders,
             List<string> warnings)
