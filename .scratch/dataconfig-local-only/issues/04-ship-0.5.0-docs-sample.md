@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (Local Only parse contract), 02 (Header Emitter omits Local Only), 03 (After Pull hook).
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] Package version is 0.5.0
 - [x] CHANGELOG documents Local Only, warnings, Header Emitter omit guidance, and After Pull for 0.5.0
