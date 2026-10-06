@@ -105,7 +105,38 @@ namespace Aerisyn.DataConfigSheet.Editor
                 return PullReport.Failed(config.name, errors);
             }
 
-            // All parses succeeded: create missing assets or overwrite data in place
+            // After Pull on each scratch before any Baked Asset create/save
+            List<Action> afterPullHooks = new List<Action>(pending.Count);
+            for (int i = 0; i < pending.Count; i++)
+            {
+                ConfigTypeAsset scratch = pending[i].Scratch;
+                string typeName = pending[i].ConfigType.Name;
+                afterPullHooks.Add(() =>
+                {
+                    try
+                    {
+                        scratch.OnAfterPull();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Preserve type name so designers know which Config Type threw
+                        throw new InvalidOperationException(
+                            $"On '{typeName}': {ex.Message}",
+                            ex);
+                    }
+                });
+            }
+
+            VerticalNestParseError afterPullError;
+            if (!AfterPull.TryInvokeAll(afterPullHooks, out afterPullError))
+            {
+                for (int i = 0; i < pending.Count; i++)
+                    UnityEngine.Object.DestroyImmediate(pending[i].Scratch);
+
+                return PullReport.Failed(config.name, new[] { afterPullError });
+            }
+
+            // All parses + After Pull succeeded: create missing assets or overwrite in place
             List<PullWriteAction> writes = new List<PullWriteAction>(pending.Count);
             for (int i = 0; i < pending.Count; i++)
             {
