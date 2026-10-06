@@ -4,9 +4,13 @@
 
 **Blocked by:** 01 (Local Only parse contract).
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] Emitted Header Row does not include Local Only field names or their Column Aliases
-- [ ] Emit guidance mentions the count of omitted Local Only fields
-- [ ] Non-Local Only Field Headers and Column Aliases still emit as today
-- [ ] Tests at the Header Emitter seam lock omit + guidance behavior
+- [x] Emitted Header Row does not include Local Only field names or their Column Aliases
+- [x] Emit guidance mentions the count of omitted Local Only fields
+- [x] Non-Local Only Field Headers and Column Aliases still emit as today
+- [x] Tests at the Header Emitter seam lock omit + guidance behavior
+
+## Comments
+
+- Implemented at Header Emitter seam: `CollectEmitHeaders` skips Local Only (scalars + primitive arrays, nest levels); `HeaderEmitResult.LocalOnlyOmittedCount` + guidance append. Fixture: `HeaderEmitterAndTabTests` (+5 cases). Full `VerticalNest.Tests` green (37).
