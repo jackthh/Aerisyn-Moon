@@ -7,7 +7,7 @@ namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
     /// Builds a pasteable Header Row from a Config Type shape (Field Headers / Column Aliases)
-    /// and guidance for !!! Ignore Marker note columns.
+    /// and guidance for !!! Ignore Marker note columns and omitted Local Only fields.
     /// </summary>
     public static class HeaderEmitter
     {
@@ -22,6 +22,7 @@ namespace Aerisyn.DataConfigSheet
 
         /// <summary>
         /// Emits Header Row labels in Vertical Nest column order for the Config Type's root items shape.
+        /// Local Only fields are omitted; guidance reports how many were left out.
         /// </summary>
         public static HeaderEmitResult Emit(Type configType)
         {
@@ -35,8 +36,11 @@ namespace Aerisyn.DataConfigSheet
                 throw new InvalidOperationException(resolveError);
 
             List<string> headers = new List<string>();
-            CollectEmitHeaders(rootElementType, headers);
-            return new HeaderEmitResult(headers, IgnoreMarkerGuidance);
+            int localOnlyOmitted = 0;
+            CollectEmitHeaders(rootElementType, headers, ref localOnlyOmitted);
+
+            string guidance = BuildGuidance(localOnlyOmitted);
+            return new HeaderEmitResult(headers, guidance, localOnlyOmitted);
         }
 
         #endregion
@@ -46,8 +50,9 @@ namespace Aerisyn.DataConfigSheet
 
         /// <summary>
         /// Walks the same type-driven nest shape as the parser: scalars, primitive arrays, then child.
+        /// Local Only fields are skipped so the paste matches the sheet contract.
         /// </summary>
-        static void CollectEmitHeaders(Type elementType, List<string> headers)
+        static void CollectEmitHeaders(Type elementType, List<string> headers, ref int localOnlyOmitted)
         {
             FieldInfo structListField = null;
             Type structListElementType = null;
@@ -64,6 +69,13 @@ namespace Aerisyn.DataConfigSheet
                 {
                     if (ConfigTypeItemsField.IsPrimitiveOrString(collectionElement))
                     {
+                        // Local Only primitive arrays are not part of the Header Row paste
+                        if (FieldHeaderNames.IsLocalOnly(field))
+                        {
+                            localOnlyOmitted++;
+                            continue;
+                        }
+
                         headers.Add(FieldHeaderNames.GetEmitName(field));
                         continue;
                     }
@@ -78,11 +90,38 @@ namespace Aerisyn.DataConfigSheet
                     continue;
                 }
 
+                // Local Only scalars omit both Field Header names and Column Aliases
+                if (FieldHeaderNames.IsLocalOnly(field))
+                {
+                    localOnlyOmitted++;
+                    continue;
+                }
+
                 headers.Add(FieldHeaderNames.GetEmitName(field));
             }
 
             if (structListField != null)
-                CollectEmitHeaders(structListElementType, headers);
+                CollectEmitHeaders(structListElementType, headers, ref localOnlyOmitted);
+        }
+
+        #endregion
+
+
+        #region Guidance
+
+        /// <summary>
+        /// Ignore Marker instructions always; Local Only omit note only when the clipboard is incomplete vs C# shape.
+        /// </summary>
+        static string BuildGuidance(int localOnlyOmitted)
+        {
+            if (localOnlyOmitted <= 0)
+                return IgnoreMarkerGuidance;
+
+            return IgnoreMarkerGuidance +
+                   "\n\n" +
+                   localOnlyOmitted +
+                   " Local Only field(s) omitted from this Header Row " +
+                   "(not part of the sheet contract; filled by the game after Pull).";
         }
 
         #endregion
