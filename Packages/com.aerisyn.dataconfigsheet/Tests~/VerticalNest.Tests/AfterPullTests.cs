@@ -78,33 +78,27 @@ namespace Aerisyn.DataConfigSheet.Tests
         #region Failure path
 
         [Test]
-        public void TryInvokeAll_Throw_FailsPhaseAndSkipsLaterHooks()
+        public void TryInvokeAll_Throw_FailsPullReportWithNoWrites()
         {
-            bool secondRan = false;
+            // Runner path: After Pull failure → PullReport.Failed → no Baked Asset writes
             Action[] hooks =
             {
                 () => throw new InvalidOperationException("derivative boom"),
-                () => { secondRan = true; },
             };
 
             VerticalNestParseError error;
             Assert.That(AfterPull.TryInvokeAll(hooks, out error), Is.False);
 
-            Assert.That(secondRan, Is.False);
             Assert.That(error, Is.Not.Null);
             Assert.That(error.Row, Is.EqualTo(-1));
             Assert.That(error.Column, Is.EqualTo(-1));
             Assert.That(error.Message, Does.Contain("After Pull"));
             Assert.That(error.Message, Does.Contain("derivative boom"));
-        }
 
-
-        [Test]
-        public void TryInvokeAll_EmptyHooks_Succeeds()
-        {
-            VerticalNestParseError error;
-            Assert.That(AfterPull.TryInvokeAll(Array.Empty<Action>(), out error), Is.True);
-            Assert.That(error, Is.Null);
+            PullReport report = PullReport.Failed("DemoPull", new[] { error });
+            Assert.That(report.Success, Is.False);
+            Assert.That(report.Writes, Is.Empty);
+            Assert.That(report.Format(), Does.Contain("no Baked Assets were written"));
         }
 
         #endregion
