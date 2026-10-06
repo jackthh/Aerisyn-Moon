@@ -17,7 +17,7 @@ Modular Unity packages (`com.aerisyn.*`) for reusable gameplay systems.
 | Package | Description | Status |
 |---|---|---|
 | [`com.aerisyn.quests`](Packages/com.aerisyn.quests) | Game-agnostic quest tracker: definitions, board-scoped progress, claim rules, UI events. | `0.4.0` |
-| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor **Pull**: Google Sheet (OAuth) → Vertical Nest → ScriptableObject Baked Assets. One-way; schema in hand-written Config Types. | `0.4.0` |
+| [`com.aerisyn.dataconfigsheet`](Packages/com.aerisyn.dataconfigsheet) | Editor **Pull**: Google Sheet (OAuth) → Vertical Nest → ScriptableObject Baked Assets. One-way; schema in hand-written Config Types. Local Only + After Pull. | `0.5.0` |
 | [`com.aerisyn.tutorial`](Packages/com.aerisyn.tutorial) | Upcoming tutorial / onboarding gameplay package (scaffold only). | `0.4.0` |
 
 ## Install a package
@@ -51,7 +51,7 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfi
 Pin a release tag when you cut one:
 
 ```text
-https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet#com.aerisyn.dataconfigsheet@0.4.0
+https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.dataconfigsheet#com.aerisyn.dataconfigsheet@0.5.0
 ```
 
 Details: [`Packages/com.aerisyn.dataconfigsheet/README.md`](Packages/com.aerisyn.dataconfigsheet/README.md).

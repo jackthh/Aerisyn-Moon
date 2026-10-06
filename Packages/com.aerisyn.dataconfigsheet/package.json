@@ -1,8 +1,8 @@
 {
   "name": "com.aerisyn.dataconfigsheet",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "displayName": "Aerisyn Data Config Sheet",
-  "description": "Editor Pull: Google Sheet (OAuth) → Vertical Nest parse → ScriptableObject Baked Assets. One-way only. Schema lives in hand-written Config Types. Requires Odin Inspector and Google API Editor plugins (bundled).",
+  "description": "Editor Pull: Google Sheet (OAuth) → Vertical Nest parse → ScriptableObject Baked Assets. One-way only. Schema lives in hand-written Config Types. Supports Local Only fields and After Pull. Requires Odin Inspector and Google API Editor plugins (bundled).",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/jackthh/Aerisyn-Moon/tree/master/Packages/com.aerisyn.dataconfigsheet",
   "changelogUrl": "https://github.com/jackthh/Aerisyn-Moon/blob/master/Packages/com.aerisyn.dataconfigsheet/CHANGELOG.md",
@@ -23,7 +23,7 @@
   "samples": [
     {
       "displayName": "Weapons Pull",
-      "description": "Nested weapons Config Type + documented Pull Config happy path (Vertical Nest → Baked Asset).",
+      "description": "Nested weapons Config Type + Pull Config happy path; MovementConfig shows Local Only + After Pull.",
       "path": "Samples~/WeaponsPull"
     }
   ]

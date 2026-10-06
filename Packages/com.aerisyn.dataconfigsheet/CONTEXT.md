@@ -5,8 +5,8 @@ Domain language for `com.aerisyn.dataconfigsheet`: Google-authored game tables p
 ## Language
 
 **Pull**:
-One editor pass that signs into Google, downloads the configured tabs, parses nested rows into config data, and writes or refreshes ScriptableObject assets. One-way only. Re-Pull overwrites data on an existing Baked Asset in place so the asset GUID (and references) stay stable.
-_Avoid_: Sync; Bake (Luban-era name for this pass); Export as the everyday name for the whole pipeline; delete-and-recreate of Baked Assets on each Pull
+One editor pass that signs into Google, downloads the configured tabs, parses nested rows into config data, and writes or refreshes ScriptableObject assets. One-way only. Re-Pull overwrites data on an existing Baked Asset in place so the asset GUID (and references) stay stable. Local Only fields are not read from the sheet; games refill them in After Pull when needed.
+_Avoid_: Sync; Bake (Luban-era name for this pass); Export as the everyday name for the whole pipeline; delete-and-recreate of Baked Assets on each Pull; merging prior Inspector values for Local Only fields across re-Pull
 
 **Config Type**:
 A hand-written Odin `SerializedScriptableObject` subclass (plus nested serializable types) the game owns. It defines field names, nesting, and data types. Developers control shape here; the package does not generate these types. Pull creates or fills the `.asset` file only. Nest shape for Vertical Nest comes from the type (type-driven parse), not from a second schema language.
@@ -17,8 +17,8 @@ The ScriptableObject asset file produced or refreshed by a Pull. One asset per m
 _Avoid_: Tables (Luban); generated JSON as the default runtime final; treating the Google sheet as a runtime dependency; one asset per top-level row as the default; per-tab output path fields
 
 **Source Sheet**:
-The Google Spreadsheet (and its tabs) that designers edit. Official source of truth for values, not for C# type shape. Pull reads cell values via the Sheets API (in memory); CSV is not required for a correct Pull.
-_Avoid_: Bridge file as the source of truth; local CSV as the official authoring surface; naive comma-split CSV as the parse path
+The Google Spreadsheet (and its tabs) that designers edit. Official source of truth for sheet-owned values (Field Headers that are not Local Only), not for C# type shape or Local Only fields. Pull reads cell values via the Sheets API (in memory); CSV is not required for a correct Pull.
+_Avoid_: Bridge file as the source of truth; local CSV as the official authoring surface; naive comma-split CSV as the parse path; treating every Config Type field as sheet-owned
 
 **Vertical Nest**:
 Sheet authoring where a parent identity is written once and child rows leave parent cells blank until the next parent value. Used for nested lists such as weapon → upgrade levels → bonus stats.
@@ -41,13 +41,21 @@ An optional `[ColumnAlias]` attribute on a Config Type field that lets the Heade
 _Avoid_: Making aliases required; a second schema file just to rename columns
 
 **Ignore Marker**:
-The cell value `!!!` in the marker row above a Field Header (or Column Alias). That column is designer-only notes; Pull skips it for parsing.
-_Avoid_: `!!` as the marker; using note columns as nest keys or runtime fields
+The cell value `!!!` in the marker row above a Field Header (or Column Alias). That column is designer-only notes; Pull skips it for parsing. Use when the Source Sheet has extra columns beyond the Config Type contract.
+_Avoid_: `!!` as the marker; using note columns as nest keys or runtime fields; Local Only (that is for extra fields on the Config Type / Baked Asset, not extra sheet columns)
+
+**Local Only**:
+A Config Type field that is not part of the Source Sheet contract. Pull does not require it on the Header Row and does not bind sheet cells into it. Games own these values on the Baked Asset, typically as derivatives filled in After Pull.
+_Avoid_: IgnorePull; NonSerialized as the sheet opt-out; Ignore Marker; assuming Inspector edits on these fields survive re-Pull without After Pull refill
+
+**After Pull**:
+A Config Type hook that runs after every included tab parses successfully and before any Baked Asset is created or saved. Games use it to fill Local Only fields (and similar) so derived data is written into the asset. Failure fails the whole Pull with no writes.
+_Avoid_: Relying on OnValidate or OnValueChanged to run automatically after Pull; package-owned derivative formulas
 
 **Preamble**:
 Human-only rows above the Header Row (instructions, navigation text, Ignore Marker row). Pull must not treat Preamble as data.
 _Avoid_: Requiring designers to keep sheets preamble-free; treating row 1 as always the header
 
 **Header Row**:
-The row that starts the parsable table. Pull finds it by matching cell values to the Config Type’s Field Headers and Column Aliases. Rows above it are Preamble; data rows follow it.
-_Avoid_: Assuming the first sheet row is always the header; requiring a fixed header row index in Pull Config
+The row that starts the parsable table. Pull finds it by matching cell values to the Config Type’s non-Local Only Field Headers and Column Aliases. Rows above it are Preamble; data rows follow it.
+_Avoid_: Assuming the first sheet row is always the header; requiring a fixed header row index in Pull Config; requiring Local Only fields as headers
