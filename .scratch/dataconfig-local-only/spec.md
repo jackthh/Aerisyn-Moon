@@ -101,7 +101,7 @@ Add opt-in **Local Only** (`[LocalOnly]`) on Config Type fields at any nest leve
 - Domain vocabulary: `Packages/com.aerisyn.dataconfigsheet/CONTEXT.md`; system ADR 0013; parent Pull design ADR 0010 / `.scratch/dataconfig-pull-so/`.
 - Design docs PR: https://github.com/jackthh/Aerisyn-Moon/pull/25
 - Confirmed test seams (to-spec step 2): ParseInto primary; HeaderEmitter secondary; PullFromGrids for After Pull (thin helper only if AssetDatabase blocks tests).
-- Next skill: `/to-tickets` → `.scratch/dataconfig-local-only/issues/NN-*.md`.
+- Next skill: `/to-tickets` → `.scratch/dataconfig-local-only/issues/01`–`04` (published; frontier starts at 01).
 
 ## Comments
 
