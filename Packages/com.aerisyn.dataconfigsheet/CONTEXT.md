@@ -57,5 +57,5 @@ Human-only rows above the Header Row (instructions, navigation text, Ignore Mark
 _Avoid_: Requiring designers to keep sheets preamble-free; treating row 1 as always the header
 
 **Header Row**:
-The row that starts the parsable table. Pull finds it by matching cell values to the Config Type’s non–Local Only Field Headers and Column Aliases. Rows above it are Preamble; data rows follow it.
+The row that starts the parsable table. Pull finds it by matching cell values to the Config Type’s non-Local Only Field Headers and Column Aliases. Rows above it are Preamble; data rows follow it.
 _Avoid_: Assuming the first sheet row is always the header; requiring a fixed header row index in Pull Config; requiring Local Only fields as headers
