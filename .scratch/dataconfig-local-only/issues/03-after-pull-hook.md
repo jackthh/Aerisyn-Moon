@@ -4,11 +4,15 @@
 
 **Blocked by:** 01 (Local Only parse contract).
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] `ConfigTypeAsset` exposes virtual `OnAfterPull()` with an empty default
-- [ ] After all included parses succeed, Pull invokes `OnAfterPull` on each scratch before any create/save
-- [ ] A successful override can populate Local Only fields that then land on the written Baked Asset path
-- [ ] A throw from `OnAfterPull` fails the Pull as a whole with no Baked Asset writes
-- [ ] Coverage via `PullFromGrids` (or a thin pre-write helper only if AssetDatabase blocks EditMode tests)
-- [ ] No separate After Pull interface or UnityEvent wiring in this ticket
+- [x] `ConfigTypeAsset` exposes virtual `OnAfterPull()` with an empty default
+- [x] After all included parses succeed, Pull invokes `OnAfterPull` on each scratch before any create/save
+- [x] A successful override can populate Local Only fields that then land on the written Baked Asset path
+- [x] A throw from `OnAfterPull` fails the Pull as a whole with no Baked Asset writes
+- [x] Coverage via `PullFromGrids` (or a thin pre-write helper only if AssetDatabase blocks EditMode tests)
+- [x] No separate After Pull interface or UnityEvent wiring in this ticket
+
+## Comments
+
+- Thin `AfterPull.TryInvokeAll` pre-write helper (AssetDatabase blocks EditMode `PullFromGrids` in net9 suite). Runner calls it after all parses, before create/save; throw → `PullReport.Failed`, no writes. Fixture: `AfterPullTests` (3). Full `VerticalNest.Tests` green (35).
