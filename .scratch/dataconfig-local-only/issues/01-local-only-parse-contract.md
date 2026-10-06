@@ -4,11 +4,15 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] `[LocalOnly]` is available on Config Type fields and is the documented name (not IgnorePull / NonSerialized)
-- [ ] Header Row match succeeds when Local Only columns are absent from the sheet (including nest-level Local Only fields)
-- [ ] Parse never binds into Local Only fields (default/empty after parse even if a matching column exists)
-- [ ] A present Local Only column (name or Column Alias) produces a warning that can mention the alias; Pull does not hard-fail for that alone
-- [ ] Unmarked missing required Field Headers still fail Header Row match (regression)
-- [ ] Fixture/tests at the Vertical Nest `ParseInto` seam lock the above without live Google
+- [x] `[LocalOnly]` is available on Config Type fields and is the documented name (not IgnorePull / NonSerialized)
+- [x] Header Row match succeeds when Local Only columns are absent from the sheet (including nest-level Local Only fields)
+- [x] Parse never binds into Local Only fields (default/empty after parse even if a matching column exists)
+- [x] A present Local Only column (name or Column Alias) produces a warning that can mention the alias; Pull does not hard-fail for that alone
+- [x] Unmarked missing required Field Headers still fail Header Row match (regression)
+- [x] Fixture/tests at the Vertical Nest `ParseInto` seam lock the above without live Google
+
+## Comments
+
+- Implemented on parse seam: `LocalOnlyAttribute`, `FieldHeaderNames.IsLocalOnly`, Header Row skip + never-bind + `VerticalNestParseResult.Warnings`. Fixture: `LocalOnlyParserTests` (8 cases). Full `VerticalNest.Tests` green (31).

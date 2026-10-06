@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="..\..\Runtime\Parsing\*.cs" Link="Parsing\%(Filename)%(Extension)" />
     <Compile Include="..\..\Runtime\ColumnAliasAttribute.cs" Link="ColumnAliasAttribute.cs" />
+    <Compile Include="..\..\Runtime\LocalOnlyAttribute.cs" Link="LocalOnlyAttribute.cs" />
     <Compile Include="..\..\Runtime\SheetTabAttribute.cs" Link="SheetTabAttribute.cs" />
   </ItemGroup>
 
