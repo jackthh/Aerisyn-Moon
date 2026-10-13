@@ -50,12 +50,14 @@ namespace Aerisyn.DataConfigSheet
             bool success,
             string pullConfigName,
             IReadOnlyList<PullWriteAction> writes,
-            IReadOnlyList<VerticalNestParseError> errors)
+            IReadOnlyList<VerticalNestParseError> errors,
+            IReadOnlyList<string> warnings)
         {
             Success = success;
             PullConfigName = pullConfigName ?? "";
             Writes = writes ?? Array.Empty<PullWriteAction>();
             Errors = errors ?? Array.Empty<VerticalNestParseError>();
+            Warnings = warnings ?? Array.Empty<string>();
         }
 
 
@@ -71,11 +73,31 @@ namespace Aerisyn.DataConfigSheet
         public IReadOnlyList<VerticalNestParseError> Errors { get; }
 
 
+        /// <summary>
+        /// Non-fatal notices (e.g. Local Only column present on the Source Sheet). Empty when none.
+        /// </summary>
+        public IReadOnlyList<string> Warnings { get; }
+
+
         #region Factories
 
         public static PullReport Succeeded(string pullConfigName, IReadOnlyList<PullWriteAction> writes)
         {
-            return new PullReport(true, pullConfigName, writes, Array.Empty<VerticalNestParseError>());
+            return Succeeded(pullConfigName, writes, Array.Empty<string>());
+        }
+
+
+        public static PullReport Succeeded(
+            string pullConfigName,
+            IReadOnlyList<PullWriteAction> writes,
+            IReadOnlyList<string> warnings)
+        {
+            return new PullReport(
+                true,
+                pullConfigName,
+                writes,
+                Array.Empty<VerticalNestParseError>(),
+                warnings ?? Array.Empty<string>());
         }
 
 
@@ -87,16 +109,42 @@ namespace Aerisyn.DataConfigSheet
                     false,
                     pullConfigName,
                     Array.Empty<PullWriteAction>(),
-                    new[] { new VerticalNestParseError(-1, -1, "Pull failed with no details.") });
+                    new[] { new VerticalNestParseError(-1, -1, "Pull failed with no details.") },
+                    Array.Empty<string>());
             }
 
-            return new PullReport(false, pullConfigName, Array.Empty<PullWriteAction>(), errors);
+            return new PullReport(
+                false,
+                pullConfigName,
+                Array.Empty<PullWriteAction>(),
+                errors,
+                Array.Empty<string>());
         }
 
         #endregion
 
 
         #region Format
+
+        /// <summary>
+        /// Copies parse warnings onto the Pull list with the same [tab] prefix as parse errors.
+        /// PullFromGrids uses this so Local Only notices reach PullReport.Format / the dialog.
+        /// </summary>
+        public static void AppendTabPrefixedWarnings(
+            string tabTitle,
+            IReadOnlyList<string> parseWarnings,
+            List<string> destination)
+        {
+            if (destination == null)
+                throw new ArgumentNullException(nameof(destination));
+            if (parseWarnings == null || parseWarnings.Count == 0)
+                return;
+
+            string prefix = "[" + (tabTitle ?? "") + "] ";
+            for (int i = 0; i < parseWarnings.Count; i++)
+                destination.Add(prefix + parseWarnings[i]);
+        }
+
 
         /// <summary>
         /// Builds the console/dialog text: success asset summary, or failures with A1 cells.
@@ -164,6 +212,24 @@ namespace Aerisyn.DataConfigSheet
                 string verb = write.Kind == PullWriteKind.Created ? "created" : "updated";
                 builder.Append("  • ").Append(write.ConfigTypeName).Append(": ").Append(verb).Append(' ')
                     .AppendLine(write.AssetPath);
+            }
+
+            // Local Only (and similar) notices: success still writes, but designers must see them
+            int warningCount = Warnings.Count;
+            if (warningCount > 0)
+            {
+                builder.AppendLine();
+                builder.Append(warningCount).Append(" Warning");
+                if (warningCount != 1)
+                    builder.Append('s');
+                builder.AppendLine(":");
+
+                int limit = Math.Min(warningCount, 20);
+                for (int i = 0; i < limit; i++)
+                    builder.Append("  • ").AppendLine(Warnings[i]);
+
+                if (warningCount > limit)
+                    builder.Append("  (and ").Append(warningCount - limit).Append(" more)");
             }
 
             return builder.ToString().TrimEnd();

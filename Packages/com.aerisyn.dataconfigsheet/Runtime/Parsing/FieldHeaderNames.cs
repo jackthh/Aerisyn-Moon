@@ -5,7 +5,8 @@ using System.Reflection;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Resolves Header Row names for a field: canonical Field Header plus optional Column Alias.
+    /// Resolves Header Row names for a field: canonical Field Header, optional Column Alias,
+    /// and Local Only detection for sheet opt-out.
     /// </summary>
     public static class FieldHeaderNames
     {
@@ -23,6 +24,17 @@ namespace Aerisyn.DataConfigSheet
 
             ColumnAliasAttribute alias = attrs[0] as ColumnAliasAttribute;
             return alias != null ? alias.Alias : null;
+        }
+
+
+        /// <summary>True when the field is Local Only (not part of the sheet Header Row contract).</summary>
+        public static bool IsLocalOnly(FieldInfo field)
+        {
+            if (field == null)
+                return false;
+
+            object[] attrs = field.GetCustomAttributes(typeof(LocalOnlyAttribute), inherit: true);
+            return attrs != null && attrs.Length > 0;
         }
 
 

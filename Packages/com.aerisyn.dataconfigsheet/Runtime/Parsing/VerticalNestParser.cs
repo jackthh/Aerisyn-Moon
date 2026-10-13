@@ -50,7 +50,8 @@ namespace Aerisyn.DataConfigSheet
 
             List<ColumnBinding> columns;
             int headerRow;
-            if (!TryBindHeader(grid, rootSchema, out headerRow, out columns, errors))
+            List<string> warnings = new List<string>();
+            if (!TryBindHeader(grid, rootSchema, out headerRow, out columns, errors, warnings))
                 return VerticalNestParseResult.Fail(errors);
 
             IList itemsList = ConfigTypeItemsField.EnsureList(target, rootListField, rootElementType);
@@ -63,12 +64,12 @@ namespace Aerisyn.DataConfigSheet
                     continue;
 
                 if (!TryParseDataRow(grid, row, columns, rootSchema, itemsList, currentByLevel, errors))
-                    return VerticalNestParseResult.Fail(errors);
+                    return VerticalNestParseResult.Fail(errors, warnings);
             }
 
             return errors.Count > 0
-                ? VerticalNestParseResult.Fail(errors)
-                : VerticalNestParseResult.Ok();
+                ? VerticalNestParseResult.Fail(errors, warnings)
+                : VerticalNestParseResult.Ok(warnings);
         }
 
         #endregion
@@ -176,15 +177,23 @@ namespace Aerisyn.DataConfigSheet
 
         /// <summary>
         /// Collects human-readable expected header labels (field name, plus alias when set)
-        /// for error messages.
+        /// for error messages. Local Only fields are omitted from the Header Row contract.
         /// </summary>
         static void CollectExpectedHeaderLabels(NestLevelSchema level, List<string> labels)
         {
             for (int i = 0; i < level.ScalarFields.Count; i++)
+            {
+                if (FieldHeaderNames.IsLocalOnly(level.ScalarFields[i]))
+                    continue;
                 labels.Add(FormatExpectedLabel(level.ScalarFields[i]));
+            }
 
             for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
+            {
+                if (FieldHeaderNames.IsLocalOnly(level.PrimitiveArrayFields[i]))
+                    continue;
                 labels.Add(FormatExpectedLabel(level.PrimitiveArrayFields[i]));
+            }
 
             if (level.Child != null)
                 CollectExpectedHeaderLabels(level.Child, labels);
@@ -201,20 +210,30 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
-        /// <summary>True when every schema Field Header is present by name or Column Alias.</summary>
+        /// <summary>
+        /// True when every non-Local Only schema Field Header is present by name or Column Alias.
+        /// </summary>
         static bool AllExpectedHeadersPresent(NestLevelSchema level, Dictionary<string, int> allHeaders)
         {
             for (int i = 0; i < level.ScalarFields.Count; i++)
             {
+                FieldInfo field = level.ScalarFields[i];
+                if (FieldHeaderNames.IsLocalOnly(field))
+                    continue;
+
                 int unusedColumn;
-                if (!FieldHeaderNames.TryFindColumn(level.ScalarFields[i], allHeaders, out unusedColumn))
+                if (!FieldHeaderNames.TryFindColumn(field, allHeaders, out unusedColumn))
                     return false;
             }
 
             for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
             {
+                FieldInfo field = level.PrimitiveArrayFields[i];
+                if (FieldHeaderNames.IsLocalOnly(field))
+                    continue;
+
                 int unusedColumn;
-                if (!FieldHeaderNames.TryFindColumn(level.PrimitiveArrayFields[i], allHeaders, out unusedColumn))
+                if (!FieldHeaderNames.TryFindColumn(field, allHeaders, out unusedColumn))
                     return false;
             }
 
@@ -232,13 +251,15 @@ namespace Aerisyn.DataConfigSheet
         /// <summary>
         /// Finds the Header Row by matching Field Headers / Column Aliases;
         /// row above supplies !!! Ignore Marker columns.
+        /// Local Only fields are not required; a matching Local Only column warns and is unbound.
         /// </summary>
         static bool TryBindHeader(
             SheetGrid grid,
             NestLevelSchema rootSchema,
             out int headerRow,
             out List<ColumnBinding> columns,
-            List<VerticalNestParseError> errors)
+            List<VerticalNestParseError> errors,
+            List<string> warnings)
         {
             headerRow = -1;
             columns = null;
@@ -254,11 +275,14 @@ namespace Aerisyn.DataConfigSheet
             for (int row = 0; row < grid.RowCount; row++)
             {
                 List<ColumnBinding> bound;
-                if (!TryMatchHeaderRow(grid, row, rootSchema, out bound))
+                List<string> rowWarnings;
+                if (!TryMatchHeaderRow(grid, row, rootSchema, out bound, out rowWarnings))
                     continue;
 
                 headerRow = row;
                 columns = bound;
+                for (int i = 0; i < rowWarnings.Count; i++)
+                    warnings.Add(rowWarnings[i]);
                 return true;
             }
 
@@ -274,9 +298,11 @@ namespace Aerisyn.DataConfigSheet
             SheetGrid grid,
             int row,
             NestLevelSchema rootSchema,
-            out List<ColumnBinding> columns)
+            out List<ColumnBinding> columns,
+            out List<string> warnings)
         {
             columns = null;
+            warnings = new List<string>();
 
             // Marker row sits immediately above the Header Row when present
             bool[] ignored = new bool[grid.ColumnCount];
@@ -309,9 +335,58 @@ namespace Aerisyn.DataConfigSheet
             if (!AllExpectedHeadersPresent(rootSchema, allHeaders))
                 return false;
 
+            CollectLocalOnlyWarnings(rootSchema, allHeaders, warnings);
+
             columns = new List<ColumnBinding>();
             BindLevelColumns(rootSchema, 0, parseHeaders, columns);
             return true;
+        }
+
+
+        /// <summary>
+        /// When the sheet still carries a Local Only Field Header or Column Alias, warn and leave unbound.
+        /// </summary>
+        static void CollectLocalOnlyWarnings(
+            NestLevelSchema level,
+            Dictionary<string, int> allHeaders,
+            List<string> warnings)
+        {
+            for (int i = 0; i < level.ScalarFields.Count; i++)
+                WarnIfLocalOnlyPresent(level.ScalarFields[i], allHeaders, warnings);
+
+            for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
+                WarnIfLocalOnlyPresent(level.PrimitiveArrayFields[i], allHeaders, warnings);
+
+            if (level.Child != null)
+                CollectLocalOnlyWarnings(level.Child, allHeaders, warnings);
+        }
+
+
+        static void WarnIfLocalOnlyPresent(
+            FieldInfo field,
+            Dictionary<string, int> allHeaders,
+            List<string> warnings)
+        {
+            if (!FieldHeaderNames.IsLocalOnly(field))
+                return;
+
+            int unusedColumn;
+            if (!FieldHeaderNames.TryFindColumn(field, allHeaders, out unusedColumn))
+                return;
+
+            string alias = FieldHeaderNames.GetAlias(field);
+            if (alias != null)
+            {
+                warnings.Add(
+                    "Local Only field '" + field.Name + "' (alias '" + alias +
+                    "') appears on Header Row; column ignored.");
+            }
+            else
+            {
+                warnings.Add(
+                    "Local Only field '" + field.Name +
+                    "' appears on Header Row; column ignored.");
+            }
         }
 
 
@@ -324,6 +399,10 @@ namespace Aerisyn.DataConfigSheet
             for (int i = 0; i < level.ScalarFields.Count; i++)
             {
                 FieldInfo field = level.ScalarFields[i];
+                // Local Only never binds from sheet cells even when a matching header exists
+                if (FieldHeaderNames.IsLocalOnly(field))
+                    continue;
+
                 int column;
                 if (!FieldHeaderNames.TryFindColumn(field, parseHeaders, out column))
                     continue;
@@ -341,6 +420,9 @@ namespace Aerisyn.DataConfigSheet
             for (int i = 0; i < level.PrimitiveArrayFields.Count; i++)
             {
                 FieldInfo field = level.PrimitiveArrayFields[i];
+                if (FieldHeaderNames.IsLocalOnly(field))
+                    continue;
+
                 int column;
                 if (!FieldHeaderNames.TryFindColumn(field, parseHeaders, out column))
                     continue;

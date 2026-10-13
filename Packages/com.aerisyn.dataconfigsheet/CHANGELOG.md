@@ -5,6 +5,24 @@ All notable changes to `com.aerisyn.dataconfigsheet` are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-06
+
+**Local Only** fields and **After Pull** (ADR 0013). Designers can keep fewer Source Sheet columns than the C# nest shape; games refill sheet-unowned derivatives on every Pull.
+
+### Added
+
+- `[LocalOnly]` on Config Type fields (scalars and primitive arrays/lists, any nest level): not part of the Source Sheet contract; not required for Header Row match; never bound from cells.
+- Warn-and-ignore when the sheet still has a column matching a Local Only field name or Column Alias (warning text can include the alias); Pull continues and does not hard-fail for that alone.
+- Header Emitter / Copy Header Row omit Local Only names and aliases; guidance states how many Local Only fields were omitted.
+- Virtual `ConfigTypeAsset.OnAfterPull()` (default no-op): after every included tab parses successfully and before any Baked Asset create/save. Override to fill Local Only derivatives. A throw fails the whole Pull with no writes.
+- README example: sheet-owned `turnSpeed` plus Local Only accel/decel filled in After Pull.
+
+### Notes
+
+- Pull stays **clean**: re-Pull rebuilds rows; prior Inspector Local Only values are not merged (refill in After Pull).
+- **Ignore Marker** (`!!!`) remains for extra sheet note columns; Local Only is for extra fields on the Config Type / Baked Asset.
+- Live Google Pull and inject `PullFromGrids` share the same After Pull timing.
+
 ## [0.4.0] - 2026-09-25
 
 Repo-scale cadence with Quests and Tutorial. Pull UX and DevHost cleanup on top of the 0.3.0 Pull → ScriptableObject path (ADR 0010).

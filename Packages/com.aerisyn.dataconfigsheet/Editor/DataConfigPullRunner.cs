@@ -55,6 +55,8 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             List<PendingWrite> pending = new List<PendingWrite>();
             List<VerticalNestParseError> errors = new List<VerticalNestParseError>();
+            // Local Only (and similar) notices from successful parses; shown on Succeeded PullReport
+            List<string> warnings = new List<string>();
 
             // Parse every included tab into scratch instances first so a failure does not partially write
             for (int i = 0; i < includedTypes.Length; i++)
@@ -90,6 +92,8 @@ namespace Aerisyn.DataConfigSheet.Editor
                     continue;
                 }
 
+                PullReport.AppendTabPrefixedWarnings(tabTitle, parseResult.Warnings, warnings);
+
                 pending.Add(new PendingWrite
                 {
                     ConfigType = configType,
@@ -105,7 +109,38 @@ namespace Aerisyn.DataConfigSheet.Editor
                 return PullReport.Failed(config.name, errors);
             }
 
-            // All parses succeeded: create missing assets or overwrite data in place
+            // After Pull on each scratch before any Baked Asset create/save
+            List<Action> afterPullHooks = new List<Action>(pending.Count);
+            for (int i = 0; i < pending.Count; i++)
+            {
+                ConfigTypeAsset scratch = pending[i].Scratch;
+                string typeName = pending[i].ConfigType.Name;
+                afterPullHooks.Add(() =>
+                {
+                    try
+                    {
+                        scratch.OnAfterPull();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Preserve type name so designers know which Config Type threw
+                        throw new InvalidOperationException(
+                            $"On '{typeName}': {ex.Message}",
+                            ex);
+                    }
+                });
+            }
+
+            VerticalNestParseError afterPullError;
+            if (!AfterPull.TryInvokeAll(afterPullHooks, out afterPullError))
+            {
+                for (int i = 0; i < pending.Count; i++)
+                    UnityEngine.Object.DestroyImmediate(pending[i].Scratch);
+
+                return PullReport.Failed(config.name, new[] { afterPullError });
+            }
+
+            // All parses + After Pull succeeded: create missing assets or overwrite in place
             List<PullWriteAction> writes = new List<PullWriteAction>(pending.Count);
             for (int i = 0; i < pending.Count; i++)
             {
@@ -126,7 +161,7 @@ namespace Aerisyn.DataConfigSheet.Editor
                 }
             }
 
-            return PullReport.Succeeded(config.name, writes);
+            return PullReport.Succeeded(config.name, writes, warnings);
         }
 
         #endregion
