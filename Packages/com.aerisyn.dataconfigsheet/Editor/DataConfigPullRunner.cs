@@ -55,6 +55,8 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             List<PendingWrite> pending = new List<PendingWrite>();
             List<VerticalNestParseError> errors = new List<VerticalNestParseError>();
+            // Local Only (and similar) notices from successful parses; shown on Succeeded PullReport
+            List<string> warnings = new List<string>();
 
             // Parse every included tab into scratch instances first so a failure does not partially write
             for (int i = 0; i < includedTypes.Length; i++)
@@ -89,6 +91,8 @@ namespace Aerisyn.DataConfigSheet.Editor
                         errors.Add(PrefixTab(tabTitle, parseResult.Errors[e]));
                     continue;
                 }
+
+                PullReport.AppendTabPrefixedWarnings(tabTitle, parseResult.Warnings, warnings);
 
                 pending.Add(new PendingWrite
                 {
@@ -157,7 +161,7 @@ namespace Aerisyn.DataConfigSheet.Editor
                 }
             }
 
-            return PullReport.Succeeded(config.name, writes);
+            return PullReport.Succeeded(config.name, writes, warnings);
         }
 
         #endregion

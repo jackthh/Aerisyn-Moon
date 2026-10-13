@@ -82,6 +82,69 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.That(text, Does.Contain("LevelsConfig.asset"));
         }
 
+
+        [Test]
+        public void Format_SuccessfulPull_WithLocalOnlyWarnings_ListsThemAfterWrites()
+        {
+            // Accidental Local Only column on the Source Sheet: Pull succeeds but must warn
+            PullWriteAction[] writes =
+            {
+                new PullWriteAction("MovementConfig", "Assets/Baked/MovementConfig.asset", PullWriteKind.Updated),
+            };
+            string[] warnings =
+            {
+                "[Movement] Header 'accelerateTurnSpeed' matches Local Only field 'accelerateTurnSpeed'; ignored.",
+            };
+
+            PullReport report = PullReport.Succeeded("DemoPull", writes, warnings);
+
+            string text = report.Format();
+
+            Assert.That(report.Success, Is.True);
+            Assert.That(report.Warnings, Has.Count.EqualTo(1));
+            Assert.That(text, Does.Contain("Pull complete for 'DemoPull'"));
+            Assert.That(text, Does.Contain("MovementConfig: updated"));
+            Assert.That(text, Does.Contain("Warning"));
+            Assert.That(text, Does.Contain("Local Only"));
+            Assert.That(text, Does.Contain("accelerateTurnSpeed"));
+        }
+
+
+        [Test]
+        public void ParseInto_LocalOnlyColumn_HandoffToSucceededReport_SurfacesWarning()
+        {
+            // PullFromGrids handoff without AssetDatabase: parse warnings → tab prefix → PullReport
+            SheetGrid grid = SheetGrid.FromRows(new[]
+            {
+                new[] { "id", "turnSpeed", "accelerateTurnSpeed" },
+                new[] { "dash", "12", "99" },
+            });
+
+            var scratch = new LocalOnlyParserTests.LocalOnlyConfig();
+            VerticalNestParseResult parseResult = VerticalNestParser.ParseInto(scratch, grid);
+            Assert.That(parseResult.Success, Is.True);
+            Assert.That(parseResult.Warnings, Has.Count.EqualTo(1));
+
+            string tabTitle = "LocalOnlyConfig";
+            var pullWarnings = new System.Collections.Generic.List<string>();
+            PullReport.AppendTabPrefixedWarnings(tabTitle, parseResult.Warnings, pullWarnings);
+
+            PullWriteAction[] writes =
+            {
+                new PullWriteAction("LocalOnlyConfig", "Assets/Baked/LocalOnlyConfig.asset", PullWriteKind.Created),
+            };
+
+            PullReport report = PullReport.Succeeded("DemoPull", writes, pullWarnings);
+            string text = report.Format();
+
+            Assert.That(report.Success, Is.True);
+            Assert.That(pullWarnings, Has.Count.EqualTo(1));
+            Assert.That(text, Does.Contain("[" + tabTitle + "]"));
+            Assert.That(text, Does.Contain("Local Only"));
+            Assert.That(text, Does.Contain("accelerateTurnSpeed"));
+            Assert.That(scratch.items[0].accelerateTurnSpeed, Is.EqualTo(0));
+        }
+
         #endregion
 
 
