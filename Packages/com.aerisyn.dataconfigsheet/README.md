@@ -4,7 +4,7 @@ Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven 
 
 That is the only supported product path for this package.
 
-**Unity:** 2022.3+ · **Version:** `0.5.1` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
+**Unity:** 2022.3+ · **Version:** `0.5.2` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
 See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md), and [`docs/adr/0013-…`](../../docs/adr/0013-dataconfigsheet-local-only-after-pull.md).
 

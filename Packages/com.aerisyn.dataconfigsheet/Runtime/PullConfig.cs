@@ -54,8 +54,10 @@ namespace Aerisyn.DataConfigSheet
 
 
         // Top of Inspector (with Pull): OAuth status + Sign In / Sign Out when Auth Mode is OAuth User.
+        // OAuth Pull stays off until signed in; Service Account Pull is always available.
         [Button("Pull", ButtonSizes.Large)]
         [PropertyOrder(-100)]
+        [EnableIf(nameof(InspectorCanPull))]
         void InspectorPull()
         {
             if (RunEditorPullAsync == null)
@@ -80,16 +82,17 @@ namespace Aerisyn.DataConfigSheet
         {
             get
             {
-                if (EditorIsSignedIn != null && EditorIsSignedIn(this))
+                if (InspectorIsSignedIn)
                     return "Signed in";
                 return "Not signed in";
             }
         }
 
 
-        // Same SignInWithUiAsync path as the menu alias.
+        // Same SignInWithUiAsync path as the menu alias. Off when already signed in.
         [Button("Sign In With Google")]
         [ShowIf(nameof(ShowOAuthAuthActions))]
+        [EnableIf(nameof(InspectorCanSignIn))]
         [PropertyOrder(-98)]
         [HorizontalGroup("OAuthActions")]
         void InspectorSignIn()
@@ -106,9 +109,10 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
-        // Same SignOutWithUi path as the menu alias.
+        // Same SignOutWithUi path as the menu alias. Off when not signed in.
         [Button("Sign Out")]
         [ShowIf(nameof(ShowOAuthAuthActions))]
+        [EnableIf(nameof(InspectorIsSignedIn))]
         [PropertyOrder(-97)]
         [HorizontalGroup("OAuthActions")]
         void InspectorSignOut()
@@ -127,6 +131,17 @@ namespace Aerisyn.DataConfigSheet
 
         // Gates OAuth-only Inspector chrome (status + Sign In / Sign Out).
         bool ShowOAuthAuthActions => _authMode == GoogleAuthMode.OAuthUser;
+
+
+        bool InspectorIsSignedIn =>
+            EditorIsSignedIn != null && EditorIsSignedIn(this);
+
+
+        bool InspectorCanSignIn => !InspectorIsSignedIn;
+
+
+        bool InspectorCanPull =>
+            _authMode == GoogleAuthMode.ServiceAccount || InspectorIsSignedIn;
 #endif
 
         #endregion
