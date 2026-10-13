@@ -4,7 +4,7 @@ Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven 
 
 That is the only supported product path for this package.
 
-**Unity:** 2022.3+ · **Version:** `0.5.1` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
+**Unity:** 2022.3+ · **Version:** `0.5.2` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
 See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md), and [`docs/adr/0013-…`](../../docs/adr/0013-dataconfigsheet-local-only-after-pull.md).
 
@@ -30,7 +30,7 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 
 1. Google Cloud **OAuth Desktop** client JSON → e.g. next to the imported Weapons Pull sample: `Assets/Samples/Aerisyn Data Config Sheet/0.5.0/Weapons Pull/oauth-client-secrets.json` (gitignored by filename).
 2. Share the spreadsheet with your Google email as Viewer.
-3. Select PullConfig → **Aerisyn → Data Config Sheet → Sign In With Google**.
+3. Open the PullConfig Inspector → **Sign In With Google** (status shows Signed in / Not signed in). Menu alias: **Aerisyn → Data Config Sheet → Sign In With Google**.
 
 ## Quick start
 
@@ -38,7 +38,7 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 2. Optional: `[ColumnAlias("Friendly Name")]` on fields; `[SheetTab("Tab Title")]` on the type when the Google tab differs from the type name; `[LocalOnly]` on fields the sheet must not own (see below).
 3. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses).
 4. Select a Config Type asset (or its script) → **Copy Header Row** to paste headers into Google (guidance covers `!!!` note columns and omitted Local Only fields).
-5. Select PullConfig → **Sign In With Google**, then **Pull From Google**.
+5. Open the PullConfig Inspector → **Sign In With Google**, then **Pull** (menus under **Aerisyn → Data Config Sheet** remain aliases).
 6. Read the **Pull report**: success lists created/updated assets; failures include **A1** sheet coordinates. Failed Pulls write nothing.
 7. Or import sample **Weapons Pull** (Package Manager → Samples) and follow its README.
 8. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s.

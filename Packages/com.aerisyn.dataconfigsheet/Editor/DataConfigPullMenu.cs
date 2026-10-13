@@ -20,6 +20,7 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Auth menus
 
+        // Thin aliases of DataConfigPullWorkflow; primary UX is the PullConfig Inspector.
         [MenuItem(SignInMenu, false, 50)]
         static async void SignIn()
         {
@@ -28,27 +29,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             if (config == null)
                 return;
 
-            try
-            {
-                EditorUtility.DisplayProgressBar(
-                    "Data Config Sheet",
-                    "Waiting for Google sign-in in your browser…",
-                    0.4f);
-                await GoogleOAuthSession.SignInAsync(config);
-                EditorUtility.DisplayDialog(
-                    "Data Config Sheet",
-                    "Signed in. Share the spreadsheet with your Google email as Viewer, then Pull.",
-                    "OK");
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                EditorUtility.DisplayDialog("Data Config Sheet sign-in failed", exception.Message, "OK");
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
+            await DataConfigPullWorkflow.SignInWithUiAsync(config);
         }
 
 
@@ -60,16 +41,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             if (config == null)
                 return;
 
-            try
-            {
-                GoogleOAuthSession.SignOut(config);
-                EditorUtility.DisplayDialog("Data Config Sheet", "Signed out.", "OK");
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                EditorUtility.DisplayDialog("Data Config Sheet sign-out failed", exception.Message, "OK");
-            }
+            DataConfigPullWorkflow.SignOutWithUi(config);
         }
 
         #endregion

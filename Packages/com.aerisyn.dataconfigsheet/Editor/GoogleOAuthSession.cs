@@ -152,7 +152,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             string tokenPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
             if (!File.Exists(tokenPath))
                 throw new FileNotFoundException(
-                    "Not signed in. Use Aerisyn → Data Config Sheet → Sign In With Google, " +
+                    "Not signed in. Open the PullConfig Inspector → Sign In With Google, " +
                     "then Pull again. Share the sheet with your Google email as Viewer.",
                     tokenPath);
 

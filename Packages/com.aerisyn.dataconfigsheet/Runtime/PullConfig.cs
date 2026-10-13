@@ -31,7 +31,7 @@ namespace Aerisyn.DataConfigSheet
     {
 
 
-        #region Inspector Pull (editor-wired)
+        #region Inspector actions (editor-wired)
 
 #if UNITY_EDITOR
         /// <summary>
@@ -41,9 +41,23 @@ namespace Aerisyn.DataConfigSheet
         public static Func<PullConfig, Task> RunEditorPullAsync;
 
 
-        // Same path as menu "Pull From Google (Selected Config)"; Sign In / Sign Out stay menu-only.
+        /// <summary>Editor-wired OAuth Sign In (progress bar + dialogs), same as the menu.</summary>
+        public static Func<PullConfig, Task> RunEditorSignInAsync;
+
+
+        /// <summary>Editor-wired OAuth Sign Out (dialogs), same as the menu.</summary>
+        public static Action<PullConfig> RunEditorSignOut;
+
+
+        /// <summary>Editor-wired token-file check for the Inspector signed-in status line.</summary>
+        public static Func<PullConfig, bool> EditorIsSignedIn;
+
+
+        // Top of Inspector (with Pull): OAuth status + Sign In / Sign Out when Auth Mode is OAuth User.
+        // OAuth Pull stays off until signed in; Service Account Pull is always available.
         [Button("Pull", ButtonSizes.Large)]
         [PropertyOrder(-100)]
+        [EnableIf(nameof(InspectorCanPull))]
         void InspectorPull()
         {
             if (RunEditorPullAsync == null)
@@ -56,6 +70,78 @@ namespace Aerisyn.DataConfigSheet
 
             _ = RunEditorPullAsync(this);
         }
+
+
+        // Token-file status from EditorIsSignedIn; hidden for Service Account.
+        [ShowInInspector]
+        [ShowIf(nameof(ShowOAuthAuthActions))]
+        [PropertyOrder(-99)]
+        [DisplayAsString]
+        [LabelText("Google auth")]
+        string InspectorSignedInStatus
+        {
+            get
+            {
+                if (InspectorIsSignedIn)
+                    return "Signed in";
+                return "Not signed in";
+            }
+        }
+
+
+        // Same SignInWithUiAsync path as the menu alias. Off when already signed in.
+        [Button("Sign In With Google")]
+        [ShowIf(nameof(ShowOAuthAuthActions))]
+        [EnableIf(nameof(InspectorCanSignIn))]
+        [PropertyOrder(-98)]
+        [HorizontalGroup("OAuthActions")]
+        void InspectorSignIn()
+        {
+            if (RunEditorSignInAsync == null)
+            {
+                Debug.LogError(
+                    "[DataConfigSheet] Editor Sign In workflow is not registered. " +
+                    "Is the Data Config Sheet Editor assembly loaded?");
+                return;
+            }
+
+            _ = RunEditorSignInAsync(this);
+        }
+
+
+        // Same SignOutWithUi path as the menu alias. Off when not signed in.
+        [Button("Sign Out")]
+        [ShowIf(nameof(ShowOAuthAuthActions))]
+        [EnableIf(nameof(InspectorIsSignedIn))]
+        [PropertyOrder(-97)]
+        [HorizontalGroup("OAuthActions")]
+        void InspectorSignOut()
+        {
+            if (RunEditorSignOut == null)
+            {
+                Debug.LogError(
+                    "[DataConfigSheet] Editor Sign Out workflow is not registered. " +
+                    "Is the Data Config Sheet Editor assembly loaded?");
+                return;
+            }
+
+            RunEditorSignOut(this);
+        }
+
+
+        // Gates OAuth-only Inspector chrome (status + Sign In / Sign Out).
+        bool ShowOAuthAuthActions => _authMode == GoogleAuthMode.OAuthUser;
+
+
+        bool InspectorIsSignedIn =>
+            EditorIsSignedIn != null && EditorIsSignedIn(this);
+
+
+        bool InspectorCanSignIn => !InspectorIsSignedIn;
+
+
+        bool InspectorCanPull =>
+            _authMode == GoogleAuthMode.ServiceAccount || InspectorIsSignedIn;
 #endif
 
         #endregion

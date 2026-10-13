@@ -42,7 +42,7 @@ No sample `.asset` is shipped (keep credentials and spreadsheet ids out of the p
 4. Output Folder: e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.5.0/Weapons Pull/Baked` (one shared folder next to the sample).
 5. Config Types list: add **`WeaponsConfig`** from the dropdown (explicit list; no auto-scan).
 6. Select `WeaponsConfig` script → **Aerisyn → Data Config Sheet → Copy Header Row** → paste into the sheet.
-7. Select PullConfig → **Sign In With Google**, then **Pull From Google**.
+7. Open the PullConfig Inspector → **Sign In With Google**, then **Pull** (or use the **Aerisyn → Data Config Sheet** menu aliases).
 
 On success the Pull report lists created/updated Baked Assets. On failure it shows **A1** cell
 coordinates (e.g. `B5`) so you can fix the sheet; nothing is written until every type parses.
