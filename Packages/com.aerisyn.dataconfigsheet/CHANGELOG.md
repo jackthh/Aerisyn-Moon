@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.1] - 2026-10-13
 
+### Added
+
+- Pull Config Inspector top strip: **Sign In With Google**, **Sign Out**, and Signed in / Not signed in status when Auth Mode is OAuth User (hidden for Service Account). Menus stay thin aliases of the same workflows.
+
 ### Fixed
 
 - Pull Config **Config Type Entries** again show the Config Types `ValueDropdown` beside Include In Pull. The candidate list is Odin-serialized so `System.Type` persists (0.4.0–0.5.0 left types null because Unity owned the entry list and dropped `Type`).
