@@ -112,14 +112,30 @@ namespace Aerisyn.DataConfigSheet
 
         // Odin must own this list: Unity [Serializable] entries drop System.Type, so a Unity
         // SerializeField list only ever persisted Include In Pull and left _configType null.
+        // CustomAddFunction avoids null slots (Odin default for reference lists → "None" rows).
         [FoldoutGroup("Pull targets")]
         [Tooltip(
             "Owned Config Type candidates. Include In Pull (checkbox) gates fetch and bake; " +
             "unticked types stay listed. Google tab title matches the type name by default, " +
             "or [SheetTab(\"...\")] when titles differ.")]
-        [ListDrawerSettings(ShowIndexLabels = true, DraggableItems = true)]
+        [ListDrawerSettings(
+            ShowIndexLabels = true,
+            DraggableItems = true,
+            ShowFoldout = false,
+            CustomAddFunction = nameof(CreateConfigTypeEntry))]
         [OdinSerialize, NonSerialized]
         List<PullConfigTypeEntry> _configTypeEntries = new List<PullConfigTypeEntry>();
+
+        #endregion
+
+
+        #region List helpers
+
+        // List + must construct an entry; otherwise Odin inserts null and draws None (Type).
+        static PullConfigTypeEntry CreateConfigTypeEntry()
+        {
+            return new PullConfigTypeEntry();
+        }
 
         #endregion
 

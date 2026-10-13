@@ -10,7 +10,10 @@ namespace Aerisyn.DataConfigSheet
     /// One owned Config Type candidate on a Pull Config, with Include In Pull gate.
     /// New entries default included so adding a type matches "I want this Pulled."
     /// </summary>
+    // Inline + hide picker: list rows are checkbox + type, not a PullConfigTypeEntry object slot.
     [Serializable]
+    [HideReferenceObjectPicker]
+    [InlineProperty]
     public sealed class PullConfigTypeEntry
     {
 

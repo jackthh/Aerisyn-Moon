@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pull Config **Config Type Entries** again show the Config Types `ValueDropdown` beside Include In Pull. The candidate list is Odin-serialized so `System.Type` persists (0.4.0–0.5.0 left types null because Unity owned the entry list and dropped `Type`).
 - Existing 0.4+ Pull Configs that never persisted a type need types re-selected once after upgrade; empty lists stay empty.
+- Config Type Entries list draws Include + type on one row (no `PullConfigTypeEntry` object picker / `None` slots). `+` always adds a real entry.
 
 ## [0.5.0] - 2026-10-06
 
