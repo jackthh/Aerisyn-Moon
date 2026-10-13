@@ -24,13 +24,10 @@ namespace Aerisyn.DataConfigSheet
         bool _includeInPull = true;
 
 
+        // Single Type field (not a bare Type list): list-member ValueDropdown flags do not apply.
         [HorizontalGroup("Entry")]
         [HideLabel]
-        [ValueDropdown(
-            nameof(FilterConfigTypes),
-            IsUniqueList = true,
-            DrawDropdownForListElements = true,
-            DropdownTitle = "Config Types")]
+        [ValueDropdown(nameof(FilterConfigTypes), DropdownTitle = "Config Types")]
         [SerializeField]
         Type _configType;
 
