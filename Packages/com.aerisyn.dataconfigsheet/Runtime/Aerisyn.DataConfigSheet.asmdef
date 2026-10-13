@@ -2,7 +2,8 @@
   "name": "Aerisyn.DataConfigSheet",
   "rootNamespace": "Aerisyn.DataConfigSheet",
   "references": [
-    "Sirenix.OdinInspector.Attributes"
+    "Sirenix.OdinInspector.Attributes",
+    "Sirenix.Serialization"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
