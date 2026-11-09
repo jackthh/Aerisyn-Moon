@@ -31,7 +31,7 @@ https://github.com/jackthh/Aerisyn-Moon.git?path=/Packages/com.aerisyn.quests
 |---|---|
 | **Quest** | Authored definition: Objective, Accumulation, Step thresholds, ClaimPolicy |
 | **Board** | Game-owned set of Quests that open and close together (stage, daily, event) |
-| **Objective** | `int kind` (your enum cast to int) + `int param`, or match-any-param |
+| **Objective** | `int kind` (your enum cast to int) + `string param` (or `int`, stored as its decimal string), or match-any-param |
 | **Accumulation** | `Sum` (count), `HighWater` (keep max), `Flag` (set once) |
 | **Step** | One threshold with its own claim; a Quest has 1..64 |
 | **ClaimPolicy** | `OncePerStep` or `RepeatWithReset` (up to a repeat limit) |

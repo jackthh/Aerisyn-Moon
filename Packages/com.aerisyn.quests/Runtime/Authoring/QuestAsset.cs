@@ -30,8 +30,12 @@ namespace Aerisyn.Quests.Authoring
 
         [FoldoutGroup("Objective")]
         [Tooltip("Narrows the kind (stall id, currency id, ...). Ignored when Match Any Param is on.")]
-        [FormerlySerializedAs("_param")]
         [HideIf(nameof(_matchAnyParam))]
+        [SerializeField] private string _objectiveParamText;
+
+        // Legacy int param from before string params. Used only while _objectiveParamText is empty, so old assets keep their data.
+        [FormerlySerializedAs("_param")]
+        [HideInInspector]
         [SerializeField] private int _objectiveParam;
 
         [FoldoutGroup("Objective")]
@@ -97,7 +101,7 @@ namespace Aerisyn.Quests.Authoring
 
 
         /// <summary>The Objective built from the kind / param / match-any fields.</summary>
-        public Objective Objective => _matchAnyParam ? Objective.AnyParam(_objectiveKind) : new Objective(_objectiveKind, _objectiveParam);
+        public Objective Objective => _matchAnyParam ? Objective.AnyParam(_objectiveKind) : new Objective(_objectiveKind, string.IsNullOrEmpty(_objectiveParamText) ? _objectiveParam.ToString() : _objectiveParamText);
 
 
         /// <summary>Build the immutable definition. Throws on invalid authoring; use <see cref="TryBuild"/> for a soft check.</summary>
