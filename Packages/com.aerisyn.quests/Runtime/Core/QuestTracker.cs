@@ -230,7 +230,11 @@ namespace Aerisyn.Quests
         ///   3) after all Quests are updated, raise ProgressChanged / StepBecameClaimable per Quest,
         ///      then BoardChanged once per affected Board, so handlers observe a consistent state.
         /// </summary>
-        public void Report(int objectiveKind, int objectiveParam, long reportedValue)
+        public void Report(int objectiveKind, int objectiveParam, long reportedValue) =>
+            Report(objectiveKind, objectiveParam.ToString(), reportedValue);
+
+        /// <inheritdoc cref="Report(int, int, long)"/>
+        public void Report(int objectiveKind, string objectiveParam, long reportedValue)
         {
             if (!_questsByObjectiveKind.TryGetValue(objectiveKind, out var candidateQuests) ||
                 candidateQuests.Count == 0)

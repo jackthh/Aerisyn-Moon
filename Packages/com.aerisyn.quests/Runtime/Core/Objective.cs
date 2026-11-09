@@ -21,7 +21,7 @@ namespace Aerisyn.Quests
         /// Game-defined target that narrows <see cref="Kind"/> (stall 2, currency "gems", ...).
         /// Meaningless when <see cref="MatchAnyParam"/> is true.
         /// </summary>
-        public readonly int Param;
+        public readonly string Param;
 
         /// <summary>True when reports of <see cref="Kind"/> match regardless of their param.</summary>
         public readonly bool MatchAnyParam;
@@ -30,15 +30,20 @@ namespace Aerisyn.Quests
 
         #region Construction
 
-        /// <summary>Matches only reports with exactly this kind and this param.</summary>
-        public Objective(int kind, int param)
+        /// <summary>Matches only reports with exactly this kind and this param (ordinal, case-sensitive). A null param is treated as "".</summary>
+        public Objective(int kind, string param)
         {
             Kind = kind;
-            Param = param;
+            Param = param ?? string.Empty;
             MatchAnyParam = false;
         }
 
-        private Objective(int kind, int param, bool matchAnyParam)
+        /// <summary>Convenience for numeric params: the int is stored as its decimal string, so <c>new Objective(k, 2)</c> equals <c>new Objective(k, "2")</c>.</summary>
+        public Objective(int kind, int param) : this(kind, param.ToString())
+        {
+        }
+
+        private Objective(int kind, string param, bool matchAnyParam)
         {
             Kind = kind;
             Param = param;
@@ -46,23 +51,26 @@ namespace Aerisyn.Quests
         }
 
         /// <summary>Matches every report of <paramref name="kind"/>, whatever its param ("serve a customer at any stall").</summary>
-        /// <remarks>Param is stored as 0 but never compared, so 0 stays a valid real param for exact Objectives.</remarks>
-        public static Objective AnyParam(int kind) => new Objective(kind, 0, true);
+        /// <remarks>Param is stored as "" but never compared, so "" stays a valid real param for exact Objectives.</remarks>
+        public static Objective AnyParam(int kind) => new Objective(kind, string.Empty, true);
 
         #endregion
 
         #region Matching
 
         /// <summary>True when a report of (<paramref name="reportedKind"/>, <paramref name="reportedParam"/>) should update a Quest with this Objective.</summary>
-        public bool Matches(int reportedKind, int reportedParam) =>
-            Kind == reportedKind && (MatchAnyParam || Param == reportedParam);
+        public bool Matches(int reportedKind, string reportedParam) =>
+            Kind == reportedKind && (MatchAnyParam || string.Equals(Param, reportedParam ?? string.Empty, StringComparison.Ordinal));
+
+        /// <summary>Numeric-param overload; compares against the int's decimal string.</summary>
+        public bool Matches(int reportedKind, int reportedParam) => Matches(reportedKind, reportedParam.ToString());
 
         #endregion
 
         #region Equality
 
         public bool Equals(Objective other) =>
-            Kind == other.Kind && Param == other.Param && MatchAnyParam == other.MatchAnyParam;
+            Kind == other.Kind && string.Equals(Param, other.Param, StringComparison.Ordinal) && MatchAnyParam == other.MatchAnyParam;
 
         public override bool Equals(object obj) => obj is Objective other && Equals(other);
 
@@ -72,7 +80,7 @@ namespace Aerisyn.Quests
             unchecked
             {
                 var hash = Kind;
-                hash = (hash * 397) ^ Param;
+                hash = (hash * 397) ^ (Param == null ? 0 : StringComparer.Ordinal.GetHashCode(Param));
                 hash = (hash * 397) ^ (MatchAnyParam ? 1 : 0);
                 return hash;
             }

@@ -5,6 +5,14 @@ All notable changes to `com.aerisyn.quests` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- `Objective.Param` is now a `string` (ordinal, case-sensitive; null is treated as ""). `Objective(int, string)`, `Objective.Matches(int, string)` and `QuestTracker.Report(int, string, long)` are new; the `int` overloads remain and convert to the decimal string, so existing callers compile and match as before.
+- `QuestAsset` has a string param field. Old assets keep their int param as a fallback while the string field is empty.
+- Source-breaking only for code reading `Objective.Param` as an int.
+
 ## [0.4.0] - 2026-09-25
 
 ### Changed
