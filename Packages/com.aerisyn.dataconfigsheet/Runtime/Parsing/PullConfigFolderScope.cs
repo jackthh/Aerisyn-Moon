@@ -46,6 +46,23 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
+        /// <summary>
+        /// Throws InvalidOperationException when <paramref name="selectedPaths"/> is empty, so a Pull All over
+        /// a folder with no Pull Configs is a clear failure instead of an empty success.
+        /// </summary>
+        public static void RequireAny(string folderPath, IReadOnlyList<string> selectedPaths)
+        {
+            if (selectedPaths == null)
+                throw new ArgumentNullException(nameof(selectedPaths));
+
+            if (selectedPaths.Count == 0)
+                throw new InvalidOperationException(
+                    $"No Pull Configs found under Pull All folder '{folderPath?.Trim()}'. " +
+                    "Create a Pull Config there (Assets → Create → Aerisyn → Data Config Sheet → Pull Config) " +
+                    "or change the Pull All folder in Data Config Settings.");
+        }
+
+
         static string Normalize(string path)
         {
             return path.Trim().Replace('\\', '/');

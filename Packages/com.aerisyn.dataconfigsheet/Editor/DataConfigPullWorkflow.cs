@@ -19,12 +19,9 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         static DataConfigPullWorkflow()
         {
-            // Inspector buttons on PullConfig cannot reference this Editor assembly;
-            // register shared workflows so Inspector and menus stay identical.
+            // The Inspector button on PullConfig cannot reference this Editor assembly;
+            // register the shared workflow so Inspector and menus stay identical.
             PullConfig.RunEditorPullAsync = PullWithUiAsync;
-            PullConfig.RunEditorSignInAsync = SignInWithUiAsync;
-            PullConfig.RunEditorSignOut = SignOutWithUi;
-            PullConfig.EditorIsSignedIn = GoogleOAuthSession.IsSignedIn;
         }
 
         #endregion
@@ -75,58 +72,42 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Finds every Pull Config in the project (stable asset-path order) and Pulls each one. A failing
-        /// config never stops the run, so one summary shows every passed and failed job. Each config's
-        /// Include In Pull ticks apply. Pull All uses one Environment Profile (the first Pull Config's): a Pull
-        /// Config that points at another profile is reported as failed and not pulled. When every job passes it
-        /// writes the Config Manifest at that profile's path and checks it against the required Config Type
-        /// list. When any job failed the manifest is left untouched, but the required list is still checked
-        /// against what the passed jobs produced, so the summary shows job failures and missing types together.
-        /// A missing type or wrong environment fails the overall run.
+        /// Loads Data Config Settings, finds every Pull Config under its Pull All folder (recursive, stable
+        /// asset-path order) and Pulls each one. A blank folder, a folder with no Pull Config, or missing
+        /// settings fails the run with a clear summary. A failing config never stops the run, so one summary
+        /// shows every passed and failed job. Each config's Include In Pull ticks apply. When every job
+        /// passes it writes the Config Manifest at the settings' path and checks it against the required
+        /// Config Type list. When any job failed the manifest is left untouched, but the required list is
+        /// still checked against what the passed jobs produced, so the summary shows job failures and
+        /// missing types together. A missing type or wrong environment fails the overall run.
         /// </summary>
-        /// <returns>The combined summary (OverallSuccess false when no Pull Config exists).</returns>
+        /// <returns>The combined summary (OverallSuccess false when no Pull Config ran).</returns>
         public static async Task<PullAllSummary> PullAllWithUiAsync()
         {
-            List<PullConfig> configs = FindPullConfigsInStableOrder();
-            if (configs.Count == 0)
+            DataConfigSettings settings;
+            List<PullConfig> configs;
+            try
             {
-                EditorUtility.DisplayDialog(
-                    "Data Config Sheet",
-                    "No PullConfig assets found. Create one via Assets → Create → Aerisyn → Data Config Sheet → Pull Config.",
-                    "OK");
-                return PullAllSummary.Create(Array.Empty<PullJobResult>(), null);
+                settings = DataConfigSettingsLoader.Load();
+                configs = DataConfigPullConfigDiscovery.Find(settings);
+            }
+            catch (InvalidOperationException exception)
+            {
+                // Missing settings, blank folder, or empty folder: nothing ran, so never a green result.
+                PullAllSummary failed = PullAllSummary.Create(
+                    Array.Empty<PullJobResult>(),
+                    new[] { exception.Message });
+                Debug.LogError("[DataConfigSheet]\n" + failed.Format());
+                EditorUtility.DisplayDialog("Data Config Sheet Pull All failed", failed.Format(), "OK");
+                return failed;
             }
 
-            // One manifest, one active environment: the first Pull Config's profile is the project's path.
-            EnvironmentProfile manifestProfile = null;
-            string[] configNames = new string[configs.Count];
-            string[] profileIds = new string[configs.Count];
-            for (int i = 0; i < configs.Count; i++)
-            {
-                configNames[i] = configs[i].name;
-                EnvironmentProfile profile = configs[i].EnvironmentProfile;
-                if (profile == null)
-                    continue;
-
-                if (manifestProfile == null)
-                    manifestProfile = profile;
-
-                string profilePath = AssetDatabase.GetAssetPath(profile);
-                profileIds[i] = string.IsNullOrEmpty(profilePath) ? profile.name : profilePath;
-            }
-
-            string[] profileMismatches = PullAllProfileRule.FindMismatches(configNames, profileIds);
-
-            // Job index == config index; a mismatched config becomes a failed result without pulling.
+            // Job index == config index.
             List<PullAllJob> jobs = new List<PullAllJob>(configs.Count);
             for (int i = 0; i < configs.Count; i++)
             {
                 PullConfig config = configs[i];
-                string mismatch = profileMismatches[i];
-                if (mismatch != null)
-                    jobs.Add(new PullAllJob(config.name, () => Task.FromResult(PullJobResult.Failed(config.name, mismatch))));
-                else
-                    jobs.Add(new PullAllJob(config.name, () => RunPullJobAsync(config)));
+                jobs.Add(new PullAllJob(config.name, () => RunPullJobAsync(config, settings)));
             }
 
             IReadOnlyList<PullJobResult> results;
@@ -136,18 +117,15 @@ namespace Aerisyn.DataConfigSheet.Editor
                 EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pull All ({configs.Count} Pull Configs)…", 0.2f);
                 results = await PullAllRunner.RunAllAsync(jobs);
 
-                if (manifestProfile != null)
+                try
                 {
-                    try
-                    {
-                        CheckManifest(manifestProfile, results, manifestFindings);
-                    }
-                    catch (Exception exception)
-                    {
-                        // Per-job exceptions are already failed results; this is manifest IO (path, hashing) failing.
-                        Debug.LogException(exception);
-                        manifestFindings.Add($"Config Manifest write failed: {exception.Message}");
-                    }
+                    CheckManifest(settings, results, manifestFindings);
+                }
+                catch (Exception exception)
+                {
+                    // Per-job exceptions are already failed results; this is manifest IO (path, hashing) failing.
+                    Debug.LogException(exception);
+                    manifestFindings.Add($"Config Manifest write failed: {exception.Message}");
                 }
             }
             finally
@@ -167,21 +145,20 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Browser OAuth sign-in for one Pull Config with the same progress bar and
-        /// dialogs used by the Inspector Sign In button and the Sign In menu.
+        /// Browser OAuth sign-in using the auth fields on Data Config Settings, with a progress bar and
+        /// dialogs. Shared by the Sign In menu and the Data Config Sheet window. Fails with a dialog when
+        /// the settings asset is missing.
         /// </summary>
-        public static async Task SignInWithUiAsync(PullConfig config)
+        public static async Task SignInWithUiAsync()
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
-
             try
             {
+                DataConfigSettings settings = DataConfigSettingsLoader.Load();
                 EditorUtility.DisplayProgressBar(
                     "Data Config Sheet",
                     "Waiting for Google sign-in in your browser…",
                     0.4f);
-                await GoogleOAuthSession.SignInAsync(config);
+                await GoogleOAuthSession.SignInAsync(settings);
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
                     "Signed in. Share the spreadsheet with your Google email as Viewer, then Pull.",
@@ -195,24 +172,21 @@ namespace Aerisyn.DataConfigSheet.Editor
             finally
             {
                 EditorUtility.ClearProgressBar();
-                // Refresh PullConfig Inspector "Google auth" status after token write.
+                // Refresh any open Data Config UI after the token write.
                 RepaintInspectors();
             }
         }
 
 
         /// <summary>
-        /// Clears the local OAuth token for one Pull Config with the same dialogs used by
-        /// the Inspector Sign Out button and the Sign Out menu.
+        /// Clears the local OAuth token (path from Data Config Settings) with dialogs. Shared by the
+        /// Sign Out menu and the Data Config Sheet window.
         /// </summary>
-        public static void SignOutWithUi(PullConfig config)
+        public static void SignOutWithUi()
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
-
             try
             {
-                GoogleOAuthSession.SignOut(config);
+                GoogleOAuthSession.SignOut(DataConfigSettingsLoader.Load());
                 EditorUtility.DisplayDialog("Data Config Sheet", "Signed out.", "OK");
             }
             catch (Exception exception)
@@ -222,7 +196,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             }
             finally
             {
-                // Refresh PullConfig Inspector "Google auth" status after token delete.
+                // Refresh any open Data Config UI after the token delete.
                 RepaintInspectors();
             }
         }
@@ -239,37 +213,12 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Pull Configs sorted by asset path (ordinal) so run order, logs, and the summary do not depend
-        /// on AssetDatabase GUID enumeration order.
-        /// </summary>
-        static List<PullConfig> FindPullConfigsInStableOrder()
-        {
-            string[] guids = AssetDatabase.FindAssets("t:PullConfig");
-            List<string> paths = new List<string>(guids.Length);
-            for (int i = 0; i < guids.Length; i++)
-                paths.Add(AssetDatabase.GUIDToAssetPath(guids[i]));
-
-            paths.Sort(StringComparer.Ordinal);
-
-            List<PullConfig> configs = new List<PullConfig>(paths.Count);
-            for (int i = 0; i < paths.Count; i++)
-            {
-                PullConfig config = AssetDatabase.LoadAssetAtPath<PullConfig>(paths[i]);
-                if (config != null)
-                    configs.Add(config);
-            }
-
-            return configs;
-        }
-
-
-        /// <summary>
         /// One Pull All job: live Pull with no per-config dialog, mapped into a pure result carrying the
         /// manifest rows. A failed PullReport becomes a failed result; thrown errors are caught by the runner.
         /// </summary>
-        static async Task<PullJobResult> RunPullJobAsync(PullConfig config)
+        static async Task<PullJobResult> RunPullJobAsync(PullConfig config, DataConfigSettings settings)
         {
-            LivePullOutcome outcome = await DataConfigPullRunner.PullWithSourceAsync(config);
+            LivePullOutcome outcome = await DataConfigPullRunner.PullWithSourceAsync(config, settings);
             string body = outcome.Report.Format();
             Debug.Log("[DataConfigSheet]\n" + body);
 
@@ -285,12 +234,12 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// All jobs passed: writes the Config Manifest (when the profile sets a path) and checks the saved
+        /// All jobs passed: writes the Config Manifest (when the settings set a path) and checks the saved
         /// asset. Any job failed: keeps the previous manifest (a partial one would claim completeness) and
         /// checks the required Config Types against what the passed jobs produced, so missing types still surface.
         /// </summary>
         static void CheckManifest(
-            EnvironmentProfile profile,
+            DataConfigSettings settings,
             IReadOnlyList<PullJobResult> results,
             List<string> findings)
         {
@@ -301,22 +250,22 @@ namespace Aerisyn.DataConfigSheet.Editor
             IReadOnlyList<string> problems;
             if (everyJobPassed)
             {
-                if (!string.IsNullOrWhiteSpace(profile.ManifestAssetPath))
+                if (!string.IsNullOrWhiteSpace(settings.ManifestAssetPath))
                 {
                     ConfigManifestSnapshot snapshot = ConfigManifestSnapshot.FromJobs(
-                        profile.ActiveEnvironmentKey,
+                        settings.ActiveEnvironmentKey,
                         DateTime.UtcNow,
                         results);
-                    ConfigManifestStore.Write(profile.ManifestAssetPath, snapshot);
+                    ConfigManifestStore.Write(settings.ManifestAssetPath, snapshot);
                 }
 
-                problems = ConfigManifestStore.CheckProfile(profile);
+                problems = ConfigManifestStore.CheckSettings(settings);
             }
             else
             {
                 problems = ManifestCompleteness.CheckRun(
-                    profile.ActiveEnvironmentKey,
-                    profile.RequiredConfigTypeNames,
+                    settings.ActiveEnvironmentKey,
+                    settings.RequiredConfigTypeNames,
                     results);
             }
 

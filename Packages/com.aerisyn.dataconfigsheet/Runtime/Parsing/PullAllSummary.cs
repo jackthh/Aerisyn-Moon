@@ -86,6 +86,9 @@ namespace Aerisyn.DataConfigSheet
             if (Results.Count == 0)
             {
                 builder.Append("Pull All failed: No Pull Configs ran.");
+                for (int i = 0; i < ManifestFindings.Count; i++)
+                    builder.AppendLine().Append("  • ").Append(ManifestFindings[i]);
+
                 return builder.ToString();
             }
 

@@ -46,7 +46,7 @@ namespace Aerisyn.DataConfigSheet
             }
 
             throw new InvalidOperationException(
-                $"Environment Profile has no spreadsheet id for Feature Key '{featureKey}' " +
+                $"Data Config Settings has no spreadsheet id for Feature Key '{featureKey}' " +
                 $"in Environment Key '{activeEnvironmentKey}'.");
         }
 

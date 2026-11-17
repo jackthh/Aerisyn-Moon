@@ -36,7 +36,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// <summary>
         /// Downloads each included Pull Config Type's tab (type name or <see cref="SheetTabAttribute"/>)
         /// into a grid keyed by Config Type. Unticked candidates are not fetched.
-        /// The spreadsheet id is resolved by the caller (Environment Profile) after the Title Check.
+        /// The spreadsheet id is resolved by the caller (Data Config Settings) after the Title Check.
         /// </summary>
         public static async Task<Dictionary<Type, SheetGrid>> FetchGridsAsync(
             PullConfig config,

@@ -28,27 +28,27 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// Opens the system browser for Google sign-in, then saves an authorized_user token.
         /// Sheet sharing: Viewer to the signed-in Google email (no public link required).
         /// </summary>
-        public static async Task SignInAsync(PullConfig config)
+        public static async Task SignInAsync(DataConfigSettings settings)
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
-            if (config.AuthMode != GoogleAuthMode.OAuthUser)
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+            if (settings.AuthMode != GoogleAuthMode.OAuthUser)
                 throw new InvalidOperationException(
-                    "PullConfig Auth Mode must be OAuth User to sign in. Switch Auth Mode, or use a service-account JSON instead.");
+                    "Data Config Settings Auth Mode must be OAuth User to sign in. Switch Auth Mode, or use a service-account JSON instead.");
 
             // Match Pull ValidateGoogle: empty default must not fall through to ResolveProjectPath.
-            if (string.IsNullOrWhiteSpace(config.OAuthClientSecretsPath))
+            if (string.IsNullOrWhiteSpace(settings.OAuthClientSecretsPath))
                 throw new InvalidOperationException(
-                    $"PullConfig '{config.name}' has an empty OAuth client secrets path.");
+                    "Data Config Settings has an empty OAuth client secrets path.");
 
-            string clientSecretsFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthClientSecretsPath);
+            string clientSecretsFullPath = DataConfigPathUtility.ResolveProjectPath(settings.OAuthClientSecretsPath);
             if (!File.Exists(clientSecretsFullPath))
                 throw new FileNotFoundException(
                     "OAuth client_secrets JSON not found. Create an OAuth Desktop client in Google Cloud, " +
-                    "download the JSON, save it at the PullConfig client-secrets path (gitignored), then Sign In again.",
+                    "download the JSON, save it at the Data Config Settings client-secrets path (gitignored), then Sign In again.",
                     clientSecretsFullPath);
 
-            string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
+            string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(settings.OAuthUserTokenPath);
             string storeDir = GetFileDataStoreDirectory();
 
             ClientSecrets secrets;
@@ -75,17 +75,17 @@ namespace Aerisyn.DataConfigSheet.Editor
                     "https://myaccount.google.com/permissions then Sign In again (offline access required).");
 
             WriteAuthorizedUserToken(tokenFullPath, secrets.ClientId, secrets.ClientSecret, userCredential.Token.RefreshToken);
-            Debug.Log($"[DataConfigSheet] Signed in. Token saved to '{config.OAuthUserTokenPath}'.");
+            Debug.Log($"[DataConfigSheet] Signed in. Token saved to '{settings.OAuthUserTokenPath}'.");
         }
 
 
         /// <summary>Deletes the local OAuth token and FileDataStore so the next Pull requires Sign In.</summary>
-        public static void SignOut(PullConfig config)
+        public static void SignOut(DataConfigSettings settings)
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
+            string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(settings.OAuthUserTokenPath);
             if (File.Exists(tokenFullPath))
                 File.Delete(tokenFullPath);
 
@@ -97,26 +97,26 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        /// <summary>True when the PullConfig OAuth user-token file exists.</summary>
-        public static bool IsSignedIn(PullConfig config)
+        /// <summary>True when the Data Config Settings OAuth user-token file exists.</summary>
+        public static bool IsSignedIn(DataConfigSettings settings)
         {
-            if (config == null || config.AuthMode != GoogleAuthMode.OAuthUser)
+            if (settings == null || settings.AuthMode != GoogleAuthMode.OAuthUser)
                 return false;
 
-            string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
+            string tokenFullPath = DataConfigPathUtility.ResolveProjectPath(settings.OAuthUserTokenPath);
             return File.Exists(tokenFullPath);
         }
 
 
         /// <summary>
-        /// Builds a Sheets API client from PullConfig OAuth or service-account credentials.
+        /// Builds a Sheets API client from Data Config Settings OAuth or service-account credentials.
         /// </summary>
-        public static async Task<SheetsService> CreateSheetsServiceAsync(PullConfig config)
+        public static async Task<SheetsService> CreateSheetsServiceAsync(DataConfigSettings settings)
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            return new SheetsService(await CreateClientInitializerAsync(config));
+            return new SheetsService(await CreateClientInitializerAsync(settings));
         }
 
 
@@ -124,12 +124,12 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// Builds a Drive API client from the same OAuth or service-account credentials. The existing
         /// <c>drive.readonly</c> scope is enough for <c>files.get</c> revision fields; no new scope.
         /// </summary>
-        public static async Task<DriveService> CreateDriveServiceAsync(PullConfig config)
+        public static async Task<DriveService> CreateDriveServiceAsync(DataConfigSettings settings)
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            return new DriveService(await CreateClientInitializerAsync(config));
+            return new DriveService(await CreateClientInitializerAsync(settings));
         }
 
         #endregion
@@ -138,24 +138,24 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Credentials
 
         // Sheets and Drive clients share the same credential and application name.
-        static async Task<BaseClientService.Initializer> CreateClientInitializerAsync(PullConfig config)
+        static async Task<BaseClientService.Initializer> CreateClientInitializerAsync(DataConfigSettings settings)
         {
             return new BaseClientService.Initializer
             {
-                HttpClientInitializer = await ResolveGoogleCredentialAsync(config),
+                HttpClientInitializer = await ResolveGoogleCredentialAsync(settings),
                 ApplicationName = "Aerisyn DataConfigSheet",
             };
         }
 
 
-        static async Task<GoogleCredential> ResolveGoogleCredentialAsync(PullConfig config)
+        static async Task<GoogleCredential> ResolveGoogleCredentialAsync(DataConfigSettings settings)
         {
-            if (config.AuthMode == GoogleAuthMode.ServiceAccount)
+            if (settings.AuthMode == GoogleAuthMode.ServiceAccount)
             {
-                string path = DataConfigPathUtility.ResolveProjectPath(config.ServiceAccountCredentialPath);
+                string path = DataConfigPathUtility.ResolveProjectPath(settings.ServiceAccountCredentialPath);
                 if (!File.Exists(path))
                     throw new FileNotFoundException(
-                        "Service-account credential JSON not found. Place the key at the PullConfig path, " +
+                        "Service-account credential JSON not found. Place the key at the Data Config Settings path, " +
                         "share the sheet with the robot email as Viewer, or switch Auth Mode to OAuth User.",
                         path);
 
@@ -168,10 +168,10 @@ namespace Aerisyn.DataConfigSheet.Editor
                 }
             }
 
-            string tokenPath = DataConfigPathUtility.ResolveProjectPath(config.OAuthUserTokenPath);
+            string tokenPath = DataConfigPathUtility.ResolveProjectPath(settings.OAuthUserTokenPath);
             if (!File.Exists(tokenPath))
                 throw new FileNotFoundException(
-                    "Not signed in. Open the PullConfig Inspector → Sign In With Google, " +
+                    "Not signed in. Open the Data Config Sheet window (or menu) → Sign In With Google, " +
                     "then Pull again. Share the sheet with your Google email as Viewer.",
                     tokenPath);
 

@@ -64,9 +64,9 @@ class DataConfigBuildCheck : IPreprocessBuildWithReport
 
     public void OnPreprocessBuild(BuildReport report)
     {
-        EnvironmentProfile profile = AssetDatabase.LoadAssetAtPath<EnvironmentProfile>("Assets/Config/EnvironmentProfile.asset");
-        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.Require(profile);
-        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.RequireCompleteManifest(profile); // optional
+        DataConfigSettings settings = Aerisyn.DataConfigSheet.Editor.DataConfigSettingsLoader.Load();
+        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.Require(settings);
+        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.RequireCompleteManifest(settings); // optional
     }
 }
 ```

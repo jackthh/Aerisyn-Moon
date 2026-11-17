@@ -32,7 +32,7 @@ namespace Aerisyn.DataConfigSheet
         public string FeatureKey { get; }
 
 
-        /// <summary>Source Sheet spreadsheet id resolved from the Environment Profile.</summary>
+        /// <summary>Source Sheet spreadsheet id resolved from Data Config Settings.</summary>
         public string SpreadsheetId { get; }
 
 

@@ -111,5 +111,30 @@ namespace Aerisyn.DataConfigSheet.Tests
         #endregion
 
 
+
+
+        #region Empty folder
+
+        [Test]
+        public void RequireAny_NoPullConfigsInFolder_ThrowsNamingFolder()
+        {
+            System.InvalidOperationException error = Assert.Throws<System.InvalidOperationException>(
+                () => PullConfigFolderScope.RequireAny("Assets/Config", new string[0]))!;
+
+            Assert.That(error.Message, Does.Contain("Assets/Config"));
+            Assert.That(error.Message, Does.Contain("No Pull Configs"));
+        }
+
+
+        [Test]
+        public void RequireAny_OnePullConfig_DoesNotThrow()
+        {
+            Assert.DoesNotThrow(
+                () => PullConfigFolderScope.RequireAny("Assets/Config", new[] { "Assets/Config/A.asset" }));
+        }
+
+        #endregion
+
+
     }
 }

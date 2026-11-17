@@ -48,7 +48,7 @@ namespace Aerisyn.DataConfigSheet
                 throw new InvalidOperationException(
                     $"Title Check failed for Environment Key '{activeEnvironmentKey}': expected the Source Sheet " +
                     $"title to start with '{expectedPrefix}' but it is '{actualTitle}'. " +
-                    $"Check the spreadsheet id bound in the Environment Profile (id '{spreadsheetId}'). " +
+                    $"Check the spreadsheet id bound in Data Config Settings (id '{spreadsheetId}'). " +
                     "No Baked Assets were written.");
             }
 

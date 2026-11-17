@@ -8,6 +8,7 @@ namespace Aerisyn.DataConfigSheet.Editor
     /// Opt-in build helpers. The package registers nothing: a game calls these from its own
     /// <c>IPreprocessBuildWithReport</c> (see README). <see cref="Require"/> is the Production gate;
     /// <see cref="RequireCompleteManifest"/> is a separate, additional check the game may also call.
+    /// Pass <see cref="DataConfigSettingsLoader.Load"/> for the project's settings asset.
     /// </summary>
     public static class DataConfigBuildGate
     {
@@ -15,15 +16,15 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         /// <summary>
         /// Production gate: throws <see cref="BuildFailedException"/> (which aborts the build) when the
-        /// profile's active Environment Key is not Production. Does not look at the Config Manifest; pair it
+        /// settings' active Environment Key is not Production. Does not look at the Config Manifest; pair it
         /// with <see cref="RequireCompleteManifest"/> to also fail on missing required Config Types.
         /// </summary>
-        public static void Require(EnvironmentProfile profile)
+        public static void Require(DataConfigSettings settings)
         {
-            if (profile == null)
-                throw new ArgumentNullException(nameof(profile));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            string environmentProblem = ProductionBuildGate.Check(profile.ActiveEnvironmentKey);
+            string environmentProblem = ProductionBuildGate.Check(settings.ActiveEnvironmentKey);
             if (environmentProblem != null)
                 throw new BuildFailedException("Data Config Sheet build gate failed:\n  • " + environmentProblem);
         }
@@ -34,12 +35,12 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// was written for another environment, or lacks a required Config Type. Independent of the
         /// Production check, so a game can gate a non-Production build on completeness alone.
         /// </summary>
-        public static void RequireCompleteManifest(EnvironmentProfile profile)
+        public static void RequireCompleteManifest(DataConfigSettings settings)
         {
-            if (profile == null)
-                throw new ArgumentNullException(nameof(profile));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            IReadOnlyList<string> problems = ConfigManifestStore.CheckProfile(profile);
+            IReadOnlyList<string> problems = ConfigManifestStore.CheckSettings(settings);
             if (problems.Count > 0)
             {
                 throw new BuildFailedException(

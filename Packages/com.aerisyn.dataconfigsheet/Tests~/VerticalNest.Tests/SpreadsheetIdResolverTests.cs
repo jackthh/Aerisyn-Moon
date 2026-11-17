@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace Aerisyn.DataConfigSheet.Tests
 {
     /// <summary>
-    /// Environment Profile resolve seam (SpreadsheetIdResolver): Source Sheet spreadsheet id from
+    /// Data Config Settings resolve seam (SpreadsheetIdResolver): Source Sheet spreadsheet id from
     /// active Environment Key + Feature Key. Hit returns the id; every miss fails clearly.
     /// </summary>
     public sealed class SpreadsheetIdResolverTests
@@ -67,6 +67,7 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.That(error!.Message, Does.Contain("Production"));
             Assert.That(error.Message, Does.Contain("cannon"));
             Assert.That(error.Message, Does.Contain("spreadsheet id"));
+            Assert.That(error.Message, Does.Contain("Data Config Settings"));
         }
 
 

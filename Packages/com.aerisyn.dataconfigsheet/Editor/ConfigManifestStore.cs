@@ -78,31 +78,31 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Completeness
 
         /// <summary>
-        /// Checks the profile's manifest asset against its active Environment Key and required Config Type
-        /// list. Returns problems (empty = complete). A profile with no manifest path and no required list
-        /// has nothing to check and returns empty; a required list without a path is a problem.
+        /// Checks the manifest asset against the settings' active Environment Key and required Config Type
+        /// list. Returns problems (empty = complete). Settings with no manifest path and no required list
+        /// have nothing to check and return empty; a required list without a path is a problem.
         /// </summary>
-        public static IReadOnlyList<string> CheckProfile(EnvironmentProfile profile)
+        public static IReadOnlyList<string> CheckSettings(DataConfigSettings settings)
         {
-            if (profile == null)
-                throw new ArgumentNullException(nameof(profile));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            bool hasPath = !string.IsNullOrWhiteSpace(profile.ManifestAssetPath);
+            bool hasPath = !string.IsNullOrWhiteSpace(settings.ManifestAssetPath);
             if (!hasPath)
             {
-                if (profile.RequiredConfigTypeNames.Count == 0)
+                if (settings.RequiredConfigTypeNames.Count == 0)
                     return Array.Empty<string>();
 
                 return new[]
                 {
-                    $"Environment Profile '{profile.name}' lists required Config Types but has no Config Manifest asset path.",
+                    "Data Config Settings lists required Config Types but has no Config Manifest asset path.",
                 };
             }
 
             ConfigManifest manifest = AssetDatabase.LoadAssetAtPath<ConfigManifest>(
-                DataConfigPathUtility.NormalizeAssetPath(profile.ManifestAssetPath.Trim()));
+                DataConfigPathUtility.NormalizeAssetPath(settings.ManifestAssetPath.Trim()));
             ConfigManifestSnapshot snapshot = manifest == null ? null : manifest.ToSnapshot();
-            return ManifestCompleteness.Check(snapshot, profile.ActiveEnvironmentKey, profile.RequiredConfigTypeNames);
+            return ManifestCompleteness.Check(snapshot, settings.ActiveEnvironmentKey, settings.RequiredConfigTypeNames);
         }
 
         #endregion
