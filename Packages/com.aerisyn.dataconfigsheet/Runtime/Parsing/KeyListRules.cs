@@ -6,7 +6,7 @@ namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
     /// Pure rules for the Data Config Settings Environment Key and Feature Key lists: package seed defaults and
-    /// pick membership. Key list assets call these so Inspectors and tests share one definition.
+    /// pick membership. Data Config Settings calls these so Inspectors and tests share one definition.
     /// </summary>
     public static class KeyListRules
     {

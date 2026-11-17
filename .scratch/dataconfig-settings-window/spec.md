@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Spec: Data Config Settings window (0.7.0)
 
