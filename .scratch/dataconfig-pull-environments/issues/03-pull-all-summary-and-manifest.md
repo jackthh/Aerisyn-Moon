@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** claimed
+**Status:** resolved
 
 - [x] Pull All continues across configs and returns a combined summary (no early silent return after first failure)
 - [x] Config Manifest asset written with env, time, per-feature metadata, per-asset hashes
@@ -17,6 +17,7 @@
 
 ## Comments
 
+- Integrated into `feature/dataconfig-pull-environments` via fast-forward to `125f375261d5c9d5d649378599847d60cc788e7b`.
 - Pure seams in `Runtime/Parsing`: `PullAllRunner` + `PullAllSummary` (run all, exceptions become failed results, empty run is not success), `ConfigManifestSnapshot.FromJobs`, `ManifestCompleteness.Check`, `SheetRevisionLookup.TryFetchAsync` (Drive fetch seam, failure → empty fields), `ManifestContentHash`, `ProductionBuildGate`. 29 new NUnit tests; suite 122/122.
 - Editor wiring: `DataConfigPullWorkflow.PullAllWithUiAsync` (stable path order, one summary dialog, manifest per Environment Profile with a manifest path, only when every job passed, then completeness), `DataConfigPullRunner.PullWithSourceAsync`, `GoogleDriveRevisionFetcher` (`files.get`, `supportsAllDrives=true`), `ConfigManifestStore`, `DataConfigBuildGate.Require` (opt-in; package registers nothing).
 - Environment Profile gained `Manifest Asset Path` and `Required Config Types`.
