@@ -7,8 +7,8 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Single user-facing Pull and OAuth path for menu items and Pull Config Inspector
-    /// buttons (progress bar, dialogs, logging).
+    /// Single user-facing Pull and OAuth path for the menu items, the Pull Config Inspector Pull button
+    /// and the Data Config Sheet window (progress bar, dialogs, logging).
     /// </summary>
     [InitializeOnLoad]
     public static class DataConfigPullWorkflow
@@ -19,9 +19,10 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         static DataConfigPullWorkflow()
         {
-            // The Inspector button on PullConfig cannot reference this Editor assembly;
-            // register the shared workflow so Inspector and menus stay identical.
+            // PullConfig (Runtime) cannot reference this Editor assembly; register the shared Pull workflow
+            // for its Inspector Pull button and the settings loader for its Feature Key dropdown.
             PullConfig.RunEditorPullAsync = PullWithUiAsync;
+            PullConfig.EditorSettingsLoader = DataConfigSettingsLoader.TryLoad;
         }
 
         #endregion
@@ -42,7 +43,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             try
             {
                 EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pulling '{config.name}'…", 0.2f);
-                PullReport report = await DataConfigPullRunner.PullAsync(config);
+                PullReport report = await DataConfigPullRunner.PullAsync(config, DataConfigSettingsLoader.Load());
                 string body = report.Format();
                 Debug.Log("[DataConfigSheet]\n" + body);
 
@@ -97,8 +98,9 @@ namespace Aerisyn.DataConfigSheet.Editor
                 PullAllSummary failed = PullAllSummary.Create(
                     Array.Empty<PullJobResult>(),
                     new[] { exception.Message });
-                Debug.LogError("[DataConfigSheet]\n" + failed.Format());
-                EditorUtility.DisplayDialog("Data Config Sheet Pull All failed", failed.Format(), "OK");
+                string failedBody = failed.Format();
+                Debug.LogError("[DataConfigSheet]\n" + failedBody);
+                EditorUtility.DisplayDialog("Data Config Sheet Pull All failed", failedBody, "OK");
                 return failed;
             }
 

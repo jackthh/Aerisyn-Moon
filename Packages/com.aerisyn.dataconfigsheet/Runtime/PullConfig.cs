@@ -41,6 +41,13 @@ namespace Aerisyn.DataConfigSheet
         public static Func<PullConfig, Task> RunEditorPullAsync;
 
 
+        /// <summary>
+        /// Editor module assigns a loader for the Data Config Settings asset (null when missing) so the
+        /// Feature Key dropdown works without Runtime referencing AssetDatabase.
+        /// </summary>
+        public static Func<DataConfigSettings> EditorSettingsLoader;
+
+
         // Sign In / Sign Out live in the Data Config Sheet window now (auth is on Data Config Settings).
         // A missing settings asset or signed-out state surfaces as a clear failure from the Pull workflow.
         [Button("Pull", ButtonSizes.Large)]
@@ -117,12 +124,11 @@ namespace Aerisyn.DataConfigSheet
         #region Picker helpers
 
         // Feature Key choices come only from Data Config Settings' Feature Key list (no free text).
-        // Empty when the settings asset does not exist yet (the window creates it).
+        // Empty when the settings asset does not exist yet (opening the window creates it) or the Editor loader is unset.
         IEnumerable<string> FeatureKeyChoices()
         {
 #if UNITY_EDITOR
-            DataConfigSettings settings =
-                UnityEditor.AssetDatabase.LoadAssetAtPath<DataConfigSettings>(DataConfigSettings.DefaultAssetPath);
+            DataConfigSettings settings = EditorSettingsLoader?.Invoke();
             if (settings != null)
                 return settings.FeatureKeys;
 #endif

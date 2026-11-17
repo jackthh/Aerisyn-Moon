@@ -100,6 +100,25 @@ namespace Aerisyn.DataConfigSheet.Tests
         [TestCase(null)]
         [TestCase("")]
         [TestCase("   ")]
+        public void RequireFolder_BlankFolderPath_ThrowsNamingPullAllFolder(string? folderPath)
+        {
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(
+                () => PullConfigFolderScope.RequireFolder(folderPath!));
+
+            Assert.That(error!.Message, Does.Contain("Pull All folder"));
+        }
+
+
+        [Test]
+        public void RequireFolder_NonBlankFolderPath_DoesNotThrow()
+        {
+            Assert.DoesNotThrow(() => PullConfigFolderScope.RequireFolder("Assets/Config"));
+        }
+
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("   ")]
         public void Select_BlankFolderPath_ThrowsNamingPullAllFolder(string folderPath)
         {
             InvalidOperationException error = Assert.Throws<InvalidOperationException>(

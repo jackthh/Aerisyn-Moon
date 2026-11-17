@@ -20,9 +20,7 @@ namespace Aerisyn.DataConfigSheet
         /// </summary>
         public static string[] Select(string folderPath, IReadOnlyList<string> assetPaths)
         {
-            if (string.IsNullOrWhiteSpace(folderPath))
-                throw new InvalidOperationException(
-                    "Pull All folder is blank. Pick the folder that holds your Pull Configs in Data Config Settings.");
+            RequireFolder(folderPath);
 
             if (assetPaths == null)
                 throw new ArgumentNullException(nameof(assetPaths));
@@ -43,6 +41,18 @@ namespace Aerisyn.DataConfigSheet
 
             selected.Sort(StringComparer.Ordinal);
             return selected.ToArray();
+        }
+
+
+        /// <summary>
+        /// Throws InvalidOperationException when the folder path is null, empty or whitespace. Callers use it
+        /// as a guard before any project-wide asset search.
+        /// </summary>
+        public static void RequireFolder(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath))
+                throw new InvalidOperationException(
+                    "Pull All folder is blank. Pick the folder that holds your Pull Configs in Data Config Settings.");
         }
 
 

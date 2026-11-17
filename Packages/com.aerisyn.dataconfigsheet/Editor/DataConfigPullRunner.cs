@@ -44,18 +44,11 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Live Google Pull: load Data Config Settings → resolve spreadsheet id (active Environment Key x Feature Key) → OAuth/service-account →
-        /// Title Check (aborts on mismatch before any cell fetch) → Sheets API cell grids → parse → Baked Assets.
-        /// Commas inside cells do not break Pull (no CSV required). Delegates to <see cref="PullWithSourceAsync"/>
-        /// and returns only its report. Fails clearly when Data Config Settings is missing.
+        /// Live Google Pull against loaded Data Config Settings (Pull All loads it once): resolve spreadsheet id
+        /// (active Environment Key x Feature Key) → OAuth/service-account → Title Check (aborts on mismatch before
+        /// any cell fetch) → Sheets API cell grids → parse → Baked Assets. Commas inside cells do not break Pull.
+        /// Delegates to <see cref="PullWithSourceAsync"/> and returns only its report.
         /// </summary>
-        public static Task<PullReport> PullAsync(PullConfig config)
-        {
-            return PullAsync(config, DataConfigSettingsLoader.Load());
-        }
-
-
-        /// <summary>Live Pull against already-loaded Data Config Settings (Pull All loads it once).</summary>
         public static async Task<PullReport> PullAsync(PullConfig config, DataConfigSettings settings)
         {
             LivePullOutcome outcome = await PullWithSourceAsync(config, settings);
@@ -68,19 +61,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// records (Feature Key, spreadsheet id, checked title, Drive revision). Drive revision is fetched only
         /// after a successful Pull and is best effort: a Drive failure leaves those fields empty. When the Pull
         /// Config sets <see cref="PullConfig.SkipTitleCheck"/> no title is read, so the recorded title is empty.
-        /// </summary>
-        public static Task<LivePullOutcome> PullWithSourceAsync(PullConfig config)
-        {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
-
-            return PullWithSourceAsync(config, DataConfigSettingsLoader.Load());
-        }
-
-
-        /// <summary>
-        /// <see cref="PullWithSourceAsync(PullConfig)"/> with Data Config Settings supplied by the caller
-        /// (spreadsheet id, active Environment Key, title prefixes, and Google auth all come from it).
+        /// Spreadsheet id, active Environment Key, title prefixes and Google auth all come from the settings.
         /// </summary>
         public static async Task<LivePullOutcome> PullWithSourceAsync(PullConfig config, DataConfigSettings settings)
         {

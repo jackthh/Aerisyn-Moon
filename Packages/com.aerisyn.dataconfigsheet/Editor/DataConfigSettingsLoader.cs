@@ -18,8 +18,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// </summary>
         public static DataConfigSettings Load()
         {
-            DataConfigSettings settings =
-                AssetDatabase.LoadAssetAtPath<DataConfigSettings>(DataConfigSettings.DefaultAssetPath);
+            DataConfigSettings settings = TryLoad();
             if (settings == null)
             {
                 throw new InvalidOperationException(
@@ -32,15 +31,24 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
+        /// Returns the settings at <see cref="DataConfigSettings.DefaultAssetPath"/>, or null when missing.
+        /// Never creates anything, so it is safe on domain reload and layout restore.
+        /// </summary>
+        public static DataConfigSettings TryLoad()
+        {
+            return AssetDatabase.LoadAssetAtPath<DataConfigSettings>(DataConfigSettings.DefaultAssetPath);
+        }
+
+
+        /// <summary>
         /// Returns the settings at <see cref="DataConfigSettings.DefaultAssetPath"/>, creating the asset
         /// (and its folder) first when missing. A new asset is seeded with Dev, Test, Production and no
-        /// Feature Keys by the <see cref="DataConfigSettings"/> field initializers. Used by the window only;
-        /// Pull and Sign In use <see cref="Load"/> so a deleted asset still fails loudly.
+        /// Feature Keys by the <see cref="DataConfigSettings"/> field initializers. Used only by the window's
+        /// explicit open / create action; Pull and Sign In use <see cref="Load"/> so a deleted asset still fails loudly.
         /// </summary>
         public static DataConfigSettings LoadOrCreate()
         {
-            DataConfigSettings settings =
-                AssetDatabase.LoadAssetAtPath<DataConfigSettings>(DataConfigSettings.DefaultAssetPath);
+            DataConfigSettings settings = TryLoad();
             if (settings != null)
                 return settings;
 

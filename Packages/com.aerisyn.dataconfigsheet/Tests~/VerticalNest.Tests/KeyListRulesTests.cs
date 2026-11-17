@@ -110,6 +110,26 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.DoesNotThrow(() => KeyListRules.RequireMember("Feature Key", featureKeys, "cannon"));
         }
 
+        [Test]
+        public void DescribeProblem_KeyInList_ReturnsNull()
+        {
+            Assert.That(KeyListRules.DescribeProblem("Environment Key", new[] { "Dev", "Test" }, "Dev"), Is.Null);
+        }
+
+
+        [TestCase("Prod")]
+        [TestCase("dev")]
+        [TestCase("")]
+        [TestCase(null)]
+        public void DescribeProblem_KeyNotInList_NamesKindKeyAndAllowed(string? key)
+        {
+            string? problem = KeyListRules.DescribeProblem("Environment Key", new[] { "Dev", "Test" }, key!);
+
+            Assert.That(problem, Does.Contain("Environment Key"));
+            Assert.That(problem, Does.Contain("Dev, Test"));
+        }
+
+
         #endregion
 
 

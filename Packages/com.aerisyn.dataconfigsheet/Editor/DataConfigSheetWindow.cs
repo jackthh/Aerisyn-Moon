@@ -1,10 +1,12 @@
+using System;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
-    /// Aerisyn > Data Config Sheet window: edits the one Data Config Settings asset (created on first open),
+    /// Aerisyn > Data Config Sheet window: edits the one Data Config Settings asset (created by the explicit menu open or the Create button),
     /// plus Sign In / Sign Out and Pull All. Buttons call the same DataConfigPullWorkflow the menus use.
     /// The settings Inspector (Odin-drawn when Odin is active) provides the folder and .asset file pickers.
     /// </summary>
@@ -29,6 +31,8 @@ namespace Aerisyn.DataConfigSheet.Editor
             DataConfigSheetWindow window = GetWindow<DataConfigSheetWindow>("Data Config Sheet");
             window.minSize = new Vector2(380f, 360f);
             window.Show();
+            // Only this explicit open creates the asset; domain reload and layout restore just load.
+            window.EnsureSettings(createIfMissing: true);
         }
 
         #endregion
@@ -38,7 +42,7 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         void OnEnable()
         {
-            EnsureSettings();
+            EnsureSettings(createIfMissing: false);
         }
 
 
@@ -53,7 +57,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             // The asset may have been deleted or restored outside the window.
             if (_settings == null)
             {
-                EnsureSettings();
+                EnsureSettings(createIfMissing: false);
                 Repaint();
             }
         }
@@ -66,19 +70,30 @@ namespace Aerisyn.DataConfigSheet.Editor
         void OnGUI()
         {
             if (_settings == null)
-                EnsureSettings();
+                EnsureSettings(createIfMissing: false);
 
             if (_settings == null)
             {
-                EditorGUILayout.HelpBox(
-                    _setupError ?? "Data Config Settings could not be loaded.",
-                    MessageType.Error);
-                if (GUILayout.Button("Retry"))
-                    EnsureSettings();
+                if (_setupError != null)
+                    EditorGUILayout.HelpBox(_setupError, MessageType.Error);
+                else
+                    EditorGUILayout.HelpBox(
+                        $"Data Config Settings not found at '{DataConfigSettings.DefaultAssetPath}'.",
+                        MessageType.Info);
+
+                if (GUILayout.Button("Create Data Config Settings"))
+                    EnsureSettings(createIfMissing: true);
                 return;
             }
 
             DrawToolbar();
+
+            string environmentProblem = KeyListRules.DescribeProblem(
+                "Environment Key", _settings.EnvironmentKeys, _settings.ActiveEnvironmentKey);
+            if (environmentProblem != null)
+                EditorGUILayout.HelpBox(
+                    environmentProblem + " Pick the active Environment Key below; Pull fails until then.",
+                    MessageType.Warning);
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             if (_settingsEditor != null)
@@ -126,19 +141,26 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Actions
 
-        async void RunSignIn()
+        // Disables the buttons while an action runs and always repaints afterwards.
+        async void RunBusy(Func<Task> action)
         {
             _busy = true;
             try
             {
                 SaveSettings();
-                await DataConfigPullWorkflow.SignInWithUiAsync();
+                await action();
             }
             finally
             {
                 _busy = false;
                 Repaint();
             }
+        }
+
+
+        void RunSignIn()
+        {
+            RunBusy(DataConfigPullWorkflow.SignInWithUiAsync);
         }
 
 
@@ -150,19 +172,9 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        async void RunPullAll()
+        void RunPullAll()
         {
-            _busy = true;
-            try
-            {
-                SaveSettings();
-                await DataConfigPullWorkflow.PullAllWithUiAsync();
-            }
-            finally
-            {
-                _busy = false;
-                Repaint();
-            }
+            RunBusy(() => DataConfigPullWorkflow.PullAllWithUiAsync());
         }
 
 
@@ -181,14 +193,16 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Helpers
 
-        void EnsureSettings()
+        void EnsureSettings(bool createIfMissing)
         {
             try
             {
-                _settings = DataConfigSettingsLoader.LoadOrCreate();
+                _settings = createIfMissing
+                    ? DataConfigSettingsLoader.LoadOrCreate()
+                    : DataConfigSettingsLoader.TryLoad();
                 _setupError = null;
             }
-            catch (System.Exception exception)
+            catch (Exception exception)
             {
                 _settings = null;
                 _setupError = exception.Message;
