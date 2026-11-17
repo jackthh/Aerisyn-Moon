@@ -10,12 +10,14 @@ namespace Aerisyn.DataConfigSheet
     /// Environment Key, Environment Key x Feature Key spreadsheet id bindings, title-prefix overrides,
     /// Config Manifest path and required Config Types, Google auth, and the Pull All folder.
     /// Lives at <see cref="DefaultAssetPath"/>; a new asset is seeded with Dev, Test, Production and no Feature Keys.
+    /// Derives from SerializedScriptableObject (like PullConfig) so Odin draws it: the key dropdowns and file/folder
+    /// pickers are Odin attributes, and plain ScriptableObject would fall back to Unity's string fields.
     /// </summary>
     [InfoBox(
         "One settings asset for the project. Keys are defined here once; bindings and the active environment " +
         "only pick from these lists.",
         InfoMessageType.Info)]
-    public sealed class DataConfigSettings : ScriptableObject
+    public sealed class DataConfigSettings : SerializedScriptableObject
     {
 
 
@@ -31,14 +33,12 @@ namespace Aerisyn.DataConfigSheet
 
         // Field initializers (not Reset) so the seed applies to every CreateInstance path.
         // Unity overwrites them with saved values when an existing asset deserializes.
-        [FoldoutGroup("Keys")]
         [Tooltip("Environment Keys games can pick. Seeded with Dev, Test, Production.")]
         [ListDrawerSettings(ShowFoldout = false, DraggableItems = true)]
         [SerializeField]
         List<string> _environmentKeys = new List<string>(KeyListRules.CreateSeedEnvironmentKeys());
 
 
-        [FoldoutGroup("Keys")]
         [Tooltip("Feature Keys for this project. Empty until the game adds its own.")]
         [ListDrawerSettings(ShowFoldout = false, DraggableItems = true)]
         [SerializeField]
@@ -78,7 +78,6 @@ namespace Aerisyn.DataConfigSheet
 
         #region Config Manifest
 
-        [FoldoutGroup("Config Manifest")]
         [Tooltip(
             "Project-relative path of the Config Manifest asset (e.g. Assets/Config/ConfigManifest.asset). " +
             "Pull All creates or overwrites it after every Pull Config passes. Leave blank to skip the manifest.")]
@@ -87,7 +86,6 @@ namespace Aerisyn.DataConfigSheet
         string _manifestAssetPath = "";
 
 
-        [FoldoutGroup("Config Manifest")]
         [Tooltip(
             "Config Types that must appear in the Config Manifest. Pull All and the build gate fail when one is missing.")]
         [ValueDropdown(nameof(ConfigTypeNameChoices), DropdownTitle = "Required Config Types")]
@@ -100,13 +98,11 @@ namespace Aerisyn.DataConfigSheet
 
         #region Google auth
 
-        [FoldoutGroup("Google auth")]
         [Tooltip("OAuthUser = browser sign-in (default). ServiceAccount = robot JSON for CI.")]
         [SerializeField]
         GoogleAuthMode _authMode = GoogleAuthMode.OAuthUser;
 
 
-        [FoldoutGroup("Google auth")]
         [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
         [Tooltip("Desktop OAuth client_secrets JSON from Google Cloud (gitignored).")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
@@ -115,7 +111,6 @@ namespace Aerisyn.DataConfigSheet
 
 
         // Machine-local under UserSettings (gitignored), never in Assets.
-        [FoldoutGroup("Google auth")]
         [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
         [Tooltip("Per-machine authorized_user token written after Sign In (gitignored).")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
@@ -123,7 +118,6 @@ namespace Aerisyn.DataConfigSheet
         string _oauthUserTokenPath = "UserSettings/AerisynDataConfig/oauth-user-token.json";
 
 
-        [FoldoutGroup("Google auth")]
         [ShowIf(nameof(_authMode), GoogleAuthMode.ServiceAccount)]
         [Tooltip("Service-account JSON. Share the sheet with that robot email as Viewer.")]
         [FilePath(Extensions = "json", RequireExistingPath = false)]
@@ -136,7 +130,6 @@ namespace Aerisyn.DataConfigSheet
         #region Pull All
 
         // Blank fails Pull All (PullConfigFolderScope); there is no whole-project fallback.
-        [FoldoutGroup("Pull All")]
         [Tooltip("Pull All runs every Pull Config under this folder, recursively. Blank fails.")]
         [FolderPath(RequireExistingPath = false)]
         [SerializeField]

@@ -1,6 +1,6 @@
 # Odin is a shared DevHost / consumer prerequisite
 
-Every `com.aerisyn.*` package in this repo may assume [Odin Inspector](https://odininspector.com/) (Sirenix) is already installed in the consuming Unity project and in DevHost. Packages may reference `Sirenix.OdinInspector.Attributes` for authoring ScriptableObjects. Odin is not on UPM and is never vendored in this repository.
+Every `com.aerisyn.*` package in this repo may assume [Odin Inspector](https://odininspector.com/) (Sirenix) is already installed in the consuming Unity project and in DevHost. Packages may reference `Sirenix.OdinInspector.Attributes` for authoring ScriptableObjects. Editor-only assemblies may also reference `Sirenix.OdinInspector.Editor` (e.g. drawing a settings asset's properties per tab in an EditorWindow). Odin is not on UPM and is never vendored in this repository.
 
 **Considered options:** Odin only for Quests; optional Odin via versionDefines; vendoring Sirenix into the monorepo.
 

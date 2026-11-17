@@ -28,7 +28,7 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 
 ## Data Config Settings window
 
-Open **Aerisyn → Data Config Sheet → Open Window**. The first open creates the one **Data Config Settings** asset at the fixed path `Assets/AerisynDataConfig/DataConfigSettings.asset` (Environment Keys seeded Dev, Test, Production; Feature Keys empty). Commit it. The window edits it and hosts **Sign In**, **Sign Out** and **Pull All**.
+Open **Aerisyn → Data Config Sheet → Open Window**. The first open creates the one **Data Config Settings** asset at the fixed path `Assets/AerisynDataConfig/DataConfigSettings.asset` (Environment Keys seeded Dev, Test, Production; Feature Keys empty). Commit it. The window edits it and hosts **Sign In**, **Sign Out** and **Pull All**. The top of the window shows the active environment, a setup checklist with one-click fixes (Choose… folder or credentials file, Sign In) and **Pull All**, which stays disabled until nothing blocks it; the settings are split into **Keys**, **Bindings**, **Manifest**, **Auth** and **Pull All** tabs.
 
 Data Config Settings holds everything project-wide:
 

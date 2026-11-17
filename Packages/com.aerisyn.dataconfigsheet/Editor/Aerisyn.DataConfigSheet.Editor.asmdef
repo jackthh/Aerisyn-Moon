@@ -22,7 +22,10 @@
     "Google.Apis.Drive.v3.dll",
     "Newtonsoft.Json.dll",
     "Sirenix.Serialization.dll",
-    "Sirenix.OdinInspector.Attributes.dll"
+    "Sirenix.OdinInspector.Attributes.dll",
+    "Sirenix.OdinInspector.Editor.dll",
+    "Sirenix.Utilities.dll",
+    "Sirenix.Utilities.Editor.dll"
   ],
   "autoReferenced": true,
   "defineConstraints": [],

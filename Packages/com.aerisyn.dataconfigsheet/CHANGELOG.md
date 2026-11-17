@@ -20,6 +20,7 @@ One Data Config Settings asset and a Data Config Sheet window replace the 0.6.0 
 ### Added
 
 - **Data Config Sheet window** (**Aerisyn → Data Config Sheet → Open Window**): edit settings, Sign In / Sign Out, Pull All. Folder picker for the Pull All folder, `.asset` file picker for the manifest path. The existing Sign In / Sign Out / Pull All menus still work.
+- The window opens on a dashboard: an active-environment dropdown, a setup checklist (environment, Feature Keys, Pull All folder with its Pull Config count, Google auth, manifest) with one-click Choose… / Sign In fixes, and a Pull All button that stays disabled until nothing blocks it. The last Pull All result stays visible with Copy and Clear. Settings are split into tabs (Overview, Keys, Bindings, Manifest, Auth, Pull All) with roomy sections; each tab draws its fields through Odin, so the key dropdowns and file/folder pickers stay. The Editor assembly now also references `Sirenix.OdinInspector.Editor`, `Sirenix.Utilities` and `Sirenix.Utilities.Editor` for this.
 - OAuth user token defaults to `UserSettings/AerisynDataConfig/oauth-user-token.json` (machine-local).
 
 ## [0.6.0] - 2026-11-17
