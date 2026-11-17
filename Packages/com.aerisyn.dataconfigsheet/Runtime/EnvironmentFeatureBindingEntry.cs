@@ -65,14 +65,14 @@ namespace Aerisyn.DataConfigSheet
 
         #region Pickers
 
-        // Odin expression dropdowns read the owning EnvironmentProfile (the Inspector tree root) because
+        // Odin expression dropdowns read the owning key source (Data Config Settings, the Inspector tree root) because
         // a row has no direct reference to it. Keys come only from the profile's key lists, never free text.
         public const string EnvironmentKeyPicker =
-            "@((Aerisyn.DataConfigSheet.EnvironmentProfile)$property.Tree.WeakTargets[0]).EnvironmentKeys";
+            "@((Aerisyn.DataConfigSheet.IDataConfigKeySource)$property.Tree.WeakTargets[0]).EnvironmentKeys";
 
 
         public const string FeatureKeyPicker =
-            "@((Aerisyn.DataConfigSheet.EnvironmentProfile)$property.Tree.WeakTargets[0]).FeatureKeys";
+            "@((Aerisyn.DataConfigSheet.IDataConfigKeySource)$property.Tree.WeakTargets[0]).FeatureKeys";
 
         #endregion
 

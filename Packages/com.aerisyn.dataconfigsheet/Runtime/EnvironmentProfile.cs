@@ -19,7 +19,7 @@ namespace Aerisyn.DataConfigSheet
         "One active environment for the project. Each row binds Environment Key × Feature Key to a " +
         "Source Sheet spreadsheet id. Pull resolves the id from the active environment.",
         InfoMessageType.Info)]
-    public sealed class EnvironmentProfile : ScriptableObject
+    public sealed class EnvironmentProfile : ScriptableObject, IDataConfigKeySource
     {
 
 
