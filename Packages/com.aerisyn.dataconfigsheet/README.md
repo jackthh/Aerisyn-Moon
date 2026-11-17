@@ -36,7 +36,7 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 
 1. Subclass `ConfigTypeAsset` for each table (root `items` list + nested serializable types).
 2. Optional: `[ColumnAlias("Friendly Name")]` on fields; `[SheetTab("Tab Title")]` on the type when the Google tab differs from the type name; `[LocalOnly]` on fields the sheet must not own (see below).
-3. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses).
+3. Create **Pull Config**; assign an **Environment Profile**, pick a **Feature Key**, set one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses). The profile binds the Feature Key to a spreadsheet id per environment. Pull checks the Source Sheet title starts with the active environment's prefix (`[Dev]`, `[Tester]`, `[Production]` by default; override per key on the profile) and aborts before any parse or write when it does not.
 4. Select a Config Type asset (or its script) → **Copy Header Row** to paste headers into Google (guidance covers `!!!` note columns and omitted Local Only fields).
 5. Open the PullConfig Inspector → **Sign In With Google**, then **Pull** (menus under **Aerisyn → Data Config Sheet** remain aliases).
 6. Read the **Pull report**: success lists created/updated assets; failures include **A1** sheet coordinates. Failed Pulls write nothing.

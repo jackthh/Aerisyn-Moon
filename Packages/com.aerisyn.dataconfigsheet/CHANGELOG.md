@@ -5,6 +5,18 @@ All notable changes to `com.aerisyn.dataconfigsheet` are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] (0.6.0)
+
+### Changed (breaking)
+
+- **Pull Config no longer stores a spreadsheet id.** The hard-coded `Spreadsheet Id` field and `PullConfig.SpreadsheetId` are removed. A Pull Config now holds an **Environment Profile** reference and a **Feature Key** (picked from the profile's Feature Key list). Pull resolves the Source Sheet spreadsheet id from the profile's active Environment Key at Pull start. Existing Pull Config assets must be re-pointed once: assign an Environment Profile, pick a Feature Key, and bind that Feature Key to the old spreadsheet id in the profile. The old serialized id is ignored.
+- `GoogleSheetsGridFetcher.FetchGridsAsync` now takes the Sheets client and the resolved spreadsheet id: `FetchGridsAsync(config, sheets, spreadsheetId)`.
+
+### Added
+
+- **Title Check.** Before any cell fetch, live Pull reads the Source Sheet file title (Sheets `properties.title`) and requires the active environment's prefix. Defaults, case-sensitive with brackets: Dev → `[Dev]`, Test → `[Tester]`, Production → `[Production]`. A mismatch aborts before parse or write, naming the expected prefix and the actual title.
+- Environment Profile **Title Prefix Overrides**: per Environment Key prefix. Required for game-added Environment Keys (a custom key with no prefix fails the Pull instead of skipping the check).
+
 ## [0.5.2] - 2026-10-13
 
 ### Added

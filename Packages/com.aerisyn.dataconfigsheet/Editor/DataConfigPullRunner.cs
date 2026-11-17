@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Google.Apis.Sheets.v4;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
@@ -16,7 +17,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Live Google Pull: OAuth/service-account → Sheets API cell grids → parse → Baked Assets.
+        /// Live Google Pull: resolve spreadsheet id from the Environment Profile → OAuth/service-account →
+        /// Title Check (aborts on mismatch before any cell fetch) → Sheets API cell grids → parse → Baked Assets.
         /// Commas inside cells do not break Pull (no CSV required).
         /// </summary>
         public static async Task<PullReport> PullAsync(PullConfig config)
@@ -26,8 +28,17 @@ namespace Aerisyn.DataConfigSheet.Editor
 
             ValidateTargets(config);
             ValidateGoogle(config);
+            string spreadsheetId = ResolveSpreadsheetId(config);
 
-            Dictionary<Type, SheetGrid> grids = await GoogleSheetsGridFetcher.FetchGridsAsync(config);
+            SheetsService sheets = await GoogleOAuthSession.CreateSheetsServiceAsync(config);
+            EnvironmentProfile profile = config.EnvironmentProfile;
+
+            Dictionary<Type, SheetGrid> grids = await SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
+                spreadsheetId,
+                profile.ActiveEnvironmentKey,
+                profile.ToTitlePrefixOverrides(),
+                id => GoogleSheetsGridFetcher.FetchSpreadsheetTitleAsync(sheets, id),
+                id => GoogleSheetsGridFetcher.FetchGridsAsync(config, sheets, id));
             return PullFromGrids(config, grids);
         }
 
@@ -35,7 +46,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// <summary>
         /// Fixture/inject Pull: parse provided grids and create or overwrite Baked Assets
         /// under the Pull Config's shared output folder (GUID stable on re-Pull).
-        /// Does not require Google spreadsheet id or credentials.
+        /// Does not require an Environment Profile, Feature Key, or credentials (no Title Check; grids are already in hand).
         /// Failed Pulls write nothing and return a report with sheet coordinates when available.
         /// Only Config Types with Include In Pull are processed.
         /// </summary>
@@ -191,12 +202,25 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        /// <summary>Spreadsheet id and credential paths required for live Google Pull.</summary>
+        /// <summary>
+        /// Source Sheet spreadsheet id for this Pull Config's Feature Key in the Environment Profile's
+        /// active environment. Throws when the profile or Feature Key is unset, or the profile cannot resolve.
+        /// </summary>
+        internal static string ResolveSpreadsheetId(PullConfig config)
+        {
+            if (config.EnvironmentProfile == null)
+                throw new InvalidOperationException($"PullConfig '{config.name}' has no Environment Profile.");
+
+            if (string.IsNullOrWhiteSpace(config.FeatureKey))
+                throw new InvalidOperationException($"PullConfig '{config.name}' has no Feature Key.");
+
+            return config.EnvironmentProfile.ResolveSpreadsheetId(config.FeatureKey);
+        }
+
+
+        /// <summary>Credential paths required for live Google Pull.</summary>
         internal static void ValidateGoogle(PullConfig config)
         {
-            if (string.IsNullOrWhiteSpace(config.SpreadsheetId))
-                throw new InvalidOperationException($"PullConfig '{config.name}' has no Spreadsheet Id.");
-
             if (config.AuthMode == GoogleAuthMode.OAuthUser)
             {
                 // Empty is the new-config default; fail here instead of ArgumentException in path resolve.

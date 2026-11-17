@@ -60,6 +60,20 @@ namespace Aerisyn.DataConfigSheet
         #endregion
 
 
+        #region Title prefixes
+
+        // Empty by default: Dev→[Dev], Test→[Tester], Production→[Production] come from the package.
+        // Add a row to change one, or to guard a game-added Environment Key.
+        [Tooltip(
+            "Optional Source Sheet title prefix per Environment Key. Package defaults: " +
+            "Dev → [Dev], Test → [Tester], Production → [Production]. Required for game-added keys.")]
+        [ListDrawerSettings(ShowFoldout = false, DraggableItems = true)]
+        [SerializeField]
+        List<EnvironmentTitlePrefixEntry> _titlePrefixOverrides = new List<EnvironmentTitlePrefixEntry>();
+
+        #endregion
+
+
         #region Public API
 
         /// <summary>The project's active Environment Key (empty until picked).</summary>
@@ -95,6 +109,25 @@ namespace Aerisyn.DataConfigSheet
                 ToBindings(),
                 _activeEnvironmentKey,
                 featureKey);
+        }
+
+
+        /// <summary>Maps serialized title prefix rows into pure overrides for the Title Check seam.</summary>
+        public EnvironmentTitlePrefix[] ToTitlePrefixOverrides()
+        {
+            if (_titlePrefixOverrides == null || _titlePrefixOverrides.Count == 0)
+                return Array.Empty<EnvironmentTitlePrefix>();
+
+            EnvironmentTitlePrefix[] overrides = new EnvironmentTitlePrefix[_titlePrefixOverrides.Count];
+            for (int i = 0; i < _titlePrefixOverrides.Count; i++)
+            {
+                EnvironmentTitlePrefixEntry entry = _titlePrefixOverrides[i];
+                overrides[i] = entry == null
+                    ? new EnvironmentTitlePrefix(null, null)
+                    : entry.ToTitlePrefix();
+            }
+
+            return overrides;
         }
 
 

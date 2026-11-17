@@ -25,7 +25,7 @@ Sheet authoring where a parent identity is written once and child rows leave par
 _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the default; Luban ##var/##type as the schema
 
 **Pull Config**:
-Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and an explicit list of owned Config Types (candidates). Only candidates with Include In Pull run on a Pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
+Editor settings for one Pull job: Environment Profile reference, Feature Key, auth, one shared output folder, and an explicit list of owned Config Types (candidates). Only candidates with Include In Pull run on a Pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
 _Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package; repeating asset folder per tab; assembly-wide auto-scan of every Config Type; suffix-guessing tab names; treating the full candidate list as always-pulled with no per-type gate
 
 **Environment Key**:
@@ -39,6 +39,10 @@ _Avoid_: Seeding game-specific Feature Keys in the package; free-typed feature s
 **Environment Profile**:
 A ScriptableObject that maps each Environment Key × Feature Key to a Source Sheet spreadsheet id and stores the one active Environment Key for the project. Pull resolves a spreadsheet id from the active environment and a Feature Key; an unbound pair or a key outside its list fails clearly.
 _Avoid_: A per-Pull-Config active environment; silently falling back to another environment when a Feature Key has no id in the active one
+
+**Title Check**:
+A guard at Pull start: read the Source Sheet file title and require it to start with the active Environment Key's prefix (case-sensitive, brackets included). Defaults: Dev → `[Dev]`, Test → `[Tester]`, Production → `[Production]`; the Environment Profile can override a prefix per key, and a game-added key needs one. A mismatch aborts the Pull before any cell fetch, parse, or write and names the expected prefix and the actual title. The spreadsheet id stays the source of truth; the title only guards against a wrong id.
+_Avoid_: Treating the title as the lookup key; silently skipping the check for an Environment Key with no prefix; case-insensitive or trimmed matching
 
 **Include In Pull**:
 Per Config Type flag on a Pull Config. When true, that type is fetched and baked on the next Pull; when false, it stays listed but is skipped. New candidates default true. A Pull with none included is an error, not a no-op.
