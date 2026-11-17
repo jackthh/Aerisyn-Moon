@@ -115,7 +115,7 @@ namespace Aerisyn.DataConfigSheet.Tests
         [Test]
         public void Resolve_BindingForKeyNoLongerInList_IsNotUsed()
         {
-            // Stale row: "Staging" was removed from the Environment Key list after binding.
+            // Stale row: "Staging" was removed from the Environment Keys after binding.
             string[] environmentKeys = { "Dev" };
             EnvironmentFeatureBinding[] bindings =
             {

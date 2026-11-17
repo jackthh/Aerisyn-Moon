@@ -5,8 +5,8 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// One serialized Environment Profile row overriding the expected Source Sheet title prefix
-    /// for an Environment Key. The key is picked from the profile's Environment Key list; the
+    /// One serialized Data Config Settings row overriding the expected Source Sheet title prefix
+    /// for an Environment Key. The key is picked from the Data Config Settings Environment Key list; the
     /// prefix is the only free-typed value.
     /// </summary>
     [Serializable]

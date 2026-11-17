@@ -8,7 +8,7 @@ namespace Aerisyn.DataConfigSheet.Editor
 {
     /// <summary>
     /// Editor IO around the pure Config Manifest seams: hash written Baked Assets, write/overwrite the
-    /// manifest asset, and run the completeness check against an Environment Profile's required list.
+    /// manifest asset, and run the completeness check against the Data Config Settings required list.
     /// </summary>
     public static class ConfigManifestStore
     {

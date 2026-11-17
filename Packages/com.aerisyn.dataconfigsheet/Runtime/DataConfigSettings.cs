@@ -15,7 +15,7 @@ namespace Aerisyn.DataConfigSheet
         "One settings asset for the project. Keys are defined here once; bindings and the active environment " +
         "only pick from these lists.",
         InfoMessageType.Info)]
-    public sealed class DataConfigSettings : ScriptableObject, IDataConfigKeySource
+    public sealed class DataConfigSettings : ScriptableObject
     {
 
 

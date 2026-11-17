@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace Aerisyn.DataConfigSheet.Tests
 {
     /// <summary>
-    /// Environment Key / Feature Key list seam (KeyListRules): package seed defaults and
+    /// Data Config Settings Environment Key / Feature Key list seam (KeyListRules): package seed defaults and
     /// pick membership. Inspectors may only pick keys that these lists define.
     /// </summary>
     public sealed class KeyListRulesTests

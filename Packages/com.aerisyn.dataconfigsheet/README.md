@@ -4,7 +4,7 @@ Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven 
 
 That is the only supported product path for this package.
 
-**Unity:** 2022.3+ · **Version:** `0.6.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
+**Unity:** 2022.3+ · **Version:** `0.7.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
 See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md), and [`docs/adr/0013-…`](../../docs/adr/0013-dataconfigsheet-local-only-after-pull.md).
 
@@ -23,35 +23,49 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 
 | Dependency | Why |
 |---|---|
-| **Odin Inspector** | `PullConfig` / `ConfigTypeAsset` drawers and serialization |
+| **Odin Inspector** | `DataConfigSettings` / `PullConfig` / `ConfigTypeAsset` drawers and serialization |
 | **Google API Editor plugins** | Bundled under `Editor/Plugins/Google` (Sheets + OAuth) |
+
+## Data Config Settings window
+
+Open **Aerisyn → Data Config Sheet → Open Window**. The first open creates the one **Data Config Settings** asset at the fixed path `Assets/AerisynDataConfig/DataConfigSettings.asset` (Environment Keys seeded Dev, Test, Production; Feature Keys empty). Commit it. The window edits it and hosts **Sign In**, **Sign Out** and **Pull All**.
+
+Data Config Settings holds everything project-wide:
+
+| Group | Contents |
+|---|---|
+| Keys | Environment Keys, Feature Keys, the active Environment Key |
+| Bindings | Environment Key x Feature Key -> spreadsheet id; Title Check prefix overrides |
+| Config Manifest | Manifest Asset Path (`.asset` file picker), Required Config Types |
+| Google auth | Auth mode, OAuth client secrets path, OAuth user token path (default under `UserSettings/`, ignored by version control), service-account JSON path |
+| Pull All | Folder path (folder picker) |
+
+Upgrading from 0.6.0: there is no migrator. Recreate keys, bindings and auth in the window, then re-pick the Feature Key on each Pull Config.
 
 ## Auth (OAuth)
 
-1. Google Cloud **OAuth Desktop** client JSON → e.g. next to the imported Weapons Pull sample: `Assets/Samples/Aerisyn Data Config Sheet/0.5.0/Weapons Pull/oauth-client-secrets.json` (gitignored by filename).
+1. Google Cloud **OAuth Desktop** client JSON → keep it out of version control and set **OAuth Client Secrets Path** in the Data Config Settings window.
 2. Share the spreadsheet with your Google email as Viewer.
-3. Open the PullConfig Inspector → **Sign In With Google** (status shows Signed in / Not signed in). Menu alias: **Aerisyn → Data Config Sheet → Sign In With Google**.
+3. Click **Sign In** in the window (status shows Signed in / Not signed in). One sign-in serves every Pull Config. Menu alias: **Aerisyn → Data Config Sheet → Sign In With Google**.
 
 ## Quick start
 
 1. Subclass `ConfigTypeAsset` for each table (root `items` list + nested serializable types).
 2. Optional: `[ColumnAlias("Friendly Name")]` on fields; `[SheetTab("Tab Title")]` on the type when the Google tab differs from the type name; `[LocalOnly]` on fields the sheet must not own (see below).
-3. Create **Pull Config**; assign an **Environment Profile**, pick a **Feature Key**, set one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses). The profile binds the Feature Key to a spreadsheet id per environment. Pull checks the Source Sheet title starts with the active environment's prefix (`[Dev]`, `[Tester]`, `[Production]` by default; override per key on the profile) and aborts before any parse or write when it does not.
+3. Open the Data Config Sheet window; add your **Feature Keys**, bind each to a spreadsheet id per Environment Key, and pick the active Environment Key. Create **Pull Config**; pick a **Feature Key**, set one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses). Pull checks the Source Sheet title starts with the active environment's prefix (`[Dev]`, `[Tester]`, `[Production]` by default; override per key in Data Config Settings) and aborts before any parse or write when it does not. A missing Data Config Settings asset fails Pull with a clear message.
 4. Select a Config Type asset (or its script) → **Copy Header Row** to paste headers into Google (guidance covers `!!!` note columns and omitted Local Only fields).
-5. Open the PullConfig Inspector → **Sign In With Google**, then **Pull** (menus under **Aerisyn → Data Config Sheet** remain aliases).
+5. **Sign In** in the window, then **Pull** on the Pull Config Inspector, or **Pull All** in the window (menus under **Aerisyn → Data Config Sheet** remain aliases).
 6. Read the **Pull report**: success lists created/updated assets; failures include **A1** sheet coordinates. Failed Pulls write nothing.
 7. Or import sample **Weapons Pull** (Package Manager → Samples) and follow its README.
 8. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s.
 
 ## Pull All + Config Manifest
 
-**Aerisyn → Data Config Sheet → Pull From Google (All Configs)** Pulls every Pull Config in asset-path order. It never stops at the first failure: one summary lists each passed and failed config, and the overall result fails if any config failed.
+**Pull All** (window button, or **Aerisyn → Data Config Sheet → Pull From Google (All Configs)**) Pulls every Pull Config under the settings **Pull All Folder Path**, recursively, in asset-path order. A blank folder path fails, and so does a folder with no Pull Configs; there is no whole-project fallback. It never stops at the first failure: one summary lists each passed and failed config, and the overall result fails if any config failed. Every config shares the one active Environment Key and the one manifest.
 
-Pull All uses **one Environment Profile**: the first Pull Config's (asset-path order). A Pull Config that points at a different profile is listed as failed and not pulled, so one run never mixes environments or writes more than one manifest.
+When every config passes, Pull All writes one **Config Manifest** (`Aerisyn/Data Config Sheet/Config Manifest`) at the settings **Manifest Asset Path**. It records the active Environment Key, the UTC time, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (best effort; empty if Drive is unavailable), and a SHA-256 per Baked Asset. Drive metadata uses the existing `drive.readonly` scope with `supportsAllDrives=true`; no new scope.
 
-When every config passes, Pull All writes one **Config Manifest** (`Aerisyn/Data Config Sheet/Config Manifest`) at that profile's **Manifest Asset Path** (Environment Profile → Config Manifest). It records the active Environment Key, the UTC time, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (best effort; empty if Drive is unavailable), and a SHA-256 per Baked Asset. Drive metadata uses the existing `drive.readonly` scope with `supportsAllDrives=true`; no new scope.
-
-List the Config Types that must exist in **Required Config Types** on the profile. After the manifest write, Pull All checks it against that list and the profile's active environment; a missing type or wrong environment fails the run. A failed Pull All leaves the previous manifest untouched, but the required list is still checked against what the passed configs produced, so the summary lists failed configs and missing Config Types together.
+List the Config Types that must exist in **Required Config Types** in Data Config Settings. After the manifest write, Pull All checks it against that list and the active environment; a missing type or wrong environment fails the run. A failed Pull All leaves the previous manifest untouched, but the required list is still checked against what the passed configs produced, so the summary lists failed configs and missing Config Types together.
 
 **Skip Title Check** (Pull Config → Google source) is off by default. Turn it on only for a documented exception sheet whose title does not carry the environment prefix (for example a shared `CONVENTIONS` sheet). That Pull skips the title read, so its manifest title is empty.
 
@@ -138,9 +152,9 @@ After installing the package and importing **Weapons Pull**, you should be able 
 
 | Folder | Purpose |
 |---|---|
-| `Runtime/` | `PullConfig`, `ConfigTypeAsset`, `[ColumnAlias]` / `[SheetTab]` / `[LocalOnly]` |
+| `Runtime/` | `DataConfigSettings`, `PullConfig`, `ConfigTypeAsset`, `[ColumnAlias]` / `[SheetTab]` / `[LocalOnly]` |
 | `Runtime/Parsing/` | `SheetGrid`, `VerticalNestParser`, `PullReport`, Header Emitter, After Pull helper, tab resolver |
-| `Editor/` | OAuth, Sheets fetch, Pull menus/runner, `BakedAssetWriter` |
+| `Editor/` | Data Config Sheet window, OAuth, Sheets fetch, Pull menus/runner, `BakedAssetWriter` |
 | `Editor/Plugins/Google/` | Google.Apis* for Sheets/Drive |
 | `Samples~/WeaponsPull/` | Nested Config Type template + Pull Config happy path; `MovementConfig` Local Only + After Pull |
 | `Tests~/VerticalNest.Tests/` | Pure fixture tests for the parse + report seams (`dotnet test`) |

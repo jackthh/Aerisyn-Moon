@@ -3,7 +3,7 @@ namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
     /// One per-Environment-Key override of the expected Source Sheet title prefix.
-    /// Pure seam type (no Unity serialization); the Environment Profile maps its serialized rows into this.
+    /// Pure seam type (no Unity serialization); Data Config Settings maps its serialized rows into this.
     /// </summary>
     public readonly struct EnvironmentTitlePrefix
     {

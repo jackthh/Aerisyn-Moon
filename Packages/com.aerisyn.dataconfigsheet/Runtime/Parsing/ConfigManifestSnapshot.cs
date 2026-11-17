@@ -28,7 +28,7 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
-        /// <summary>Feature Key the Pull Config picked (Feature Key list entry).</summary>
+        /// <summary>Feature Key the Pull Config picked (Data Config Settings Feature Key).</summary>
         public string FeatureKey { get; }
 
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Resolves a Source Sheet spreadsheet id from the Environment Profile bindings, the active
+    /// Resolves a Source Sheet spreadsheet id from the Data Config Settings bindings, the active
     /// Environment Key, and a Feature Key. Pull calls this instead of reading a hard-coded id.
     /// </summary>
     public static class SpreadsheetIdResolver

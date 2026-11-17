@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Pure rules for the Environment Key list and Feature Key list: package seed defaults and
+    /// Pure rules for the Data Config Settings Environment Key and Feature Key lists: package seed defaults and
     /// pick membership. Key list assets call these so Inspectors and tests share one definition.
     /// </summary>
     public static class KeyListRules
@@ -15,7 +15,7 @@ namespace Aerisyn.DataConfigSheet
         #region Seed defaults
 
         /// <summary>
-        /// Environment Keys the package seeds when an Environment Key list is created: Dev, Test, Production.
+        /// Environment Keys the package seeds when Data Config Settings is created: Dev, Test, Production.
         /// Returns a fresh array so callers cannot mutate the shared defaults.
         /// </summary>
         public static string[] CreateSeedEnvironmentKeys()

@@ -36,20 +36,22 @@ Notes:
 
 No sample `.asset` is shipped (keep credentials and spreadsheet ids out of the package).
 
-1. **Create → Aerisyn → Data Config Sheet → Pull Config**.
-2. Spreadsheet id from the Google URL (`…/d/{id}/…`).
-3. Auth = **OAuth User**; client secrets JSON path, e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.5.0/Weapons Pull/oauth-client-secrets.json` (gitignored by filename).
-4. Output Folder: e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.5.0/Weapons Pull/Baked` (one shared folder next to the sample).
-5. Config Types list: add **`WeaponsConfig`** from the dropdown (explicit list; no auto-scan).
-6. Select `WeaponsConfig` script → **Aerisyn → Data Config Sheet → Copy Header Row** → paste into the sheet.
-7. Open the PullConfig Inspector → **Sign In With Google**, then **Pull** (or use the **Aerisyn → Data Config Sheet** menu aliases).
+1. Open **Aerisyn → Data Config Sheet → Open Window**. The first open creates Data Config Settings at `Assets/AerisynDataConfig/DataConfigSettings.asset`.
+2. In the window, add Feature Key `weapons`; under bindings, bind it to the spreadsheet id from the Google URL (`…/d/{id}/…`) for each Environment Key you use, and pick the active Environment Key. The sheet's file title must start with that environment's prefix (`[Dev]` by default).
+3. Under Google auth, keep **OAuth User** and set the client secrets JSON path, e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.7.0/Weapons Pull/oauth-client-secrets.json` (ignored by filename).
+4. Set the **Pull All Folder Path** to the folder that will hold your Pull Configs (for example `Assets/Samples/Aerisyn Data Config Sheet/0.7.0/Weapons Pull`).
+5. **Create → Aerisyn → Data Config Sheet → Pull Config** inside that folder. Pick Feature Key `weapons`.
+6. Output Folder: e.g. `Assets/Samples/Aerisyn Data Config Sheet/0.7.0/Weapons Pull/Baked` (one shared folder next to the sample).
+7. Config Types list: add **`WeaponsConfig`** from the dropdown (explicit list; no auto-scan).
+8. Select `WeaponsConfig` script → **Aerisyn → Data Config Sheet → Copy Header Row** → paste into the sheet.
+9. Click **Sign In** in the window, then **Pull** on the Pull Config Inspector, or **Pull All** in the window.
 
 On success the Pull report lists created/updated Baked Assets. On failure it shows **A1** cell
 coordinates (e.g. `B5`) so you can fix the sheet; nothing is written until every type parses.
 
 ## Local Only + After Pull (`MovementConfig`)
 
-`MovementConfig` shows the 0.5.0 pattern. Optional second table on the same Pull Config (Include In Pull).
+`MovementConfig` shows the Local Only + After Pull pattern. Optional second table on the same Pull Config (Include In Pull).
 
 Tab title: **`MovementConfig`**.
 
