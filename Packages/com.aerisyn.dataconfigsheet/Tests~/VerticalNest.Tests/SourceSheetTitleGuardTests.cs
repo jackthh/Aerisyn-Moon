@@ -134,5 +134,50 @@ namespace Aerisyn.DataConfigSheet.Tests
         #endregion
 
 
+        #region Skip Title Check (documented exception sheets)
+
+        [Test]
+        public async Task FetchAfterTitleCheckAsync_SkipTitleCheck_FetchesGridsWithoutReadingTitle()
+        {
+            // e.g. a "[Production]_CONVENTIONS" sheet pulled while Dev is active.
+            FakeSheet sheet = new FakeSheet { Title = "[Production]_CONVENTIONS" };
+
+            string result = await SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
+                "conventions-id", "Dev", null, sheet.FetchTitleAsync, sheet.FetchGridsAsync, skipTitleCheck: true);
+
+            Assert.That(result, Is.EqualTo("grids"));
+            Assert.That(sheet.TitleFetchCount, Is.EqualTo(0));
+            Assert.That(sheet.GridsFetchedFor, Is.EqualTo("conventions-id"));
+        }
+
+
+        [Test]
+        public async Task FetchAfterTitleCheckAsync_SkipTitleCheck_CustomEnvironmentWithoutPrefixStillPulls()
+        {
+            // The opt-out also covers the "custom key has no prefix" abort: nothing is checked.
+            FakeSheet sheet = new FakeSheet { Title = "anything" };
+
+            await SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
+                "id", "Staging", null, sheet.FetchTitleAsync, sheet.FetchGridsAsync, skipTitleCheck: true);
+
+            Assert.That(sheet.GridFetchCount, Is.EqualTo(1));
+        }
+
+
+        [Test]
+        public void FetchAfterTitleCheckAsync_SkipTitleCheckFalse_StillAbortsOnMismatch()
+        {
+            FakeSheet sheet = new FakeSheet { Title = "[Production]_AI_SHIP" };
+
+            Assert.ThrowsAsync<InvalidOperationException>(
+                () => SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
+                    "prod-id", "Dev", null, sheet.FetchTitleAsync, sheet.FetchGridsAsync, skipTitleCheck: false));
+
+            Assert.That(sheet.GridFetchCount, Is.EqualTo(0));
+        }
+
+        #endregion
+
+
     }
 }

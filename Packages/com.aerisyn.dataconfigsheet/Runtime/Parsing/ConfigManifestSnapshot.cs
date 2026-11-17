@@ -28,13 +28,15 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
+        /// <summary>Feature Key the Pull Config picked (Feature Key list entry).</summary>
         public string FeatureKey { get; }
 
 
+        /// <summary>Source Sheet spreadsheet id resolved from the Environment Profile.</summary>
         public string SpreadsheetId { get; }
 
 
-        /// <summary>Source Sheet file title read by the Title Check.</summary>
+        /// <summary>Source Sheet file title read by the Title Check; empty when the check was skipped.</summary>
         public string SheetTitle { get; }
 
 
@@ -66,6 +68,7 @@ namespace Aerisyn.DataConfigSheet
         public string ConfigTypeName { get; }
 
 
+        /// <summary>Project-relative path of the Baked Asset file.</summary>
         public string AssetPath { get; }
 
 

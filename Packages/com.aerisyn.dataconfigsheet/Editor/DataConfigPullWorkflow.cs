@@ -77,9 +77,12 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// <summary>
         /// Finds every Pull Config in the project (stable asset-path order) and Pulls each one. A failing
         /// config never stops the run, so one summary shows every passed and failed job. Each config's
-        /// Include In Pull ticks apply. After every job passes, writes the Config Manifest for each
-        /// Environment Profile that sets a manifest path, then checks it against that profile's required
-        /// Config Type list; a missing type or wrong environment fails the overall run.
+        /// Include In Pull ticks apply. Pull All uses one Environment Profile (the first Pull Config's): a Pull
+        /// Config that points at another profile is reported as failed and not pulled. When every job passes it
+        /// writes the Config Manifest at that profile's path and checks it against the required Config Type
+        /// list. When any job failed the manifest is left untouched, but the required list is still checked
+        /// against what the passed jobs produced, so the summary shows job failures and missing types together.
+        /// A missing type or wrong environment fails the overall run.
         /// </summary>
         /// <returns>The combined summary (OverallSuccess false when no Pull Config exists).</returns>
         public static async Task<PullAllSummary> PullAllWithUiAsync()
@@ -94,12 +97,36 @@ namespace Aerisyn.DataConfigSheet.Editor
                 return PullAllSummary.Create(Array.Empty<PullJobResult>(), null);
             }
 
-            // job index == config index, so results map back to each config's Environment Profile.
+            // One manifest, one active environment: the first Pull Config's profile is the project's path.
+            EnvironmentProfile manifestProfile = null;
+            string[] configNames = new string[configs.Count];
+            string[] profileIds = new string[configs.Count];
+            for (int i = 0; i < configs.Count; i++)
+            {
+                configNames[i] = configs[i].name;
+                EnvironmentProfile profile = configs[i].EnvironmentProfile;
+                if (profile == null)
+                    continue;
+
+                if (manifestProfile == null)
+                    manifestProfile = profile;
+
+                string profilePath = AssetDatabase.GetAssetPath(profile);
+                profileIds[i] = string.IsNullOrEmpty(profilePath) ? profile.name : profilePath;
+            }
+
+            string[] profileMismatches = PullAllProfileRule.FindMismatches(configNames, profileIds);
+
+            // Job index == config index; a mismatched config becomes a failed result without pulling.
             List<PullAllJob> jobs = new List<PullAllJob>(configs.Count);
             for (int i = 0; i < configs.Count; i++)
             {
                 PullConfig config = configs[i];
-                jobs.Add(new PullAllJob(config.name, () => RunPullJobAsync(config)));
+                string mismatch = profileMismatches[i];
+                if (mismatch != null)
+                    jobs.Add(new PullAllJob(config.name, () => Task.FromResult(PullJobResult.Failed(config.name, mismatch))));
+                else
+                    jobs.Add(new PullAllJob(config.name, () => RunPullJobAsync(config)));
             }
 
             IReadOnlyList<PullJobResult> results;
@@ -109,16 +136,11 @@ namespace Aerisyn.DataConfigSheet.Editor
                 EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pull All ({configs.Count} Pull Configs)…", 0.2f);
                 results = await PullAllRunner.RunAllAsync(jobs);
 
-                bool everyJobPassed = true;
-                for (int i = 0; i < results.Count; i++)
-                    everyJobPassed &= results[i].Success;
-
-                // A partial manifest would claim completeness for a run that was not; keep the previous one.
-                if (everyJobPassed)
+                if (manifestProfile != null)
                 {
                     try
                     {
-                        WriteManifestsAndCheck(configs, results, manifestFindings);
+                        CheckManifest(manifestProfile, results, manifestFindings);
                     }
                     catch (Exception exception)
                     {
@@ -263,52 +285,42 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Writes one Config Manifest per distinct Environment Profile that sets a manifest path (from the
-        /// jobs that used it), then runs completeness for every profile that was involved. Findings are
-        /// prefixed with the profile name. Profiles with neither a path nor a required list are skipped.
+        /// All jobs passed: writes the Config Manifest (when the profile sets a path) and checks the saved
+        /// asset. Any job failed: keeps the previous manifest (a partial one would claim completeness) and
+        /// checks the required Config Types against what the passed jobs produced, so missing types still surface.
         /// </summary>
-        static void WriteManifestsAndCheck(
-            List<PullConfig> configs,
+        static void CheckManifest(
+            EnvironmentProfile profile,
             IReadOnlyList<PullJobResult> results,
             List<string> findings)
         {
-            List<EnvironmentProfile> profiles = new List<EnvironmentProfile>();
-            Dictionary<EnvironmentProfile, List<PullJobResult>> resultsByProfile =
-                new Dictionary<EnvironmentProfile, List<PullJobResult>>();
+            bool everyJobPassed = true;
+            for (int i = 0; i < results.Count; i++)
+                everyJobPassed &= results[i].Success;
 
-            for (int i = 0; i < configs.Count; i++)
+            IReadOnlyList<string> problems;
+            if (everyJobPassed)
             {
-                EnvironmentProfile profile = configs[i].EnvironmentProfile;
-                if (profile == null)
-                    continue;
-
-                List<PullJobResult> profileResults;
-                if (!resultsByProfile.TryGetValue(profile, out profileResults))
-                {
-                    profileResults = new List<PullJobResult>();
-                    resultsByProfile[profile] = profileResults;
-                    profiles.Add(profile);
-                }
-
-                profileResults.Add(results[i]);
-            }
-
-            for (int i = 0; i < profiles.Count; i++)
-            {
-                EnvironmentProfile profile = profiles[i];
                 if (!string.IsNullOrWhiteSpace(profile.ManifestAssetPath))
                 {
                     ConfigManifestSnapshot snapshot = ConfigManifestSnapshot.FromJobs(
                         profile.ActiveEnvironmentKey,
                         DateTime.UtcNow,
-                        resultsByProfile[profile]);
+                        results);
                     ConfigManifestStore.Write(profile.ManifestAssetPath, snapshot);
                 }
 
-                IReadOnlyList<string> problems = ConfigManifestStore.CheckProfile(profile);
-                for (int problemIndex = 0; problemIndex < problems.Count; problemIndex++)
-                    findings.Add($"[{profile.name}] {problems[problemIndex]}");
+                problems = ConfigManifestStore.CheckProfile(profile);
             }
+            else
+            {
+                problems = ManifestCompleteness.CheckRun(
+                    profile.ActiveEnvironmentKey,
+                    profile.RequiredConfigTypeNames,
+                    results);
+            }
+
+            findings.AddRange(problems);
         }
 
         #endregion

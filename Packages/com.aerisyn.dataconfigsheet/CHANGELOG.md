@@ -11,7 +11,7 @@ Safer Pull environments: explicit Environment Keys, Title Check, hardened Pull A
 
 ### Changed (breaking)
 
-- **Pull All no longer stops at the first failure.** It runs every Pull Config in asset-path order, prints one summary of passed and failed configs, and fails overall if any config failed. `DataConfigPullWorkflow.PullAllWithUiAsync` now returns `Task<PullAllSummary>` and shows one summary dialog instead of one dialog per config.
+- **Pull All no longer stops at the first failure.** It runs every Pull Config in asset-path order, prints one summary of passed and failed configs, and fails overall if any config failed or a required Config Type is missing. `DataConfigPullWorkflow.PullAllWithUiAsync` now returns `Task<PullAllSummary>` and shows one summary dialog instead of one dialog per config.
 
 - **Pull Config no longer stores a spreadsheet id.** The hard-coded `Spreadsheet Id` field and `PullConfig.SpreadsheetId` are removed. A Pull Config now holds an **Environment Profile** reference and a **Feature Key** (picked from the profile's Feature Key list). Pull resolves the Source Sheet spreadsheet id from the profile's active Environment Key at Pull start. Existing Pull Config assets must be re-pointed once: assign an Environment Profile, pick a Feature Key, and bind that Feature Key to the old spreadsheet id in the profile. The old serialized id is ignored.
 - `GoogleSheetsGridFetcher.FetchGridsAsync` now takes the Sheets client and the resolved spreadsheet id: `FetchGridsAsync(config, sheets, spreadsheetId)`.
@@ -24,8 +24,11 @@ Safer Pull environments: explicit Environment Keys, Title Check, hardened Pull A
 - Environment Profile **Config Manifest** group: `Manifest Asset Path` (blank = no manifest) and **Required Config Types**. Pull All checks the manifest against that list and the active environment; a missing type or wrong environment fails the run.
 - Drive metadata fetch (`files.get`, `supportsAllDrives=true`) behind an injectable seam (`SheetRevisionLookup`). Uses the existing `drive.readonly` scope; best effort, so a Drive failure leaves the revision fields empty instead of failing the Pull.
 - `DataConfigPullRunner.PullWithSourceAsync` returns the PullReport plus the Source Sheet facts for the manifest; `PullAsync` is unchanged.
-- Opt-in `DataConfigBuildGate.Require(profile)` for your own `IPreprocessBuildWithReport`: fails builds when the active environment is not Production or the manifest is incomplete. The package registers nothing.
-- Pure, Unity-free seams with `dotnet test` coverage: `PullAllRunner`, `PullAllSummary`, `ConfigManifestSnapshot`, `ManifestCompleteness`, `SheetRevisionLookup`, `ManifestContentHash`, `ProductionBuildGate`.
+- Opt-in build gates for your own `IPreprocessBuildWithReport`; the package registers nothing. `DataConfigBuildGate.Require(profile)` is the Production gate (fails when the active environment is not Production). `DataConfigBuildGate.RequireCompleteManifest(profile)` is a separate call that fails when the manifest is missing, for another environment, or lacks a required Config Type.
+- **Skip Title Check** on Pull Config (default off, check stays on). For documented exception sheets such as a shared `CONVENTIONS` sheet; a skipped Pull reads no title and records an empty title in the manifest.
+- Pull All with failed configs still checks the required Config Type list against what the passed configs produced, so the summary shows job failures and missing types together. The manifest asset is still not written for a run with failures.
+- Pull All uses one Environment Profile (the first Pull Config's, asset-path order) and writes one Config Manifest. A Pull Config pointing at another profile is reported as failed and not pulled.
+- Pure, Unity-free seams with `dotnet test` coverage: `PullAllRunner`, `PullAllSummary`, `PullAllProfileRule`, `ConfigManifestSnapshot`, `ManifestCompleteness`, `SheetRevisionLookup`, `ManifestContentHash`, `ProductionBuildGate`.
 
 ## [0.5.2] - 2026-10-13
 

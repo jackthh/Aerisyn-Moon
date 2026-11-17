@@ -54,12 +54,14 @@ namespace Aerisyn.DataConfigSheet
 
         #region Factories
 
+        /// <summary>A passed job with no manifest metadata (Pulls that report no Source Sheet or Baked Asset rows).</summary>
         public static PullJobResult Passed(string name, string detail)
         {
             return new PullJobResult(name, true, detail, null, null);
         }
 
 
+        /// <summary>A passed job carrying the Source Sheet row and Baked Asset hashes the Config Manifest records.</summary>
         public static PullJobResult Passed(
             string name,
             string detail,
@@ -70,6 +72,7 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
+        /// <summary>A failed job; detail is the reason shown in the Pull All summary. Contributes nothing to the manifest.</summary>
         public static PullJobResult Failed(string name, string detail)
         {
             return new PullJobResult(name, false, detail, null, null);

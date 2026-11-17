@@ -166,6 +166,17 @@ namespace Aerisyn.DataConfigSheet
         string _featureKey = "";
 
 
+        // Default false: Title Check stays on. Only for documented exception sheets whose title does not
+        // carry the environment prefix (e.g. a shared CONVENTIONS sheet).
+        [FoldoutGroup("Google source")]
+        [Tooltip(
+            "Skip the Title Check for this Pull Config. Leave off unless the Source Sheet is a documented " +
+            "exception whose title does not start with the active environment's prefix (e.g. CONVENTIONS). " +
+            "The manifest records an empty title for a skipped sheet.")]
+        [SerializeField]
+        bool _skipTitleCheck;
+
+
         [FoldoutGroup("Google source")]
         [Tooltip("OAuthUser = browser sign-in (default). ServiceAccount = robot JSON for CI.")]
         [SerializeField]
@@ -260,6 +271,10 @@ namespace Aerisyn.DataConfigSheet
 
         /// <summary>Feature Key picked for this Pull (empty until picked).</summary>
         public string FeatureKey => _featureKey;
+
+
+        /// <summary>True when this Pull Config opts out of the Title Check (default false = check on).</summary>
+        public bool SkipTitleCheck => _skipTitleCheck;
 
 
         /// <summary>OAuth user (default) or service-account auth.</summary>

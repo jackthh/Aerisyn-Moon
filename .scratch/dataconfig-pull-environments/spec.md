@@ -79,3 +79,4 @@ OAuth already requests `spreadsheets.readonly` and `drive.readonly` for user and
 ## Comments
 
 - Spec written after clarifying env vs feature key lists, title prefix defaults, and ticket scope.
+- Review fixes landed (branch `feature/dataconfig-pull-environments-review-fixes`): Skip Title Check opt-out on Pull Config; Pull All checks required Config Types even when jobs failed; Pull All uses one Environment Profile (others reported failed, not pulled); build gate split into `Require` (Production) and `RequireCompleteManifest`; Config Manifest wording and missing XML summaries fixed. Still 0.6.0.

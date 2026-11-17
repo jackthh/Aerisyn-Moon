@@ -202,6 +202,130 @@ namespace Aerisyn.DataConfigSheet.Tests
         #endregion
 
 
+        #region Completeness of a Pull All run
+
+        [Test]
+        public void CheckRun_EveryRequiredTypeBakedByPassedJobs_NoProblems()
+        {
+            IReadOnlyList<string> problems = ManifestCompleteness.CheckRun(
+                "Production",
+                new[] { "ShipConfig", "CannonConfig" },
+                new[]
+                {
+                    PassedJob("ShipPull", "ai_ship", "sheet-ship", "ShipConfig"),
+                    PassedJob("CannonPull", "cannon", "sheet-cannon", "CannonConfig"),
+                });
+
+            Assert.That(problems, Is.Empty);
+        }
+
+
+        [Test]
+        public void CheckRun_FailedJobOwnedTheRequiredType_ReportsItMissing()
+        {
+            // Mixed run: CannonPull failed, so CannonConfig has no successful output.
+            IReadOnlyList<string> problems = ManifestCompleteness.CheckRun(
+                "Production",
+                new[] { "ShipConfig", "CannonConfig" },
+                new[]
+                {
+                    PassedJob("ShipPull", "ai_ship", "sheet-ship", "ShipConfig"),
+                    PullJobResult.Failed("CannonPull", "Title Check failed"),
+                });
+
+            Assert.That(problems, Has.Count.EqualTo(1));
+            Assert.That(problems[0], Does.Contain("CannonConfig"));
+        }
+
+
+        [Test]
+        public void CheckRun_AllJobsFailed_EveryRequiredTypeReportedMissing()
+        {
+            IReadOnlyList<string> problems = ManifestCompleteness.CheckRun(
+                "Production",
+                new[] { "ShipConfig", "CannonConfig" },
+                new[] { PullJobResult.Failed("ShipPull", "boom"), PullJobResult.Failed("CannonPull", "boom") });
+
+            Assert.That(problems, Has.Count.EqualTo(2));
+        }
+
+
+        [Test]
+        public void CheckRun_NoRequiredList_NoProblems()
+        {
+            IReadOnlyList<string> problems = ManifestCompleteness.CheckRun(
+                "Production", null, new[] { PullJobResult.Failed("ShipPull", "boom") });
+
+            Assert.That(problems, Is.Empty);
+        }
+
+
+        [Test]
+        public void Summary_FailedJobAndMissingRequiredType_FormatShowsBoth()
+        {
+            PullJobResult[] results =
+            {
+                PassedJob("ShipPull", "ai_ship", "sheet-ship", "ShipConfig"),
+                PullJobResult.Failed("CannonPull", "Title Check failed"),
+            };
+            IReadOnlyList<string> problems = ManifestCompleteness.CheckRun(
+                "Production", new[] { "ShipConfig", "CannonConfig" }, results);
+
+            PullAllSummary summary = PullAllSummary.Create(results, problems);
+            string text = summary.Format();
+
+            Assert.That(summary.OverallSuccess, Is.False);
+            Assert.That(text, Does.Contain("Title Check failed"));
+            Assert.That(text, Does.Contain("missing required Config Type 'CannonConfig'"));
+        }
+
+        #endregion
+
+
+        #region One Environment Profile per Pull All
+
+        [Test]
+        public void FindMismatches_AllConfigsShareOneProfile_NoMismatches()
+        {
+            string?[] messages = PullAllProfileRule.FindMismatches(
+                new[] { "ShipPull", "CannonPull" },
+                new[] { "Assets/Env.asset", "Assets/Env.asset" });
+
+            Assert.That(messages, Is.EqualTo(new string?[] { null, null }));
+        }
+
+
+        [Test]
+        public void FindMismatches_SecondConfigUsesOtherProfile_ItIsFlaggedAndFirstProfileWins()
+        {
+            string?[] messages = PullAllProfileRule.FindMismatches(
+                new[] { "ShipPull", "CannonPull", "LootPull" },
+                new[] { "Assets/EnvA.asset", "Assets/EnvB.asset", "Assets/EnvA.asset" });
+
+            Assert.That(messages[0], Is.Null);
+            Assert.That(messages[2], Is.Null);
+            Assert.That(messages[1], Does.Contain("CannonPull"));
+            Assert.That(messages[1], Does.Contain("Assets/EnvB.asset"));
+            Assert.That(messages[1], Does.Contain("Assets/EnvA.asset"));
+        }
+
+
+        [Test]
+        public void FindMismatches_ConfigWithoutProfile_IsNotFlaggedAndDoesNotPickTheReference()
+        {
+            // A missing profile already fails that Pull on its own; the reference is the first real profile.
+            string?[] messages = PullAllProfileRule.FindMismatches(
+                new[] { "NoProfilePull", "ShipPull", "CannonPull" },
+                new[] { null, "Assets/EnvA.asset", "Assets/EnvB.asset" });
+
+            Assert.That(messages[0], Is.Null);
+            Assert.That(messages[1], Is.Null);
+            Assert.That(messages[2], Is.Not.Null);
+        }
+
+        #endregion
+
+
         #region Drive metadata seam
 
         [Test]

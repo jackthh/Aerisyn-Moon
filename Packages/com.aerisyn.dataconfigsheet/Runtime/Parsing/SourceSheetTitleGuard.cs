@@ -21,18 +21,24 @@ namespace Aerisyn.DataConfigSheet
         /// call), fetches the title for the spreadsheet id, throws InvalidOperationException on a
         /// prefix mismatch, and otherwise returns the result of fetchGridsAsync for the same id.
         /// A mismatch never reaches fetchGridsAsync, so nothing is parsed or written.
+        /// With skipTitleCheck true (a documented exception sheet such as a shared CONVENTIONS sheet) no
+        /// prefix is resolved and no title is read: the grids are fetched directly. The default stays check-on.
         /// </summary>
         public static async Task<TGrids> FetchAfterTitleCheckAsync<TGrids>(
             string spreadsheetId,
             string activeEnvironmentKey,
             IReadOnlyList<EnvironmentTitlePrefix> prefixOverrides,
             Func<string, Task<string>> fetchTitleAsync,
-            Func<string, Task<TGrids>> fetchGridsAsync)
+            Func<string, Task<TGrids>> fetchGridsAsync,
+            bool skipTitleCheck = false)
         {
             if (fetchTitleAsync == null)
                 throw new ArgumentNullException(nameof(fetchTitleAsync));
             if (fetchGridsAsync == null)
                 throw new ArgumentNullException(nameof(fetchGridsAsync));
+
+            if (skipTitleCheck)
+                return await fetchGridsAsync(spreadsheetId);
 
             string expectedPrefix = TitleCheckRules.ResolveExpectedPrefix(activeEnvironmentKey, prefixOverrides);
             string actualTitle = await fetchTitleAsync(spreadsheetId);

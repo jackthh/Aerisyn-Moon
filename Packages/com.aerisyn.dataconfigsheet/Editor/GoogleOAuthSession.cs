@@ -116,12 +116,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
-            GoogleCredential credential = await ResolveGoogleCredentialAsync(config);
-            return new SheetsService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Aerisyn DataConfigSheet",
-            });
+            return new SheetsService(await CreateClientInitializerAsync(config));
         }
 
 
@@ -134,18 +129,24 @@ namespace Aerisyn.DataConfigSheet.Editor
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
-            GoogleCredential credential = await ResolveGoogleCredentialAsync(config);
-            return new DriveService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Aerisyn DataConfigSheet",
-            });
+            return new DriveService(await CreateClientInitializerAsync(config));
         }
 
         #endregion
 
 
         #region Credentials
+
+        // Sheets and Drive clients share the same credential and application name.
+        static async Task<BaseClientService.Initializer> CreateClientInitializerAsync(PullConfig config)
+        {
+            return new BaseClientService.Initializer
+            {
+                HttpClientInitializer = await ResolveGoogleCredentialAsync(config),
+                ApplicationName = "Aerisyn DataConfigSheet",
+            };
+        }
+
 
         static async Task<GoogleCredential> ResolveGoogleCredentialAsync(PullConfig config)
         {

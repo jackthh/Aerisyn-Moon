@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Bake record written after a successful Pull All: the active Environment Key, when it ran, the
+    /// Config Manifest written after a Pull All in which every config passed: the active Environment Key, when it ran, the
     /// Source Sheet each Feature Key was read from (id, title, Drive revision), and a content hash per
     /// Baked Asset. CI and build helpers compare it to the required Config Type list. Pull All overwrites
     /// it; do not edit by hand.
@@ -17,7 +17,7 @@ namespace Aerisyn.DataConfigSheet
         order = 4)]
     [InfoBox(
         "Written by Pull All. Records which environment, Source Sheet revisions, and Baked Asset hashes " +
-        "were baked. Do not edit by hand.",
+        "were pulled. Do not edit by hand.",
         InfoMessageType.Info)]
     public sealed class ConfigManifest : ScriptableObject
     {

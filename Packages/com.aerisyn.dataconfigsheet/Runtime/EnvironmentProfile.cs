@@ -148,38 +148,43 @@ namespace Aerisyn.DataConfigSheet
         /// <summary>Maps serialized title prefix rows into pure overrides for the Title Check seam.</summary>
         public EnvironmentTitlePrefix[] ToTitlePrefixOverrides()
         {
-            if (_titlePrefixOverrides == null || _titlePrefixOverrides.Count == 0)
-                return Array.Empty<EnvironmentTitlePrefix>();
-
-            EnvironmentTitlePrefix[] overrides = new EnvironmentTitlePrefix[_titlePrefixOverrides.Count];
-            for (int i = 0; i < _titlePrefixOverrides.Count; i++)
-            {
-                EnvironmentTitlePrefixEntry entry = _titlePrefixOverrides[i];
-                overrides[i] = entry == null
-                    ? new EnvironmentTitlePrefix(null, null)
-                    : entry.ToTitlePrefix();
-            }
-
-            return overrides;
+            return MapEntries(
+                _titlePrefixOverrides,
+                entry => entry.ToTitlePrefix(),
+                () => new EnvironmentTitlePrefix(null, null));
         }
 
 
         /// <summary>Maps serialized rows into pure bindings for the resolve seam.</summary>
         public EnvironmentFeatureBinding[] ToBindings()
         {
-            if (_bindings == null || _bindings.Count == 0)
-                return Array.Empty<EnvironmentFeatureBinding>();
+            return MapEntries(
+                _bindings,
+                entry => entry.ToBinding(),
+                () => new EnvironmentFeatureBinding(null, null, null));
+        }
 
-            EnvironmentFeatureBinding[] bindings = new EnvironmentFeatureBinding[_bindings.Count];
-            for (int i = 0; i < _bindings.Count; i++)
-            {
-                EnvironmentFeatureBindingEntry entry = _bindings[i];
-                bindings[i] = entry == null
-                    ? new EnvironmentFeatureBinding(null, null, null)
-                    : entry.ToBinding();
-            }
+        #endregion
 
-            return bindings;
+
+        #region Mapping helpers
+
+        // Serialized rows may contain null slots (Odin/Inspector); map them to a blank pure value so the
+        // downstream resolver reports the bad row instead of throwing a NullReferenceException.
+        static TPure[] MapEntries<TEntry, TPure>(
+            List<TEntry> entries,
+            Func<TEntry, TPure> map,
+            Func<TPure> createBlank)
+            where TEntry : class
+        {
+            if (entries == null || entries.Count == 0)
+                return Array.Empty<TPure>();
+
+            TPure[] mapped = new TPure[entries.Count];
+            for (int i = 0; i < entries.Count; i++)
+                mapped[i] = entries[i] == null ? createBlank() : map(entries[i]);
+
+            return mapped;
         }
 
         #endregion

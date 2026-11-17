@@ -47,11 +47,15 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 
 **Aerisyn → Data Config Sheet → Pull From Google (All Configs)** Pulls every Pull Config in asset-path order. It never stops at the first failure: one summary lists each passed and failed config, and the overall result fails if any config failed.
 
-When every config passes, Pull All writes a **Config Manifest** (`Aerisyn/Data Config Sheet/Config Manifest`) for each Environment Profile that sets a **Manifest Asset Path** (Environment Profile → Config Manifest). It records the active Environment Key, the UTC time, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (best effort; empty if Drive is unavailable), and a SHA-256 per Baked Asset. Drive metadata uses the existing `drive.readonly` scope with `supportsAllDrives=true`; no new scope.
+Pull All uses **one Environment Profile**: the first Pull Config's (asset-path order). A Pull Config that points at a different profile is listed as failed and not pulled, so one run never mixes environments or writes more than one manifest.
 
-List the Config Types that must exist in **Required Config Types** on the profile. After the manifest write, Pull All checks it against that list and the profile's active environment; a missing type or wrong environment fails the run. A failed Pull All leaves the previous manifest untouched.
+When every config passes, Pull All writes one **Config Manifest** (`Aerisyn/Data Config Sheet/Config Manifest`) at that profile's **Manifest Asset Path** (Environment Profile → Config Manifest). It records the active Environment Key, the UTC time, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (best effort; empty if Drive is unavailable), and a SHA-256 per Baked Asset. Drive metadata uses the existing `drive.readonly` scope with `supportsAllDrives=true`; no new scope.
 
-Opt-in build gate: the package registers nothing. Call it from your own preprocessor to fail player builds when the active environment is not Production or the manifest is incomplete:
+List the Config Types that must exist in **Required Config Types** on the profile. After the manifest write, Pull All checks it against that list and the profile's active environment; a missing type or wrong environment fails the run. A failed Pull All leaves the previous manifest untouched, but the required list is still checked against what the passed configs produced, so the summary lists failed configs and missing Config Types together.
+
+**Skip Title Check** (Pull Config → Google source) is off by default. Turn it on only for a documented exception sheet whose title does not carry the environment prefix (for example a shared `CONVENTIONS` sheet). That Pull skips the title read, so its manifest title is empty.
+
+Opt-in build gates: the package registers nothing. Call them from your own preprocessor. `Require` is the Production gate (fails when the active environment is not Production); `RequireCompleteManifest` is a separate check that fails when the manifest is missing, for another environment, or lacks a required Config Type:
 
 ```csharp
 class DataConfigBuildCheck : IPreprocessBuildWithReport
@@ -62,6 +66,7 @@ class DataConfigBuildCheck : IPreprocessBuildWithReport
     {
         EnvironmentProfile profile = AssetDatabase.LoadAssetAtPath<EnvironmentProfile>("Assets/Config/EnvironmentProfile.asset");
         Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.Require(profile);
+        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.RequireCompleteManifest(profile); // optional
     }
 }
 ```

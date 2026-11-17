@@ -55,6 +55,28 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
+        /// <summary>
+        /// Completeness of one Pull All run computed from its results instead of a written manifest, so a
+        /// run with failed jobs still reports every required Config Type that no passed job produced.
+        /// Only passed jobs count (same rule as <see cref="ConfigManifestSnapshot.FromJobs"/>); the manifest
+        /// asset itself is not written for a run with failures.
+        /// </summary>
+        public static IReadOnlyList<string> CheckRun(
+            string expectedEnvironmentKey,
+            IReadOnlyList<string> requiredConfigTypeNames,
+            IReadOnlyList<PullJobResult> results)
+        {
+            if (results == null)
+                throw new ArgumentNullException(nameof(results));
+
+            ConfigManifestSnapshot runSnapshot = ConfigManifestSnapshot.FromJobs(
+                expectedEnvironmentKey,
+                DateTime.UtcNow,
+                results);
+            return Check(runSnapshot, expectedEnvironmentKey, requiredConfigTypeNames);
+        }
+
+
         static bool HasAsset(ConfigManifestSnapshot manifest, string configTypeName)
         {
             for (int i = 0; i < manifest.Assets.Count; i++)

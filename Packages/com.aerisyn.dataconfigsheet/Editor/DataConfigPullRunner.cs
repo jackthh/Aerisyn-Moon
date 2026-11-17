@@ -22,6 +22,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
+        /// <summary>The Pull outcome: created/updated Baked Assets on success, or failures with sheet coordinates.</summary>
         public PullReport Report { get; }
 
 
@@ -45,7 +46,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// <summary>
         /// Live Google Pull: resolve spreadsheet id from the Environment Profile → OAuth/service-account →
         /// Title Check (aborts on mismatch before any cell fetch) → Sheets API cell grids → parse → Baked Assets.
-        /// Commas inside cells do not break Pull (no CSV required).
+        /// Commas inside cells do not break Pull (no CSV required). Delegates to <see cref="PullWithSourceAsync"/>
+        /// and returns only its report.
         /// </summary>
         public static async Task<PullReport> PullAsync(PullConfig config)
         {
@@ -57,7 +59,8 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// <summary>
         /// Same live Pull as <see cref="PullAsync"/>, also returning the Source Sheet facts the Config Manifest
         /// records (Feature Key, spreadsheet id, checked title, Drive revision). Drive revision is fetched only
-        /// after a successful Pull and is best effort: a Drive failure leaves those fields empty.
+        /// after a successful Pull and is best effort: a Drive failure leaves those fields empty. When the Pull
+        /// Config sets <see cref="PullConfig.SkipTitleCheck"/> no title is read, so the recorded title is empty.
         /// </summary>
         public static async Task<LivePullOutcome> PullWithSourceAsync(PullConfig config)
         {
@@ -82,7 +85,8 @@ namespace Aerisyn.DataConfigSheet.Editor
                     checkedTitle = await GoogleSheetsGridFetcher.FetchSpreadsheetTitleAsync(sheets, id);
                     return checkedTitle;
                 },
-                id => GoogleSheetsGridFetcher.FetchGridsAsync(config, sheets, id));
+                id => GoogleSheetsGridFetcher.FetchGridsAsync(config, sheets, id),
+                config.SkipTitleCheck);
             PullReport report = PullFromGrids(config, grids);
             if (!report.Success)
                 return new LivePullOutcome(report, null);
