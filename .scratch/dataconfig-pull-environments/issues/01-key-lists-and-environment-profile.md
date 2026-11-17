@@ -4,7 +4,7 @@
 
 **Blocked by:** None.
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Environment key list asset/API exists; create path seeds Dev, Test, Production
 - [ ] Feature key list asset/API exists; empty by default; games add keys
