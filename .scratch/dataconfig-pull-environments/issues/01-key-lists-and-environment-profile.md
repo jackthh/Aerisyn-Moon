@@ -4,7 +4,7 @@
 
 **Blocked by:** None.
 
-**Status:** done (pending integration)
+**Status:** resolved
 
 - [x] Environment key list asset/API exists; create path seeds Dev, Test, Production
 - [x] Feature key list asset/API exists; empty by default; games add keys
@@ -14,3 +14,5 @@
 - [x] Pure tests cover seed defaults, pick membership, resolve hit/miss
 
 ## Comments
+
+- Integrated into `feature/dataconfig-pull-environments` via fast-forward to `3f6328fc482950ab5f7c55663b9ef14c54bb144a`.
