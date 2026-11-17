@@ -5,6 +5,31 @@ All notable changes to `com.aerisyn.dataconfigsheet` are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-11-17
+
+Safer Pull environments: explicit Environment Keys, Title Check, hardened Pull All, Config Manifest.
+
+### Changed (breaking)
+
+- **Pull All no longer stops at the first failure.** It runs every Pull Config in asset-path order, prints one summary of passed and failed configs, and fails overall if any config failed or a required Config Type is missing. `DataConfigPullWorkflow.PullAllWithUiAsync` now returns `Task<PullAllSummary>` and shows one summary dialog instead of one dialog per config.
+
+- **Pull Config no longer stores a spreadsheet id.** The hard-coded `Spreadsheet Id` field and `PullConfig.SpreadsheetId` are removed. A Pull Config now holds an **Environment Profile** reference and a **Feature Key** (picked from the profile's Feature Key list). Pull resolves the Source Sheet spreadsheet id from the profile's active Environment Key at Pull start. Existing Pull Config assets must be re-pointed once: assign an Environment Profile, pick a Feature Key, and bind that Feature Key to the old spreadsheet id in the profile. The old serialized id is ignored.
+- `GoogleSheetsGridFetcher.FetchGridsAsync` now takes the Sheets client and the resolved spreadsheet id: `FetchGridsAsync(config, sheets, spreadsheetId)`.
+
+### Added
+
+- **Title Check.** Before any cell fetch, live Pull reads the Source Sheet file title (Sheets `properties.title`) and requires the active environment's prefix. Defaults, case-sensitive with brackets: Dev → `[Dev]`, Test → `[Tester]`, Production → `[Production]`. A mismatch aborts before parse or write, naming the expected prefix and the actual title.
+- Environment Profile **Title Prefix Overrides**: per Environment Key prefix. Required for game-added Environment Keys (a custom key with no prefix fails the Pull instead of skipping the check).
+- **Config Manifest** asset (`Aerisyn/Data Config Sheet/Config Manifest`). After every Pull Config in a Pull All passes, the manifest records the active Environment Key, UTC timestamp, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version`, and a SHA-256 per Baked Asset. A failed Pull All leaves the previous manifest untouched.
+- Environment Profile **Config Manifest** group: `Manifest Asset Path` (blank = no manifest) and **Required Config Types**. Pull All checks the manifest against that list and the active environment; a missing type or wrong environment fails the run.
+- Drive metadata fetch (`files.get`, `supportsAllDrives=true`) behind an injectable seam (`SheetRevisionLookup`). Uses the existing `drive.readonly` scope; best effort, so a Drive failure leaves the revision fields empty instead of failing the Pull.
+- `DataConfigPullRunner.PullWithSourceAsync` returns the PullReport plus the Source Sheet facts for the manifest; `PullAsync` is unchanged.
+- Opt-in build gates for your own `IPreprocessBuildWithReport`; the package registers nothing. `DataConfigBuildGate.Require(profile)` is the Production gate (fails when the active environment is not Production). `DataConfigBuildGate.RequireCompleteManifest(profile)` is a separate call that fails when the manifest is missing, for another environment, or lacks a required Config Type.
+- **Skip Title Check** on Pull Config (default off, check stays on). For documented exception sheets such as a shared `CONVENTIONS` sheet; a skipped Pull reads no title and records an empty title in the manifest.
+- Pull All with failed configs still checks the required Config Type list against what the passed configs produced, so the summary shows job failures and missing types together. The manifest asset is still not written for a run with failures.
+- Pull All uses one Environment Profile (the first Pull Config's, asset-path order) and writes one Config Manifest. A Pull Config pointing at another profile is reported as failed and not pulled.
+- Pure, Unity-free seams with `dotnet test` coverage: `PullAllRunner`, `PullAllSummary`, `PullAllProfileRule`, `ConfigManifestSnapshot`, `ManifestCompleteness`, `SheetRevisionLookup`, `ManifestContentHash`, `ProductionBuildGate`.
+
 ## [0.5.2] - 2026-10-13
 
 ### Added

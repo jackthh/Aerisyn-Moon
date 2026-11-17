@@ -25,8 +25,32 @@ Sheet authoring where a parent identity is written once and child rows leave par
 _Avoid_: Compact list#sep cell blobs; one normalized tab per nest level as the default; Luban ##var/##type as the schema
 
 **Pull Config**:
-Editor settings for one Pull job: spreadsheet id, auth, one shared output folder, and an explicit list of owned Config Types (candidates). Only candidates with Include In Pull run on a Pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
+Editor settings for one Pull job: Environment Profile reference, Feature Key, auth, one shared output folder, and an explicit list of owned Config Types (candidates). Only candidates with Include In Pull run on a Pull. Tab ↔ type pairing is by exact type name, or an optional `[SheetTab]` attribute on the type when the Google tab title must differ. All Baked Assets for that config write into the one output folder.
 _Avoid_: Bake Config; Luban project paths; treating Pull Config as the schema; keeping a parallel Luban pipeline in this package; repeating asset folder per tab; assembly-wide auto-scan of every Config Type; suffix-guessing tab names; treating the full candidate list as always-pulled with no per-type gate
+
+**Environment Key**:
+A named stage (seeded: Dev, Test, Production; games may add more) defined once in the Environment Key list asset. Every other asset or Inspector only picks an Environment Key from that list; none accepts a free-typed environment string. Matching is case-sensitive.
+_Avoid_: Free-typed environment strings on a Pull Config or profile row; per-asset copies of the environment name list
+
+**Feature Key**:
+A game-owned name for one Source Sheet feature (e.g. `ai_ship`, `cannon`), defined once in the Feature Key list asset. The package ships it empty. Environment Profile rows and Pull Config pick a Feature Key from that list; none accepts a free-typed feature string.
+_Avoid_: Seeding game-specific Feature Keys in the package; free-typed feature strings; storing a spreadsheet id where a Feature Key belongs
+
+**Environment Profile**:
+A ScriptableObject that maps each Environment Key × Feature Key to a Source Sheet spreadsheet id and stores the one active Environment Key for the project. It also holds the Config Manifest asset path and the required Config Type list. Pull resolves a spreadsheet id from the active environment and a Feature Key; an unbound pair or a key outside its list fails clearly.
+_Avoid_: A per-Pull-Config active environment; silently falling back to another environment when a Feature Key has no id in the active one
+
+**Title Check**:
+A guard at Pull start (on by default; a Pull Config can opt out via Skip Title Check for a documented exception sheet such as a shared CONVENTIONS sheet, which reads no title): read the Source Sheet file title and require it to start with the active Environment Key's prefix (case-sensitive, brackets included). Defaults: Dev → `[Dev]`, Test → `[Tester]`, Production → `[Production]`; the Environment Profile can override a prefix per key, and a game-added key needs one. A mismatch aborts the Pull before any cell fetch, parse, or write and names the expected prefix and the actual title. The spreadsheet id stays the source of truth; the title only guards against a wrong id.
+_Avoid_: Treating the title as the lookup key; silently skipping the check for an Environment Key with no prefix; case-insensitive or trimmed matching
+
+**Pull All**:
+The menu pass that Pulls every Pull Config in stable asset-path order. It never stops at the first failure: one summary lists each passed and failed config, and the overall result fails if any config failed or the Config Manifest check finds a problem. When a config failed, the required Config Type list is still checked against what the passed configs produced, so failures and missing types show together. Pull All uses one Environment Profile (the first Pull Config's); a Pull Config on another profile is reported failed and not pulled. Include In Pull on each config still applies.
+_Avoid_: Stopping at the first failing config; one dialog per config; reporting success when no Pull Config ran
+
+**Config Manifest**:
+A ScriptableObject written after a Pull All in which every config passed, at the path set on the Environment Profile. It records the active Environment Key, a UTC timestamp, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (empty when Drive is unavailable), and a content hash per Baked Asset. A completeness check compares it to the profile's required Config Type list and the active environment; a missing Config Type or wrong environment fails. Pull All overwrites it; a failed Pull All leaves the previous one. A game may opt in to failing player builds when the active environment is not Production (the build gate) and, separately, when the manifest is incomplete.
+_Avoid_: Treating it as runtime data; hand-editing it; writing it after a partially failed Pull All; failing a Pull because Drive revision fields are unavailable
 
 **Include In Pull**:
 Per Config Type flag on a Pull Config. When true, that type is fetched and baked on the next Pull; when false, it stays listed but is skipped. New candidates default true. A Pull with none included is an error, not a no-op.

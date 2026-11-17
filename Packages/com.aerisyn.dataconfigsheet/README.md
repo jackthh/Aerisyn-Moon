@@ -4,7 +4,7 @@ Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven 
 
 That is the only supported product path for this package.
 
-**Unity:** 2022.3+ · **Version:** `0.5.2` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
+**Unity:** 2022.3+ · **Version:** `0.6.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
 See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md), and [`docs/adr/0013-…`](../../docs/adr/0013-dataconfigsheet-local-only-after-pull.md).
 
@@ -36,12 +36,40 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 
 1. Subclass `ConfigTypeAsset` for each table (root `items` list + nested serializable types).
 2. Optional: `[ColumnAlias("Friendly Name")]` on fields; `[SheetTab("Tab Title")]` on the type when the Google tab differs from the type name; `[LocalOnly]` on fields the sheet must not own (see below).
-3. Create **Pull Config**; set spreadsheet id, one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses).
+3. Create **Pull Config**; assign an **Environment Profile**, pick a **Feature Key**, set one shared output folder, and the explicit Config Type list (Odin dropdown of concrete `ConfigTypeAsset` subclasses). The profile binds the Feature Key to a spreadsheet id per environment. Pull checks the Source Sheet title starts with the active environment's prefix (`[Dev]`, `[Tester]`, `[Production]` by default; override per key on the profile) and aborts before any parse or write when it does not.
 4. Select a Config Type asset (or its script) → **Copy Header Row** to paste headers into Google (guidance covers `!!!` note columns and omitted Local Only fields).
 5. Open the PullConfig Inspector → **Sign In With Google**, then **Pull** (menus under **Aerisyn → Data Config Sheet** remain aliases).
 6. Read the **Pull report**: success lists created/updated assets; failures include **A1** sheet coordinates. Failed Pulls write nothing.
 7. Or import sample **Weapons Pull** (Package Manager → Samples) and follow its README.
 8. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s.
+
+## Pull All + Config Manifest
+
+**Aerisyn → Data Config Sheet → Pull From Google (All Configs)** Pulls every Pull Config in asset-path order. It never stops at the first failure: one summary lists each passed and failed config, and the overall result fails if any config failed.
+
+Pull All uses **one Environment Profile**: the first Pull Config's (asset-path order). A Pull Config that points at a different profile is listed as failed and not pulled, so one run never mixes environments or writes more than one manifest.
+
+When every config passes, Pull All writes one **Config Manifest** (`Aerisyn/Data Config Sheet/Config Manifest`) at that profile's **Manifest Asset Path** (Environment Profile → Config Manifest). It records the active Environment Key, the UTC time, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (best effort; empty if Drive is unavailable), and a SHA-256 per Baked Asset. Drive metadata uses the existing `drive.readonly` scope with `supportsAllDrives=true`; no new scope.
+
+List the Config Types that must exist in **Required Config Types** on the profile. After the manifest write, Pull All checks it against that list and the profile's active environment; a missing type or wrong environment fails the run. A failed Pull All leaves the previous manifest untouched, but the required list is still checked against what the passed configs produced, so the summary lists failed configs and missing Config Types together.
+
+**Skip Title Check** (Pull Config → Google source) is off by default. Turn it on only for a documented exception sheet whose title does not carry the environment prefix (for example a shared `CONVENTIONS` sheet). That Pull skips the title read, so its manifest title is empty.
+
+Opt-in build gates: the package registers nothing. Call them from your own preprocessor. `Require` is the Production gate (fails when the active environment is not Production); `RequireCompleteManifest` is a separate check that fails when the manifest is missing, for another environment, or lacks a required Config Type:
+
+```csharp
+class DataConfigBuildCheck : IPreprocessBuildWithReport
+{
+    public int callbackOrder => 0;
+
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        EnvironmentProfile profile = AssetDatabase.LoadAssetAtPath<EnvironmentProfile>("Assets/Config/EnvironmentProfile.asset");
+        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.Require(profile);
+        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.RequireCompleteManifest(profile); // optional
+    }
+}
+```
 
 ## Local Only + After Pull
 

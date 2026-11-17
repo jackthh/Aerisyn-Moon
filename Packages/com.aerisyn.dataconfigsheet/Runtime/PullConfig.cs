@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Editor settings for one Pull job: Google spreadsheet, OAuth/service-account auth,
+    /// Editor settings for one Pull job: Feature Key + Environment Profile (spreadsheet id), OAuth/service-account auth,
     /// one shared Baked Asset output folder, and owned Config Type candidates with Include In Pull.
     /// One-way: Google → Vertical Nest parse → Baked Assets. Never push back to Google.
     /// </summary>
@@ -149,10 +149,32 @@ namespace Aerisyn.DataConfigSheet
 
         #region Google source
 
+        // The active environment lives on the profile, never here, so switching environment does
+        // not mean editing every Pull Config.
         [FoldoutGroup("Google source")]
-        [Tooltip("Google Spreadsheet id from the URL (.../d/{id}/...).")]
+        [Tooltip("Environment Profile that holds the active environment and the spreadsheet id per Feature Key.")]
         [SerializeField]
-        string _spreadsheetId = "";
+        EnvironmentProfile _environmentProfile;
+
+
+        [FoldoutGroup("Google source")]
+        [Tooltip(
+            "Feature Key for this Pull. The Source Sheet spreadsheet id is resolved from the " +
+            "Environment Profile's active environment at Pull time.")]
+        [ValueDropdown(nameof(FeatureKeyChoices), DropdownTitle = "Feature Key")]
+        [SerializeField]
+        string _featureKey = "";
+
+
+        // Default false: Title Check stays on. Only for documented exception sheets whose title does not
+        // carry the environment prefix (e.g. a shared CONVENTIONS sheet).
+        [FoldoutGroup("Google source")]
+        [Tooltip(
+            "Skip the Title Check for this Pull Config. Leave off unless the Source Sheet is a documented " +
+            "exception whose title does not start with the active environment's prefix (e.g. CONVENTIONS). " +
+            "The manifest records an empty title for a skipped sheet.")]
+        [SerializeField]
+        bool _skipTitleCheck;
 
 
         [FoldoutGroup("Google source")]
@@ -215,6 +237,21 @@ namespace Aerisyn.DataConfigSheet
         #endregion
 
 
+        #region Picker helpers
+
+        // Feature Key choices come only from the profile's Feature Key list (no free text).
+        // Empty until a profile with a Feature Key List is assigned.
+        IEnumerable<string> FeatureKeyChoices()
+        {
+            if (_environmentProfile == null)
+                return Array.Empty<string>();
+
+            return _environmentProfile.FeatureKeys;
+        }
+
+        #endregion
+
+
         #region List helpers
 
         // List + must construct an entry; otherwise Odin inserts null and draws None (Type).
@@ -228,8 +265,16 @@ namespace Aerisyn.DataConfigSheet
 
         #region Public API
 
-        /// <summary>Single Google spreadsheet document id.</summary>
-        public string SpreadsheetId => _spreadsheetId;
+        /// <summary>Environment Profile that resolves this Pull's spreadsheet id (null until assigned).</summary>
+        public EnvironmentProfile EnvironmentProfile => _environmentProfile;
+
+
+        /// <summary>Feature Key picked for this Pull (empty until picked).</summary>
+        public string FeatureKey => _featureKey;
+
+
+        /// <summary>True when this Pull Config opts out of the Title Check (default false = check on).</summary>
+        public bool SkipTitleCheck => _skipTitleCheck;
 
 
         /// <summary>OAuth user (default) or service-account auth.</summary>

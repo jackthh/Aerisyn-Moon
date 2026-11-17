@@ -18,16 +18,37 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
+        /// Reads the spreadsheet file title (Sheets <c>properties.title</c>) for the Title Check.
+        /// Requests only that field; no cell data is downloaded.
+        /// </summary>
+        public static async Task<string> FetchSpreadsheetTitleAsync(SheetsService sheets, string spreadsheetId)
+        {
+            if (sheets == null)
+                throw new ArgumentNullException(nameof(sheets));
+
+            SpreadsheetsResource.GetRequest request = sheets.Spreadsheets.Get(spreadsheetId.Trim());
+            request.Fields = "properties.title";
+            Spreadsheet spreadsheet = await request.ExecuteAsync();
+            return spreadsheet?.Properties?.Title ?? "";
+        }
+
+
+        /// <summary>
         /// Downloads each included Pull Config Type's tab (type name or <see cref="SheetTabAttribute"/>)
         /// into a grid keyed by Config Type. Unticked candidates are not fetched.
+        /// The spreadsheet id is resolved by the caller (Environment Profile) after the Title Check.
         /// </summary>
-        public static async Task<Dictionary<Type, SheetGrid>> FetchGridsAsync(PullConfig config)
+        public static async Task<Dictionary<Type, SheetGrid>> FetchGridsAsync(
+            PullConfig config,
+            SheetsService sheets,
+            string resolvedSpreadsheetId)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
+            if (sheets == null)
+                throw new ArgumentNullException(nameof(sheets));
 
-            SheetsService sheets = await GoogleOAuthSession.CreateSheetsServiceAsync(config);
-            string spreadsheetId = config.SpreadsheetId.Trim();
+            string spreadsheetId = resolvedSpreadsheetId.Trim();
             Dictionary<Type, SheetGrid> grids = new Dictionary<Type, SheetGrid>();
 
             // Same inclusion resolution as inject Pull so live/fetch cannot disagree

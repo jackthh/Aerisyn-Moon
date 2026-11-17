@@ -1,10 +1,38 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Google.Apis.Drive.v3;
+using Google.Apis.Sheets.v4;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
+    /// <summary>
+    /// Result of a live Pull: the PullReport plus Source Sheet facts for the Config Manifest
+    /// (null Source when the Pull failed).
+    /// </summary>
+    public readonly struct LivePullOutcome
+    {
+
+
+        public LivePullOutcome(PullReport report, ManifestFeatureEntry source)
+        {
+            Report = report;
+            Source = source;
+        }
+
+
+        /// <summary>The Pull outcome: created/updated Baked Assets on success, or failures with sheet coordinates.</summary>
+        public PullReport Report { get; }
+
+
+        /// <summary>Feature Key, spreadsheet id, checked title, Drive revision; null when the Pull failed.</summary>
+        public ManifestFeatureEntry Source { get; }
+
+
+    }
+
+
     /// <summary>
     /// Runs one-way Pull: Google Sheets (or injected grids) → Vertical Nest → Baked Assets.
     /// Returns a PullReport (success summary or failures with sheet coordinates).
@@ -16,26 +44,76 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Live Google Pull: OAuth/service-account → Sheets API cell grids → parse → Baked Assets.
-        /// Commas inside cells do not break Pull (no CSV required).
+        /// Live Google Pull: resolve spreadsheet id from the Environment Profile → OAuth/service-account →
+        /// Title Check (aborts on mismatch before any cell fetch) → Sheets API cell grids → parse → Baked Assets.
+        /// Commas inside cells do not break Pull (no CSV required). Delegates to <see cref="PullWithSourceAsync"/>
+        /// and returns only its report.
         /// </summary>
         public static async Task<PullReport> PullAsync(PullConfig config)
+        {
+            LivePullOutcome outcome = await PullWithSourceAsync(config);
+            return outcome.Report;
+        }
+
+
+        /// <summary>
+        /// Same live Pull as <see cref="PullAsync"/>, also returning the Source Sheet facts the Config Manifest
+        /// records (Feature Key, spreadsheet id, checked title, Drive revision). Drive revision is fetched only
+        /// after a successful Pull and is best effort: a Drive failure leaves those fields empty. When the Pull
+        /// Config sets <see cref="PullConfig.SkipTitleCheck"/> no title is read, so the recorded title is empty.
+        /// </summary>
+        public static async Task<LivePullOutcome> PullWithSourceAsync(PullConfig config)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
             ValidateTargets(config);
             ValidateGoogle(config);
+            string spreadsheetId = ResolveSpreadsheetId(config);
 
-            Dictionary<Type, SheetGrid> grids = await GoogleSheetsGridFetcher.FetchGridsAsync(config);
-            return PullFromGrids(config, grids);
+            SheetsService sheets = await GoogleOAuthSession.CreateSheetsServiceAsync(config);
+            EnvironmentProfile profile = config.EnvironmentProfile;
+
+            // The guard discards the title it reads; keep it for the manifest row.
+            string checkedTitle = "";
+            Dictionary<Type, SheetGrid> grids = await SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
+                spreadsheetId,
+                profile.ActiveEnvironmentKey,
+                profile.ToTitlePrefixOverrides(),
+                async id =>
+                {
+                    checkedTitle = await GoogleSheetsGridFetcher.FetchSpreadsheetTitleAsync(sheets, id);
+                    return checkedTitle;
+                },
+                id => GoogleSheetsGridFetcher.FetchGridsAsync(config, sheets, id),
+                config.SkipTitleCheck);
+            PullReport report = PullFromGrids(config, grids);
+            if (!report.Success)
+                return new LivePullOutcome(report, null);
+
+            // Created lazily inside the lookup so a Drive client failure is swallowed with the fetch.
+            SheetRevisionMetadata revision = await SheetRevisionLookup.TryFetchAsync(
+                async id =>
+                {
+                    DriveService drive = await GoogleOAuthSession.CreateDriveServiceAsync(config);
+                    return await GoogleDriveRevisionFetcher.FetchAsync(drive, id);
+                },
+                spreadsheetId);
+
+            ManifestFeatureEntry source = new ManifestFeatureEntry(
+                config.FeatureKey,
+                spreadsheetId.Trim(),
+                checkedTitle,
+                revision.ModifiedTime,
+                revision.Version);
+            return new LivePullOutcome(report, source);
         }
 
 
         /// <summary>
         /// Fixture/inject Pull: parse provided grids and create or overwrite Baked Assets
         /// under the Pull Config's shared output folder (GUID stable on re-Pull).
-        /// Does not require Google spreadsheet id or credentials.
+        /// Does not require an Environment Profile, Feature Key, or credentials (no Title Check; grids are already in hand).
         /// Failed Pulls write nothing and return a report with sheet coordinates when available.
         /// Only Config Types with Include In Pull are processed.
         /// </summary>
@@ -191,12 +269,25 @@ namespace Aerisyn.DataConfigSheet.Editor
         }
 
 
-        /// <summary>Spreadsheet id and credential paths required for live Google Pull.</summary>
+        /// <summary>
+        /// Source Sheet spreadsheet id for this Pull Config's Feature Key in the Environment Profile's
+        /// active environment. Throws when the profile or Feature Key is unset, or the profile cannot resolve.
+        /// </summary>
+        internal static string ResolveSpreadsheetId(PullConfig config)
+        {
+            if (config.EnvironmentProfile == null)
+                throw new InvalidOperationException($"PullConfig '{config.name}' has no Environment Profile.");
+
+            if (string.IsNullOrWhiteSpace(config.FeatureKey))
+                throw new InvalidOperationException($"PullConfig '{config.name}' has no Feature Key.");
+
+            return config.EnvironmentProfile.ResolveSpreadsheetId(config.FeatureKey);
+        }
+
+
+        /// <summary>Credential paths required for live Google Pull.</summary>
         internal static void ValidateGoogle(PullConfig config)
         {
-            if (string.IsNullOrWhiteSpace(config.SpreadsheetId))
-                throw new InvalidOperationException($"PullConfig '{config.name}' has no Spreadsheet Id.");
-
             if (config.AuthMode == GoogleAuthMode.OAuthUser)
             {
                 // Empty is the new-config default; fail here instead of ArgumentException in path resolve.
