@@ -4,13 +4,13 @@
 
 **Blocked by:** None.
 
-**Status:** claimed
+**Status:** done (pending integration)
 
-- [ ] Environment key list asset/API exists; create path seeds Dev, Test, Production
-- [ ] Feature key list asset/API exists; empty by default; games add keys
-- [ ] Environment Profile maps each environment × feature → spreadsheet id
-- [ ] Active environment is stored once and readable by Pull
-- [ ] Resolve(feature key) returns spreadsheet id for active environment or fails clearly
-- [ ] Pure tests cover seed defaults, pick membership, resolve hit/miss
+- [x] Environment key list asset/API exists; create path seeds Dev, Test, Production
+- [x] Feature key list asset/API exists; empty by default; games add keys
+- [x] Environment Profile maps each environment × feature → spreadsheet id
+- [x] Active environment is stored once and readable by Pull
+- [x] Resolve(feature key) returns spreadsheet id for active environment or fails clearly
+- [x] Pure tests cover seed defaults, pick membership, resolve hit/miss
 
 ## Comments
