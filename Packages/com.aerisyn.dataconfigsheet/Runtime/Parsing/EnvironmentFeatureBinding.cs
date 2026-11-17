@@ -2,7 +2,7 @@
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// One Environment Profile cell: Environment Key × Feature Key → Source Sheet spreadsheet id.
+    /// One Data Config Settings binding cell: Environment Key × Feature Key → Source Sheet spreadsheet id.
     /// Pure seam type (no Unity serialization); the profile's serialized rows map into this for resolve.
     /// </summary>
     public readonly struct EnvironmentFeatureBinding

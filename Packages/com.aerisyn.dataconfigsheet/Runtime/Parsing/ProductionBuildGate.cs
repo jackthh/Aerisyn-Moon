@@ -25,7 +25,7 @@ namespace Aerisyn.DataConfigSheet
 
             string shown = string.IsNullOrWhiteSpace(activeEnvironmentKey) ? "(none)" : activeEnvironmentKey;
             return $"Active Environment Key is '{shown}' but a player build requires '{ProductionKey}'. " +
-                   "Switch the Environment Profile to Production, Pull All, then build.";
+                   "Switch the active Environment Key in Data Config Settings to Production, Pull All, then build.";
         }
 
 

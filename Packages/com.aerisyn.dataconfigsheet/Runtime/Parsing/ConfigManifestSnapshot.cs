@@ -28,11 +28,11 @@ namespace Aerisyn.DataConfigSheet
         }
 
 
-        /// <summary>Feature Key the Pull Config picked (Feature Key list entry).</summary>
+        /// <summary>Feature Key the Pull Config picked (Data Config Settings Feature Key).</summary>
         public string FeatureKey { get; }
 
 
-        /// <summary>Source Sheet spreadsheet id resolved from the Environment Profile.</summary>
+        /// <summary>Source Sheet spreadsheet id resolved from Data Config Settings.</summary>
         public string SpreadsheetId { get; }
 
 

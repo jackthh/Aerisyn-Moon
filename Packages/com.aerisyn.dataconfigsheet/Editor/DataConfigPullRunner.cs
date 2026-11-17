@@ -44,14 +44,14 @@ namespace Aerisyn.DataConfigSheet.Editor
         #region Public API
 
         /// <summary>
-        /// Live Google Pull: resolve spreadsheet id from the Environment Profile → OAuth/service-account →
-        /// Title Check (aborts on mismatch before any cell fetch) → Sheets API cell grids → parse → Baked Assets.
-        /// Commas inside cells do not break Pull (no CSV required). Delegates to <see cref="PullWithSourceAsync"/>
-        /// and returns only its report.
+        /// Live Google Pull against loaded Data Config Settings (Pull All loads it once): resolve spreadsheet id
+        /// (active Environment Key x Feature Key) → OAuth/service-account → Title Check (aborts on mismatch before
+        /// any cell fetch) → Sheets API cell grids → parse → Baked Assets. Commas inside cells do not break Pull.
+        /// Delegates to <see cref="PullWithSourceAsync"/> and returns only its report.
         /// </summary>
-        public static async Task<PullReport> PullAsync(PullConfig config)
+        public static async Task<PullReport> PullAsync(PullConfig config, DataConfigSettings settings)
         {
-            LivePullOutcome outcome = await PullWithSourceAsync(config);
+            LivePullOutcome outcome = await PullWithSourceAsync(config, settings);
             return outcome.Report;
         }
 
@@ -61,25 +61,27 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// records (Feature Key, spreadsheet id, checked title, Drive revision). Drive revision is fetched only
         /// after a successful Pull and is best effort: a Drive failure leaves those fields empty. When the Pull
         /// Config sets <see cref="PullConfig.SkipTitleCheck"/> no title is read, so the recorded title is empty.
+        /// Spreadsheet id, active Environment Key, title prefixes and Google auth all come from the settings.
         /// </summary>
-        public static async Task<LivePullOutcome> PullWithSourceAsync(PullConfig config)
+        public static async Task<LivePullOutcome> PullWithSourceAsync(PullConfig config, DataConfigSettings settings)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
             ValidateTargets(config);
-            ValidateGoogle(config);
-            string spreadsheetId = ResolveSpreadsheetId(config);
+            ValidateGoogle(settings);
+            string spreadsheetId = ResolveSpreadsheetId(config, settings);
 
-            SheetsService sheets = await GoogleOAuthSession.CreateSheetsServiceAsync(config);
-            EnvironmentProfile profile = config.EnvironmentProfile;
+            SheetsService sheets = await GoogleOAuthSession.CreateSheetsServiceAsync(settings);
 
             // The guard discards the title it reads; keep it for the manifest row.
             string checkedTitle = "";
             Dictionary<Type, SheetGrid> grids = await SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
                 spreadsheetId,
-                profile.ActiveEnvironmentKey,
-                profile.ToTitlePrefixOverrides(),
+                settings.ActiveEnvironmentKey,
+                settings.ToTitlePrefixOverrides(),
                 async id =>
                 {
                     checkedTitle = await GoogleSheetsGridFetcher.FetchSpreadsheetTitleAsync(sheets, id);
@@ -95,7 +97,7 @@ namespace Aerisyn.DataConfigSheet.Editor
             SheetRevisionMetadata revision = await SheetRevisionLookup.TryFetchAsync(
                 async id =>
                 {
-                    DriveService drive = await GoogleOAuthSession.CreateDriveServiceAsync(config);
+                    DriveService drive = await GoogleOAuthSession.CreateDriveServiceAsync(settings);
                     return await GoogleDriveRevisionFetcher.FetchAsync(drive, id);
                 },
                 spreadsheetId);
@@ -113,7 +115,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// <summary>
         /// Fixture/inject Pull: parse provided grids and create or overwrite Baked Assets
         /// under the Pull Config's shared output folder (GUID stable on re-Pull).
-        /// Does not require an Environment Profile, Feature Key, or credentials (no Title Check; grids are already in hand).
+        /// Does not require Data Config Settings, a Feature Key, or credentials (no Title Check; grids are already in hand).
         /// Failed Pulls write nothing and return a report with sheet coordinates when available.
         /// Only Config Types with Include In Pull are processed.
         /// </summary>
@@ -270,39 +272,36 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Source Sheet spreadsheet id for this Pull Config's Feature Key in the Environment Profile's
-        /// active environment. Throws when the profile or Feature Key is unset, or the profile cannot resolve.
+        /// Source Sheet spreadsheet id for this Pull Config's Feature Key in the settings' active
+        /// Environment Key. Throws when the Feature Key is unset or the settings cannot resolve it.
         /// </summary>
-        internal static string ResolveSpreadsheetId(PullConfig config)
+        internal static string ResolveSpreadsheetId(PullConfig config, DataConfigSettings settings)
         {
-            if (config.EnvironmentProfile == null)
-                throw new InvalidOperationException($"PullConfig '{config.name}' has no Environment Profile.");
-
             if (string.IsNullOrWhiteSpace(config.FeatureKey))
                 throw new InvalidOperationException($"PullConfig '{config.name}' has no Feature Key.");
 
-            return config.EnvironmentProfile.ResolveSpreadsheetId(config.FeatureKey);
+            return settings.ResolveSpreadsheetId(config.FeatureKey);
         }
 
 
-        /// <summary>Credential paths required for live Google Pull.</summary>
-        internal static void ValidateGoogle(PullConfig config)
+        /// <summary>Credential paths required for live Google Pull (from Data Config Settings).</summary>
+        internal static void ValidateGoogle(DataConfigSettings settings)
         {
-            if (config.AuthMode == GoogleAuthMode.OAuthUser)
+            if (settings.AuthMode == GoogleAuthMode.OAuthUser)
             {
-                // Empty is the new-config default; fail here instead of ArgumentException in path resolve.
-                if (string.IsNullOrWhiteSpace(config.OAuthClientSecretsPath))
+                // Empty is the new-settings default; fail here instead of ArgumentException in path resolve.
+                if (string.IsNullOrWhiteSpace(settings.OAuthClientSecretsPath))
                     throw new InvalidOperationException(
-                        $"PullConfig '{config.name}' has an empty OAuth client secrets path.");
+                        "Data Config Settings has an empty OAuth client secrets path.");
 
-                if (string.IsNullOrWhiteSpace(config.OAuthUserTokenPath))
+                if (string.IsNullOrWhiteSpace(settings.OAuthUserTokenPath))
                     throw new InvalidOperationException(
-                        $"PullConfig '{config.name}' has an empty OAuth user token path.");
+                        "Data Config Settings has an empty OAuth user token path.");
             }
-            else if (string.IsNullOrWhiteSpace(config.ServiceAccountCredentialPath))
+            else if (string.IsNullOrWhiteSpace(settings.ServiceAccountCredentialPath))
             {
                 throw new InvalidOperationException(
-                    $"PullConfig '{config.name}' has an empty service-account credential path.");
+                    "Data Config Settings has an empty service-account credential path.");
             }
         }
 

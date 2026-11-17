@@ -5,6 +5,24 @@ All notable changes to `com.aerisyn.dataconfigsheet` are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-11-17
+
+One Data Config Settings asset and a Data Config Sheet window replace the 0.6.0 multi-asset setup.
+
+### Changed (breaking, no migrator)
+
+- **Hard break from 0.6.0. Recreate your setup in the window.** There is no automatic migration of 0.6.0 assets. Open **Aerisyn → Data Config Sheet → Open Window**, re-enter Environment Keys, Feature Keys, bindings, title prefixes, manifest path, required Config Types and auth, then re-pick the Feature Key on each Pull Config.
+- **Removed `EnvironmentKeyList`, `FeatureKeyList` and `EnvironmentProfile`** (and their Create Asset menus), plus `PullAllProfileRule` and the internal `IDataConfigKeySource` interface (not part of the documented API). Their data now lives on **Data Config Settings** at `Assets/AerisynDataConfig/DataConfigSettings.asset`, created when you open the window from the menu (merely restoring a docked window never creates it) (Dev, Test, Production seeded; Feature Keys empty).
+- **Pull Config keeps only** Feature Key, output folder, Config Types, Include In Pull and Skip Title Check. The Environment Profile reference and Google auth fields are gone; Pull resolves the spreadsheet id and credentials from Data Config Settings. A missing settings asset fails Pull with a clear message.
+- **Pull All is folder-scoped.** It pulls Pull Configs recursively under the settings Pull All Folder Path. A blank path or an empty folder fails; there is no whole-project scan. The multi-profile rule is gone because there is one settings asset.
+- Build gates take Data Config Settings: `DataConfigBuildGate.Require(settings)` and `RequireCompleteManifest(settings)`. `GoogleOAuthSession` APIs take Data Config Settings; the `PullConfig.RunEditorSignIn*` statics are removed.
+
+### Added
+
+- **Data Config Sheet window** (**Aerisyn → Data Config Sheet → Open Window**): edit settings, Sign In / Sign Out, Pull All. Folder picker for the Pull All folder, `.asset` file picker for the manifest path. The existing Sign In / Sign Out / Pull All menus still work.
+- The window opens on a dashboard: an active-environment dropdown, a setup checklist (environment, Feature Keys, Pull All folder with its Pull Config count, Google auth, manifest) with one-click Choose… / Sign In fixes, and a Pull All button that stays disabled until nothing blocks it. The last Pull All result stays visible with Copy and Clear. Settings are split into tabs (Overview, Keys, Bindings, Manifest, Auth, Pull All) with roomy sections; each tab draws its fields through Odin, so the key dropdowns and file/folder pickers stay. The Editor assembly now also references `Sirenix.OdinInspector.Editor`, `Sirenix.Utilities` and `Sirenix.Utilities.Editor` for this.
+- OAuth user token defaults to `UserSettings/AerisynDataConfig/oauth-user-token.json` (machine-local).
+
 ## [0.6.0] - 2026-11-17
 
 Safer Pull environments: explicit Environment Keys, Title Check, hardened Pull All, Config Manifest.

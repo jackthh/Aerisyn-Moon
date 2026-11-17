@@ -138,6 +138,19 @@ namespace Aerisyn.DataConfigSheet.Tests
             Assert.That(summary.Format(), Does.Contain("No Pull Configs"));
         }
 
+
+        [Test]
+        public void Create_NoJobsWithFinding_FormatShowsTheFinding()
+        {
+            // Blank folder / empty folder reasons must reach the dialog, not just "No Pull Configs ran".
+            PullAllSummary summary = PullAllSummary.Create(
+                Array.Empty<PullJobResult>(),
+                new[] { "Pull All folder is blank." });
+
+            Assert.That(summary.OverallSuccess, Is.False);
+            Assert.That(summary.Format(), Does.Contain("Pull All folder is blank."));
+        }
+
         #endregion
 
 

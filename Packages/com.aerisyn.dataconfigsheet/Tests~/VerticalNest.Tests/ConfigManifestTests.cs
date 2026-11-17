@@ -282,50 +282,6 @@ namespace Aerisyn.DataConfigSheet.Tests
         #endregion
 
 
-        #region One Environment Profile per Pull All
-
-        [Test]
-        public void FindMismatches_AllConfigsShareOneProfile_NoMismatches()
-        {
-            string?[] messages = PullAllProfileRule.FindMismatches(
-                new[] { "ShipPull", "CannonPull" },
-                new[] { "Assets/Env.asset", "Assets/Env.asset" });
-
-            Assert.That(messages, Is.EqualTo(new string?[] { null, null }));
-        }
-
-
-        [Test]
-        public void FindMismatches_SecondConfigUsesOtherProfile_ItIsFlaggedAndFirstProfileWins()
-        {
-            string?[] messages = PullAllProfileRule.FindMismatches(
-                new[] { "ShipPull", "CannonPull", "LootPull" },
-                new[] { "Assets/EnvA.asset", "Assets/EnvB.asset", "Assets/EnvA.asset" });
-
-            Assert.That(messages[0], Is.Null);
-            Assert.That(messages[2], Is.Null);
-            Assert.That(messages[1], Does.Contain("CannonPull"));
-            Assert.That(messages[1], Does.Contain("Assets/EnvB.asset"));
-            Assert.That(messages[1], Does.Contain("Assets/EnvA.asset"));
-        }
-
-
-        [Test]
-        public void FindMismatches_ConfigWithoutProfile_IsNotFlaggedAndDoesNotPickTheReference()
-        {
-            // A missing profile already fails that Pull on its own; the reference is the first real profile.
-            string?[] messages = PullAllProfileRule.FindMismatches(
-                new[] { "NoProfilePull", "ShipPull", "CannonPull" },
-                new[] { null, "Assets/EnvA.asset", "Assets/EnvB.asset" });
-
-            Assert.That(messages[0], Is.Null);
-            Assert.That(messages[1], Is.Null);
-            Assert.That(messages[2], Is.Not.Null);
-        }
-
-        #endregion
-
-
         #region Drive metadata seam
 
         [Test]

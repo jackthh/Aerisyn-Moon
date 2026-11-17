@@ -5,8 +5,8 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// One serialized Environment Profile row: Environment Key × Feature Key → Source Sheet spreadsheet id.
-    /// Both keys are picked from the profile's key lists; the id is the only free-typed value.
+    /// One serialized Data Config Settings row: Environment Key × Feature Key → Source Sheet spreadsheet id.
+    /// Both keys are picked from the Data Config Settings key lists; the id is the only free-typed value.
     /// </summary>
     [Serializable]
     [HideReferenceObjectPicker]
@@ -65,14 +65,14 @@ namespace Aerisyn.DataConfigSheet
 
         #region Pickers
 
-        // Odin expression dropdowns read the owning EnvironmentProfile (the Inspector tree root) because
-        // a row has no direct reference to it. Keys come only from the profile's key lists, never free text.
+        // Odin expression dropdowns read the Data Config Settings (the Inspector tree root) because
+        // a row has no direct reference to it. Keys come only from the Data Config Settings key lists, never free text.
         public const string EnvironmentKeyPicker =
-            "@((Aerisyn.DataConfigSheet.EnvironmentProfile)$property.Tree.WeakTargets[0]).EnvironmentKeys";
+            "@((Aerisyn.DataConfigSheet.DataConfigSettings)$property.Tree.WeakTargets[0]).EnvironmentKeys";
 
 
         public const string FeatureKeyPicker =
-            "@((Aerisyn.DataConfigSheet.EnvironmentProfile)$property.Tree.WeakTargets[0]).FeatureKeys";
+            "@((Aerisyn.DataConfigSheet.DataConfigSettings)$property.Tree.WeakTargets[0]).FeatureKeys";
 
         #endregion
 

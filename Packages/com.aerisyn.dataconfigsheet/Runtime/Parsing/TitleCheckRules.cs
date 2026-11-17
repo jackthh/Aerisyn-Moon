@@ -63,7 +63,7 @@ namespace Aerisyn.DataConfigSheet
 
             throw new InvalidOperationException(
                 $"Environment Key '{activeEnvironmentKey}' has no Source Sheet title prefix. " +
-                "Add a title prefix override for it on the Environment Profile.");
+                "Add a title prefix override for it on Data Config Settings.");
         }
 
 

@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Aerisyn.DataConfigSheet
 {
     /// <summary>
-    /// Editor settings for one Pull job: Feature Key + Environment Profile (spreadsheet id), OAuth/service-account auth,
+    /// Editor settings for one Pull job: Feature Key (spreadsheet id and auth come from Data Config Settings),
     /// one shared Baked Asset output folder, and owned Config Type candidates with Include In Pull.
     /// One-way: Google → Vertical Nest parse → Baked Assets. Never push back to Google.
     /// </summary>
@@ -24,8 +24,8 @@ namespace Aerisyn.DataConfigSheet
         "One shared output folder for all Baked Assets. Never push generated data back to Google.",
         InfoMessageType.Info)]
     [InfoBox(
-        "Default auth is OAuth (Sign In With Google). Share the sheet with your Google email as Viewer. " +
-        "Service account stays available for CI / headless Pull.",
+        "Spreadsheet id and Google auth come from Data Config Settings (Aerisyn > Data Config Sheet). " +
+        "Share the sheet with your Google email as Viewer.",
         InfoMessageType.Info)]
     public sealed class PullConfig : SerializedScriptableObject
     {
@@ -41,23 +41,17 @@ namespace Aerisyn.DataConfigSheet
         public static Func<PullConfig, Task> RunEditorPullAsync;
 
 
-        /// <summary>Editor-wired OAuth Sign In (progress bar + dialogs), same as the menu.</summary>
-        public static Func<PullConfig, Task> RunEditorSignInAsync;
+        /// <summary>
+        /// Editor module assigns a loader for the Data Config Settings asset (null when missing) so the
+        /// Feature Key dropdown works without Runtime referencing AssetDatabase.
+        /// </summary>
+        public static Func<DataConfigSettings> EditorSettingsLoader;
 
 
-        /// <summary>Editor-wired OAuth Sign Out (dialogs), same as the menu.</summary>
-        public static Action<PullConfig> RunEditorSignOut;
-
-
-        /// <summary>Editor-wired token-file check for the Inspector signed-in status line.</summary>
-        public static Func<PullConfig, bool> EditorIsSignedIn;
-
-
-        // Top of Inspector (with Pull): OAuth status + Sign In / Sign Out when Auth Mode is OAuth User.
-        // OAuth Pull stays off until signed in; Service Account Pull is always available.
+        // Sign In / Sign Out live in the Data Config Sheet window now (auth is on Data Config Settings).
+        // A missing settings asset or signed-out state surfaces as a clear failure from the Pull workflow.
         [Button("Pull", ButtonSizes.Large)]
         [PropertyOrder(-100)]
-        [EnableIf(nameof(InspectorCanPull))]
         void InspectorPull()
         {
             if (RunEditorPullAsync == null)
@@ -70,78 +64,6 @@ namespace Aerisyn.DataConfigSheet
 
             _ = RunEditorPullAsync(this);
         }
-
-
-        // Token-file status from EditorIsSignedIn; hidden for Service Account.
-        [ShowInInspector]
-        [ShowIf(nameof(ShowOAuthAuthActions))]
-        [PropertyOrder(-99)]
-        [DisplayAsString]
-        [LabelText("Google auth")]
-        string InspectorSignedInStatus
-        {
-            get
-            {
-                if (InspectorIsSignedIn)
-                    return "Signed in";
-                return "Not signed in";
-            }
-        }
-
-
-        // Same SignInWithUiAsync path as the menu alias. Off when already signed in.
-        [Button("Sign In With Google")]
-        [ShowIf(nameof(ShowOAuthAuthActions))]
-        [EnableIf(nameof(InspectorCanSignIn))]
-        [PropertyOrder(-98)]
-        [HorizontalGroup("OAuthActions")]
-        void InspectorSignIn()
-        {
-            if (RunEditorSignInAsync == null)
-            {
-                Debug.LogError(
-                    "[DataConfigSheet] Editor Sign In workflow is not registered. " +
-                    "Is the Data Config Sheet Editor assembly loaded?");
-                return;
-            }
-
-            _ = RunEditorSignInAsync(this);
-        }
-
-
-        // Same SignOutWithUi path as the menu alias. Off when not signed in.
-        [Button("Sign Out")]
-        [ShowIf(nameof(ShowOAuthAuthActions))]
-        [EnableIf(nameof(InspectorIsSignedIn))]
-        [PropertyOrder(-97)]
-        [HorizontalGroup("OAuthActions")]
-        void InspectorSignOut()
-        {
-            if (RunEditorSignOut == null)
-            {
-                Debug.LogError(
-                    "[DataConfigSheet] Editor Sign Out workflow is not registered. " +
-                    "Is the Data Config Sheet Editor assembly loaded?");
-                return;
-            }
-
-            RunEditorSignOut(this);
-        }
-
-
-        // Gates OAuth-only Inspector chrome (status + Sign In / Sign Out).
-        bool ShowOAuthAuthActions => _authMode == GoogleAuthMode.OAuthUser;
-
-
-        bool InspectorIsSignedIn =>
-            EditorIsSignedIn != null && EditorIsSignedIn(this);
-
-
-        bool InspectorCanSignIn => !InspectorIsSignedIn;
-
-
-        bool InspectorCanPull =>
-            _authMode == GoogleAuthMode.ServiceAccount || InspectorIsSignedIn;
 #endif
 
         #endregion
@@ -149,18 +71,10 @@ namespace Aerisyn.DataConfigSheet
 
         #region Google source
 
-        // The active environment lives on the profile, never here, so switching environment does
-        // not mean editing every Pull Config.
-        [FoldoutGroup("Google source")]
-        [Tooltip("Environment Profile that holds the active environment and the spreadsheet id per Feature Key.")]
-        [SerializeField]
-        EnvironmentProfile _environmentProfile;
-
-
         [FoldoutGroup("Google source")]
         [Tooltip(
-            "Feature Key for this Pull. The Source Sheet spreadsheet id is resolved from the " +
-            "Environment Profile's active environment at Pull time.")]
+            "Feature Key for this Pull. The Source Sheet spreadsheet id is resolved from " +
+            "Data Config Settings (active Environment Key x Feature Key) at Pull time.")]
         [ValueDropdown(nameof(FeatureKeyChoices), DropdownTitle = "Feature Key")]
         [SerializeField]
         string _featureKey = "";
@@ -175,36 +89,6 @@ namespace Aerisyn.DataConfigSheet
             "The manifest records an empty title for a skipped sheet.")]
         [SerializeField]
         bool _skipTitleCheck;
-
-
-        [FoldoutGroup("Google source")]
-        [Tooltip("OAuthUser = browser sign-in (default). ServiceAccount = robot JSON for CI.")]
-        [SerializeField]
-        GoogleAuthMode _authMode = GoogleAuthMode.OAuthUser;
-
-
-        [FoldoutGroup("Google source")]
-        [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
-        [Tooltip("Desktop OAuth client_secrets JSON from Google Cloud (gitignored).")]
-        [FilePath(Extensions = "json", RequireExistingPath = false)]
-        [SerializeField]
-        string _oauthClientSecretsPath = "";
-
-
-        [FoldoutGroup("Google source")]
-        [ShowIf(nameof(_authMode), GoogleAuthMode.OAuthUser)]
-        [Tooltip("Per-machine authorized_user token written after Sign In (gitignored).")]
-        [FilePath(Extensions = "json", RequireExistingPath = false)]
-        [SerializeField]
-        string _oauthUserTokenPath = "UserSettings/AerisynDataConfig/oauth-user-token.json";
-
-
-        [FoldoutGroup("Google source")]
-        [ShowIf(nameof(_authMode), GoogleAuthMode.ServiceAccount)]
-        [Tooltip("Service-account JSON. Share the sheet with that robot email as Viewer.")]
-        [FilePath(Extensions = "json", RequireExistingPath = false)]
-        [SerializeField]
-        string _serviceAccountCredentialPath = "";
 
         #endregion
 
@@ -239,14 +123,16 @@ namespace Aerisyn.DataConfigSheet
 
         #region Picker helpers
 
-        // Feature Key choices come only from the profile's Feature Key list (no free text).
-        // Empty until a profile with a Feature Key List is assigned.
+        // Feature Key choices come only from Data Config Settings' Feature Key list (no free text).
+        // Empty when the settings asset does not exist yet (opening the window creates it) or the Editor loader is unset.
         IEnumerable<string> FeatureKeyChoices()
         {
-            if (_environmentProfile == null)
-                return Array.Empty<string>();
-
-            return _environmentProfile.FeatureKeys;
+#if UNITY_EDITOR
+            DataConfigSettings settings = EditorSettingsLoader?.Invoke();
+            if (settings != null)
+                return settings.FeatureKeys;
+#endif
+            return Array.Empty<string>();
         }
 
         #endregion
@@ -265,32 +151,12 @@ namespace Aerisyn.DataConfigSheet
 
         #region Public API
 
-        /// <summary>Environment Profile that resolves this Pull's spreadsheet id (null until assigned).</summary>
-        public EnvironmentProfile EnvironmentProfile => _environmentProfile;
-
-
         /// <summary>Feature Key picked for this Pull (empty until picked).</summary>
         public string FeatureKey => _featureKey;
 
 
         /// <summary>True when this Pull Config opts out of the Title Check (default false = check on).</summary>
         public bool SkipTitleCheck => _skipTitleCheck;
-
-
-        /// <summary>OAuth user (default) or service-account auth.</summary>
-        public GoogleAuthMode AuthMode => _authMode;
-
-
-        /// <summary>Desktop OAuth client_secrets.json path.</summary>
-        public string OAuthClientSecretsPath => _oauthClientSecretsPath;
-
-
-        /// <summary>Per-machine authorized_user token path.</summary>
-        public string OAuthUserTokenPath => _oauthUserTokenPath;
-
-
-        /// <summary>Service-account credential JSON path.</summary>
-        public string ServiceAccountCredentialPath => _serviceAccountCredentialPath;
 
 
         /// <summary>Shared output folder for Baked Assets from this Pull.</summary>

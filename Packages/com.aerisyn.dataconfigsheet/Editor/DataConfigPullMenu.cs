@@ -20,28 +20,18 @@ namespace Aerisyn.DataConfigSheet.Editor
 
         #region Auth menus
 
-        // Thin aliases of DataConfigPullWorkflow; primary UX is the PullConfig Inspector.
+        // Thin aliases of DataConfigPullWorkflow; auth fields live on Data Config Settings.
         [MenuItem(SignInMenu, false, 50)]
         static async void SignIn()
         {
-            PullConfig config = RequireSelectedPullConfig(
-                "Select a PullConfig asset (Auth Mode = OAuth User), then Sign In again.");
-            if (config == null)
-                return;
-
-            await DataConfigPullWorkflow.SignInWithUiAsync(config);
+            await DataConfigPullWorkflow.SignInWithUiAsync();
         }
 
 
         [MenuItem(SignOutMenu, false, 51)]
         static void SignOut()
         {
-            PullConfig config = RequireSelectedPullConfig(
-                "Select a PullConfig asset, then Sign Out again.");
-            if (config == null)
-                return;
-
-            DataConfigPullWorkflow.SignOutWithUi(config);
+            DataConfigPullWorkflow.SignOutWithUi();
         }
 
         #endregion
@@ -77,7 +67,7 @@ namespace Aerisyn.DataConfigSheet.Editor
         [MenuItem(PullAllMenu, false, 101)]
         static async void PullAll()
         {
-            // Each Pull Config's Include In Pull flags apply inside the runner.
+            // Runs the Pull Configs under the Data Config Settings Pull All folder; Include In Pull applies per config.
             await DataConfigPullWorkflow.PullAllWithUiAsync();
         }
 
@@ -130,17 +120,6 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         #region Helpers
-
-        static PullConfig RequireSelectedPullConfig(string missingMessage)
-        {
-            PullConfig config = Selection.activeObject as PullConfig;
-            if (config != null)
-                return config;
-
-            EditorUtility.DisplayDialog("Data Config Sheet", missingMessage, "OK");
-            return null;
-        }
-
 
         /// <summary>
         /// Resolves a concrete ConfigTypeAsset type from the Project selection (asset or script).
