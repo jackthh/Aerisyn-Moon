@@ -17,3 +17,4 @@
 
 - Pull Config references an Environment Profile and stores a Feature Key; the active environment stays on the profile. `SpreadsheetId` removed from `PullConfig`.
 - Title Check seams: `TitleCheckRules` (prefix match + defaults + per-key overrides) and `SourceSheetTitleGuard` (title read before grid fetch, injected fetchers). Custom Environment Keys without an override prefix fail the Pull. No opt-out for exception sheets yet (spec allows it later).
+- Integrated into `feature/dataconfig-pull-environments` via fast-forward to `8742814e1ca9f417a3367c86369d0363ebb3a718`.
