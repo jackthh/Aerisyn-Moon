@@ -74,10 +74,43 @@ namespace Aerisyn.DataConfigSheet
         #endregion
 
 
+        #region Config Manifest
+
+        // Project-chosen path; Pull All overwrites it after a fully successful run. Blank = no manifest.
+        [FoldoutGroup("Config Manifest")]
+        [Tooltip(
+            "Project-relative path of the Config Manifest asset (e.g. Assets/Config/ConfigManifest.asset). " +
+            "Pull All creates or overwrites it after every Pull Config passes. Leave blank to skip the manifest.")]
+        [FilePath(Extensions = "asset", RequireExistingPath = false)]
+        [SerializeField]
+        string _manifestAssetPath = "";
+
+
+        // Config Type names (= Baked Asset file names) the manifest must contain.
+        [FoldoutGroup("Config Manifest")]
+        [Tooltip(
+            "Config Types that must appear in the Config Manifest. Pull All and the build gate fail when one is missing, " +
+            "so a Pull Config that was never pulled cannot go unnoticed.")]
+        [ValueDropdown(nameof(ConfigTypeNameChoices), DropdownTitle = "Required Config Types")]
+        [ListDrawerSettings(ShowFoldout = false, DraggableItems = true)]
+        [SerializeField]
+        List<string> _requiredConfigTypeNames = new List<string>();
+
+        #endregion
+
+
         #region Public API
 
         /// <summary>The project's active Environment Key (empty until picked).</summary>
         public string ActiveEnvironmentKey => _activeEnvironmentKey;
+
+
+        /// <summary>Project-relative Config Manifest asset path; blank when the project keeps no manifest.</summary>
+        public string ManifestAssetPath => _manifestAssetPath;
+
+
+        /// <summary>Config Type names the Config Manifest must contain (completeness check).</summary>
+        public IReadOnlyList<string> RequiredConfigTypeNames => _requiredConfigTypeNames;
 
 
         /// <summary>Environment Keys defined by the referenced list; empty when no list is assigned.</summary>
@@ -147,6 +180,19 @@ namespace Aerisyn.DataConfigSheet
             }
 
             return bindings;
+        }
+
+        #endregion
+
+
+        #region Picker helpers
+
+        // Names of concrete Config Types (same scan as the Pull Config type picker); the name is what
+        // Baked Asset files and manifest rows use.
+        IEnumerable<string> ConfigTypeNameChoices()
+        {
+            foreach (Type configType in PullConfigTypeEntry.FilterConfigTypes())
+                yield return configType.Name;
         }
 
         #endregion

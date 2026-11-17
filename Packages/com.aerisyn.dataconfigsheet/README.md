@@ -4,7 +4,7 @@ Editor **Pull**: **Google Sheet (OAuth) → in-memory cell grid → type-driven 
 
 That is the only supported product path for this package.
 
-**Unity:** 2022.3+ · **Version:** `0.5.2` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
+**Unity:** 2022.3+ · **Version:** `0.6.0` · **Requires:** [Odin Inspector](https://odininspector.com/), Google API Editor plugins (bundled)
 
 See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-dataconfigsheet-pull-scriptableobject.md), and [`docs/adr/0013-…`](../../docs/adr/0013-dataconfigsheet-local-only-after-pull.md).
 
@@ -42,6 +42,29 @@ See [`CONTEXT.md`](./CONTEXT.md), [`docs/adr/0010-…`](../../docs/adr/0010-data
 6. Read the **Pull report**: success lists created/updated assets; failures include **A1** sheet coordinates. Failed Pulls write nothing.
 7. Or import sample **Weapons Pull** (Package Manager → Samples) and follow its README.
 8. Inject path (no live Google): call `DataConfigPullRunner.PullFromGrids` with in-memory `SheetGrid`s.
+
+## Pull All + Config Manifest
+
+**Aerisyn → Data Config Sheet → Pull From Google (All Configs)** Pulls every Pull Config in asset-path order. It never stops at the first failure: one summary lists each passed and failed config, and the overall result fails if any config failed.
+
+When every config passes, Pull All writes a **Config Manifest** (`Aerisyn/Data Config Sheet/Config Manifest`) for each Environment Profile that sets a **Manifest Asset Path** (Environment Profile → Config Manifest). It records the active Environment Key, the UTC time, per Feature Key the Source Sheet id, title and Drive `modifiedTime` / `version` (best effort; empty if Drive is unavailable), and a SHA-256 per Baked Asset. Drive metadata uses the existing `drive.readonly` scope with `supportsAllDrives=true`; no new scope.
+
+List the Config Types that must exist in **Required Config Types** on the profile. After the manifest write, Pull All checks it against that list and the profile's active environment; a missing type or wrong environment fails the run. A failed Pull All leaves the previous manifest untouched.
+
+Opt-in build gate: the package registers nothing. Call it from your own preprocessor to fail player builds when the active environment is not Production or the manifest is incomplete:
+
+```csharp
+class DataConfigBuildCheck : IPreprocessBuildWithReport
+{
+    public int callbackOrder => 0;
+
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        EnvironmentProfile profile = AssetDatabase.LoadAssetAtPath<EnvironmentProfile>("Assets/Config/EnvironmentProfile.asset");
+        Aerisyn.DataConfigSheet.Editor.DataConfigBuildGate.Require(profile);
+    }
+}
+```
 
 ## Local Only + After Pull
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -74,32 +75,72 @@ namespace Aerisyn.DataConfigSheet.Editor
 
 
         /// <summary>
-        /// Finds every Pull Config in the project and runs PullWithUiAsync on each,
-        /// stopping at the first failure. Each config's Include In Pull ticks apply.
+        /// Finds every Pull Config in the project (stable asset-path order) and Pulls each one. A failing
+        /// config never stops the run, so one summary shows every passed and failed job. Each config's
+        /// Include In Pull ticks apply. After every job passes, writes the Config Manifest for each
+        /// Environment Profile that sets a manifest path, then checks it against that profile's required
+        /// Config Type list; a missing type or wrong environment fails the overall run.
         /// </summary>
-        public static async Task PullAllWithUiAsync()
+        /// <returns>The combined summary (OverallSuccess false when no Pull Config exists).</returns>
+        public static async Task<PullAllSummary> PullAllWithUiAsync()
         {
-            string[] guids = AssetDatabase.FindAssets("t:PullConfig");
-            if (guids == null || guids.Length == 0)
+            List<PullConfig> configs = FindPullConfigsInStableOrder();
+            if (configs.Count == 0)
             {
                 EditorUtility.DisplayDialog(
                     "Data Config Sheet",
                     "No PullConfig assets found. Create one via Assets → Create → Aerisyn → Data Config Sheet → Pull Config.",
                     "OK");
-                return;
+                return PullAllSummary.Create(Array.Empty<PullJobResult>(), null);
             }
 
-            for (int i = 0; i < guids.Length; i++)
+            // job index == config index, so results map back to each config's Environment Profile.
+            List<PullAllJob> jobs = new List<PullAllJob>(configs.Count);
+            for (int i = 0; i < configs.Count; i++)
             {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                PullConfig config = AssetDatabase.LoadAssetAtPath<PullConfig>(path);
-                if (config == null)
-                    continue;
-
-                bool ok = await PullWithUiAsync(config);
-                if (!ok)
-                    return;
+                PullConfig config = configs[i];
+                jobs.Add(new PullAllJob(config.name, () => RunPullJobAsync(config)));
             }
+
+            IReadOnlyList<PullJobResult> results;
+            List<string> manifestFindings = new List<string>();
+            try
+            {
+                EditorUtility.DisplayProgressBar("Data Config Sheet", $"Pull All ({configs.Count} Pull Configs)…", 0.2f);
+                results = await PullAllRunner.RunAllAsync(jobs);
+
+                bool everyJobPassed = true;
+                for (int i = 0; i < results.Count; i++)
+                    everyJobPassed &= results[i].Success;
+
+                // A partial manifest would claim completeness for a run that was not; keep the previous one.
+                if (everyJobPassed)
+                {
+                    try
+                    {
+                        WriteManifestsAndCheck(configs, results, manifestFindings);
+                    }
+                    catch (Exception exception)
+                    {
+                        // Per-job exceptions are already failed results; this is manifest IO (path, hashing) failing.
+                        Debug.LogException(exception);
+                        manifestFindings.Add($"Config Manifest write failed: {exception.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+
+            PullAllSummary summary = PullAllSummary.Create(results, manifestFindings);
+            string body = summary.Format();
+            Debug.Log("[DataConfigSheet]\n" + body);
+            EditorUtility.DisplayDialog(
+                summary.OverallSuccess ? "Data Config Sheet" : "Data Config Sheet Pull All failed",
+                body,
+                "OK");
+            return summary;
         }
 
 
@@ -172,6 +213,102 @@ namespace Aerisyn.DataConfigSheet.Editor
         static void RepaintInspectors()
         {
             UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+        }
+
+
+        /// <summary>
+        /// Pull Configs sorted by asset path (ordinal) so run order, logs, and the summary do not depend
+        /// on AssetDatabase GUID enumeration order.
+        /// </summary>
+        static List<PullConfig> FindPullConfigsInStableOrder()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:PullConfig");
+            List<string> paths = new List<string>(guids.Length);
+            for (int i = 0; i < guids.Length; i++)
+                paths.Add(AssetDatabase.GUIDToAssetPath(guids[i]));
+
+            paths.Sort(StringComparer.Ordinal);
+
+            List<PullConfig> configs = new List<PullConfig>(paths.Count);
+            for (int i = 0; i < paths.Count; i++)
+            {
+                PullConfig config = AssetDatabase.LoadAssetAtPath<PullConfig>(paths[i]);
+                if (config != null)
+                    configs.Add(config);
+            }
+
+            return configs;
+        }
+
+
+        /// <summary>
+        /// One Pull All job: live Pull with no per-config dialog, mapped into a pure result carrying the
+        /// manifest rows. A failed PullReport becomes a failed result; thrown errors are caught by the runner.
+        /// </summary>
+        static async Task<PullJobResult> RunPullJobAsync(PullConfig config)
+        {
+            LivePullOutcome outcome = await DataConfigPullRunner.PullWithSourceAsync(config);
+            string body = outcome.Report.Format();
+            Debug.Log("[DataConfigSheet]\n" + body);
+
+            if (!outcome.Report.Success)
+                return PullJobResult.Failed(config.name, body);
+
+            return PullJobResult.Passed(
+                config.name,
+                body,
+                outcome.Source,
+                ConfigManifestStore.BuildAssetRows(outcome.Report));
+        }
+
+
+        /// <summary>
+        /// Writes one Config Manifest per distinct Environment Profile that sets a manifest path (from the
+        /// jobs that used it), then runs completeness for every profile that was involved. Findings are
+        /// prefixed with the profile name. Profiles with neither a path nor a required list are skipped.
+        /// </summary>
+        static void WriteManifestsAndCheck(
+            List<PullConfig> configs,
+            IReadOnlyList<PullJobResult> results,
+            List<string> findings)
+        {
+            List<EnvironmentProfile> profiles = new List<EnvironmentProfile>();
+            Dictionary<EnvironmentProfile, List<PullJobResult>> resultsByProfile =
+                new Dictionary<EnvironmentProfile, List<PullJobResult>>();
+
+            for (int i = 0; i < configs.Count; i++)
+            {
+                EnvironmentProfile profile = configs[i].EnvironmentProfile;
+                if (profile == null)
+                    continue;
+
+                List<PullJobResult> profileResults;
+                if (!resultsByProfile.TryGetValue(profile, out profileResults))
+                {
+                    profileResults = new List<PullJobResult>();
+                    resultsByProfile[profile] = profileResults;
+                    profiles.Add(profile);
+                }
+
+                profileResults.Add(results[i]);
+            }
+
+            for (int i = 0; i < profiles.Count; i++)
+            {
+                EnvironmentProfile profile = profiles[i];
+                if (!string.IsNullOrWhiteSpace(profile.ManifestAssetPath))
+                {
+                    ConfigManifestSnapshot snapshot = ConfigManifestSnapshot.FromJobs(
+                        profile.ActiveEnvironmentKey,
+                        DateTime.UtcNow,
+                        resultsByProfile[profile]);
+                    ConfigManifestStore.Write(profile.ManifestAssetPath, snapshot);
+                }
+
+                IReadOnlyList<string> problems = ConfigManifestStore.CheckProfile(profile);
+                for (int problemIndex = 0; problemIndex < problems.Count; problemIndex++)
+                    findings.Add($"[{profile.name}] {problems[problemIndex]}");
+            }
         }
 
         #endregion

@@ -124,6 +124,24 @@ namespace Aerisyn.DataConfigSheet.Editor
             });
         }
 
+
+        /// <summary>
+        /// Builds a Drive API client from the same OAuth or service-account credentials. The existing
+        /// <c>drive.readonly</c> scope is enough for <c>files.get</c> revision fields; no new scope.
+        /// </summary>
+        public static async Task<DriveService> CreateDriveServiceAsync(PullConfig config)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+
+            GoogleCredential credential = await ResolveGoogleCredentialAsync(config);
+            return new DriveService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Aerisyn DataConfigSheet",
+            });
+        }
+
         #endregion
 
 

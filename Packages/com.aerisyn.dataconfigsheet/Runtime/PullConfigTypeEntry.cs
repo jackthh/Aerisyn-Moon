@@ -78,7 +78,7 @@ namespace Aerisyn.DataConfigSheet
         /// ValueDropdown candidates only (concrete ConfigTypeAsset subclasses).
         /// Does not choose what Pull runs; that is Include In Pull on each entry.
         /// </summary>
-        static IEnumerable<Type> FilterConfigTypes()
+        internal static IEnumerable<Type> FilterConfigTypes()
         {
             Type baseType = typeof(ConfigTypeAsset);
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();

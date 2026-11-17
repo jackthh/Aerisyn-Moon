@@ -1,11 +1,37 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Google.Apis.Drive.v3;
 using Google.Apis.Sheets.v4;
 using UnityEngine;
 
 namespace Aerisyn.DataConfigSheet.Editor
 {
+    /// <summary>
+    /// Result of a live Pull: the PullReport plus Source Sheet facts for the Config Manifest
+    /// (null Source when the Pull failed).
+    /// </summary>
+    public readonly struct LivePullOutcome
+    {
+
+
+        public LivePullOutcome(PullReport report, ManifestFeatureEntry source)
+        {
+            Report = report;
+            Source = source;
+        }
+
+
+        public PullReport Report { get; }
+
+
+        /// <summary>Feature Key, spreadsheet id, checked title, Drive revision; null when the Pull failed.</summary>
+        public ManifestFeatureEntry Source { get; }
+
+
+    }
+
+
     /// <summary>
     /// Runs one-way Pull: Google Sheets (or injected grids) → Vertical Nest → Baked Assets.
     /// Returns a PullReport (success summary or failures with sheet coordinates).
@@ -23,6 +49,18 @@ namespace Aerisyn.DataConfigSheet.Editor
         /// </summary>
         public static async Task<PullReport> PullAsync(PullConfig config)
         {
+            LivePullOutcome outcome = await PullWithSourceAsync(config);
+            return outcome.Report;
+        }
+
+
+        /// <summary>
+        /// Same live Pull as <see cref="PullAsync"/>, also returning the Source Sheet facts the Config Manifest
+        /// records (Feature Key, spreadsheet id, checked title, Drive revision). Drive revision is fetched only
+        /// after a successful Pull and is best effort: a Drive failure leaves those fields empty.
+        /// </summary>
+        public static async Task<LivePullOutcome> PullWithSourceAsync(PullConfig config)
+        {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
@@ -33,13 +71,38 @@ namespace Aerisyn.DataConfigSheet.Editor
             SheetsService sheets = await GoogleOAuthSession.CreateSheetsServiceAsync(config);
             EnvironmentProfile profile = config.EnvironmentProfile;
 
+            // The guard discards the title it reads; keep it for the manifest row.
+            string checkedTitle = "";
             Dictionary<Type, SheetGrid> grids = await SourceSheetTitleGuard.FetchAfterTitleCheckAsync(
                 spreadsheetId,
                 profile.ActiveEnvironmentKey,
                 profile.ToTitlePrefixOverrides(),
-                id => GoogleSheetsGridFetcher.FetchSpreadsheetTitleAsync(sheets, id),
+                async id =>
+                {
+                    checkedTitle = await GoogleSheetsGridFetcher.FetchSpreadsheetTitleAsync(sheets, id);
+                    return checkedTitle;
+                },
                 id => GoogleSheetsGridFetcher.FetchGridsAsync(config, sheets, id));
-            return PullFromGrids(config, grids);
+            PullReport report = PullFromGrids(config, grids);
+            if (!report.Success)
+                return new LivePullOutcome(report, null);
+
+            // Created lazily inside the lookup so a Drive client failure is swallowed with the fetch.
+            SheetRevisionMetadata revision = await SheetRevisionLookup.TryFetchAsync(
+                async id =>
+                {
+                    DriveService drive = await GoogleOAuthSession.CreateDriveServiceAsync(config);
+                    return await GoogleDriveRevisionFetcher.FetchAsync(drive, id);
+                },
+                spreadsheetId);
+
+            ManifestFeatureEntry source = new ManifestFeatureEntry(
+                config.FeatureKey,
+                spreadsheetId.Trim(),
+                checkedTitle,
+                revision.ModifiedTime,
+                revision.Version);
+            return new LivePullOutcome(report, source);
         }
 
 
