@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Pull Config uses feature key picker; spreadsheet id field removed or hidden as obsolete
 - [ ] Pull resolves spreadsheet id via active Environment Profile
