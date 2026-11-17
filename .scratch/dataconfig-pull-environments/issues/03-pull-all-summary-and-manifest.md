@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Pull All continues across configs and returns a combined summary (no early silent return after first failure)
 - [ ] Config Manifest asset written with env, time, per-feature metadata, per-asset hashes
